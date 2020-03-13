@@ -11,7 +11,6 @@
 #include <jack/midiport.h>
 #include <sndfile.h>
 #include <samplerate.h>
-#include <rubberband/RubberBandStretcher.h>
 
 // Files & JSON
 #include <sys/types.h>
@@ -217,10 +216,11 @@ static int process(jack_nframes_t nframes, void *arg)
         }
 
         MCK::AudioSample *s = &m_samples[v.sampleIdx];
+        /*
         for (unsigned i = 0; i < s->numChans; i++)
         {
             memset(s->pitchBuffer[i], 0, bufferSize * sizeof(float));
-        }
+        }*/
         len = std::min(bufferSize, s->numFrames - v.bufferIdx) - v.startIdx;
 
         if (s->numChans > 1)
@@ -468,14 +468,14 @@ int main(int argc, char **argv)
         // Deinterleaving
 
         m_samples[i].buffer = new float[m_samples[i].numChans * m_samples[i].numFrames];
-
+        /*
         m_samples[i].pitchBuffer = new float *[m_samples[i].numChans];
         m_samples[i].outBuffer = new float *[m_samples[i].numChans];
         for (unsigned j = 0; j < m_samples[i].numChans; j++)
         {
             m_samples[i].pitchBuffer[j] = new float[bufferSize];
             m_samples[i].outBuffer[j] = new float[bufferSize];
-        }
+        }*/
         for (unsigned s = 0; s < std::min(m_samples[i].numFrames, numSrcFrames); s++)
         {
             for (unsigned c = 0; c < m_samples[i].numChans; c++)
@@ -486,7 +486,7 @@ int main(int argc, char **argv)
         delete tmpBuf;
 
         // init pitcher
-        m_samples[i].pitcher = new RubberBand::RubberBandStretcher(sampleRate, m_samples[i].numChans, RubberBand::RubberBandStretcher::OptionProcessRealTime, 1.0, 1.0);
+        //m_samples[i].pitcher = new RubberBand::RubberBandStretcher(sampleRate, m_samples[i].numChans, RubberBand::RubberBandStretcher::OptionProcessRealTime, 1.0, 1.0);
         //m_samples[i].pitcher->setMaxProcessSize(bufferSize);
     }
 

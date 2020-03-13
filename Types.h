@@ -2,17 +2,19 @@
 #include <string>
 #include <vector>
 #include "nlohmann/json.hpp"
-#include <rubberband/RubberBandStretcher.h>
+//#include <rubberband/RubberBandStretcher.h>
 
 namespace MCK {
     struct AudioSample {
         unsigned numChans;
         unsigned numFrames;
         float *buffer;
+        /*
         float **pitchBuffer;
         float **outBuffer;
         RubberBand::RubberBandStretcher *pitcher;
-        AudioSample() : numChans(0), numFrames(0), buffer(nullptr), pitchBuffer(nullptr), outBuffer(nullptr), pitcher(nullptr) {}
+        */
+        AudioSample() : numChans(0), numFrames(0), buffer(nullptr)/*, pitchBuffer(nullptr), outBuffer(nullptr), pitcher(nullptr)*/ {}
     };
     struct AudioVoice {
         bool playSample;
