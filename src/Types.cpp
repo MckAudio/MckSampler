@@ -1,4 +1,4 @@
-#include "Types.h"
+#include "Types.hpp"
 
 void MCK::to_json(nlohmann::json &j, const Connection &c)
 {

@@ -1,4 +1,4 @@
-#include "JackHelper.h"
+#include "JackHelper.hpp"
 
 bool MCK::JACK::GetConnections(jack_client_t *client, jack_port_t *port, std::vector<Connection> &connections)
 {

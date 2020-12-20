@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <vector>
-#include "Metronome.h"
+#include "Metronome.hpp"
 
 jack_client_t *client;
 jack_port_t *input_port;

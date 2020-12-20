@@ -1,4 +1,4 @@
-#include "portaudio.h"
+#include "portaudio.hpp"
 #include <stdio.h>
 
 #define SAMPLE_RATE (48000)

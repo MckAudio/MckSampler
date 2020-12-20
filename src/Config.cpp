@@ -1,4 +1,4 @@
-#include "Config.h"
+#include "Config.hpp"
 
 void SP::to_json(nlohmann::json &j, const SP::Sample &s)
 {

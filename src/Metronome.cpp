@@ -1,4 +1,4 @@
-#include "Metronome.h"
+#include "Metronome.hpp"
 
 Metronome::Metronome() : m_tempo(120.0f), m_initialized(false), m_isRunning(false), m_clkSet(false), m_clkLen(24), m_clkCount(0), m_clkIdx(0), m_clkBuf(0), m_print(false), m_beat(3), m_numBeats(4), m_sampleIdx(0), m_startIdx(0), m_start(false)
 {
@@ -26,7 +26,7 @@ bool Metronome::Init(unsigned buffersize, unsigned samplerate)
 
     // Read Wav Files
     SF_INFO info;
-    m_clickHigh = sf_open("metro_1.wav", SFM_READ, &info);
+    m_clickHigh = sf_open("../content/metro_1.wav", SFM_READ, &info);
     m_clickHighCount = info.frames;
     // Sample rate Conversion
     if (info.samplerate != samplerate)
@@ -49,7 +49,7 @@ bool Metronome::Init(unsigned buffersize, unsigned samplerate)
         sf_read_float(m_clickHigh, m_clickHighOutput, m_clickHighCount);
     }
 
-    m_clickLow = sf_open("metro_2.wav", SFM_READ, &info);
+    m_clickLow = sf_open("../content/metro_2.wav", SFM_READ, &info);
     m_clickLowCount = info.frames;
     // Sample rate Conversion
     if (info.samplerate != samplerate)

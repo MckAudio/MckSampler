@@ -20,8 +20,8 @@
 #include "nlohmann/json.hpp"
 
 // OWN Header
-#include "Config.h"
-#include "JackHelper.h"
+#include "Config.hpp"
+#include "JackHelper.hpp"
 
 enum
 {
@@ -33,7 +33,7 @@ enum
     CONFIG_LENGTH
 };
 
-std::string wavFile = "risset_long.wav";
+std::string wavFile = "../content/risset_long.wav";
 SNDFILE *sndFile;
 SF_INFO sndInfo;
 

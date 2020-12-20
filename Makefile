@@ -1,11 +1,20 @@
 REL_FLAGS = -O2 -DNDEBUG
 DEB_FLAGS = -O0 -DDEBUG -ggdb3
 
-samplepad: samplepad.cpp Config.cpp Config.h JackHelper.cpp JackHelper.h Types.cpp Types.h
-	g++ $(DEB_FLAGS) samplepad.cpp Config.cpp JackHelper.cpp Types.cpp -o samplepad -std=c++17 -I./json/include -ljack -lsndfile -lsamplerate
+release: ./src/samplepad.cpp ./src/Config.cpp ./src/Config.hpp ./src/JackHelper.cpp ./src/JackHelper.hpp ./src/Types.cpp ./src/Types.hpp
+	mkdir -p bin/release
+	g++ $(REL_FLAGS) ./src/samplepad.cpp ./src/Config.cpp ./src/JackHelper.cpp ./src/Types.cpp -o ./bin/debug/samplepad -std=c++17 -I./json/include -ljack -lsndfile -lsamplerate -lrubberband
 
-metronome: midimetronome.cpp Metronome.cpp Metronome.h
-	g++ midimetronome.cpp Metronome.cpp Metronome.h -o metronome -ljack -lsndfile -lsamplerate
+debug: ./src/samplepad.cpp ./src/Config.cpp ./src/Config.hpp ./src/JackHelper.cpp ./src/JackHelper.hpp ./src/Types.cpp ./src/Types.hpp
+	mkdir -p bin/debug
+	g++ $(DEB_FLAGS) ./src/samplepad.cpp ./src/Config.cpp ./src/JackHelper.cpp ./src/Types.cpp -o ./bin/release/samplepad -std=c++17 -I./json/include -ljack -lsndfile -lsamplerate -lrubberband
 
-looper: midilooper.cpp Metronome.cpp Metronome.h
-	g++ midilooper.cpp Metronome.cpp Metronome.h -o looper -ljack -lsndfile -lsamplerate
+metronome: ./src/midimetronome.cpp ./src/Metronome.cpp ./src/Metronome.hpp
+	mkdir -p bin
+	g++ ./src/midimetronome.cpp ./src/Metronome.cpp ./src/Metronome.hpp -o ./bin/metronome -ljack -lsndfile -lsamplerate
+
+looper: ./src/midilooper.cpp ./src/Metronome.cpp ./src/Metronome.hpp
+	mkdir -p bin
+	g++ ./src/midilooper.cpp ./src/Metronome.cpp ./src/Metronome.hpp -o ./bin/looper -ljack -lsndfile -lsamplerate
+
+all: release metronome looper

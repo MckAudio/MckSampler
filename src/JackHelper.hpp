@@ -3,7 +3,7 @@
 #include <jack/jack.h>
 #include <jack/midiport.h>
 
-#include "Types.h"
+#include "Types.hpp"
 
 namespace MCK {
     namespace JACK {

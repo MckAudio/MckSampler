@@ -7,7 +7,7 @@
 #include <filesystem>
 #include <iostream>
 
-#include "Types.h"
+#include "Types.hpp"
 
 namespace SP
 {

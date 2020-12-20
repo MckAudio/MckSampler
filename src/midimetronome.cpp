@@ -7,7 +7,7 @@
 #include <vector>
 #include <string.h>
 
-#include "Metronome.h"
+#include "Metronome.hpp"
 
 jack_client_t *client;
 jack_port_t *input_port;
