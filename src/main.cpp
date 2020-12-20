@@ -283,7 +283,7 @@ int main(int argc, char **argv)
     // Read Config
     struct passwd *pw = getpwuid(getuid());
     path configPath(pw->pw_dir);
-    configPath.append(".mcksampler");
+    configPath.append(".mck").append("sampler");
     if (exists(configPath) == false)
     {
         create_directories(configPath);
@@ -388,7 +388,7 @@ int main(int argc, char **argv)
 
     SP::VerifyConfiguration(m_config);
 
-    if ((client = jack_client_open("SamplePad", JackNullOption, NULL)) == 0)
+    if ((client = jack_client_open("MckSampler", JackNullOption, NULL)) == 0)
     {
         fprintf(stderr, "JACK server not running?\n");
         return 1;

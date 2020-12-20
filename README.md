@@ -4,11 +4,11 @@
 
 MckSampler is a one shot sample player that allows the user to trigger drum samples in WAV format with MIDI note messages.
 
-At this point MckSampler is just a command line program that creates its configuration in the folder ```$HOME/.mcksampler/config.json```.
+At this point MckSampler is just a command line program that creates its configuration in the folder ```$HOME/.mck/sampler/config.json```.
 
-The configuration is created with the command ```./mcksampler --config```.
+The configuration is created with the command ```./mck-sampler --config```.
 
-The desired WAV files have to go in the folder ```$HOME/.mcksampler/audio/```.
+The desired WAV files have to go in the folder ```$HOME/.mck/sampler/audio/```.
 
 ## Getting started
 
@@ -16,7 +16,9 @@ The desired WAV files have to go in the folder ```$HOME/.mcksampler/audio/```.
 git submodule update --init
 sudo apt install build-essential libsamplerate0-dev libsndfile1-dev libjack-jackd2-dev
 
-make release
+make
+
+sudo make install
 ```
 
 ## Features (including planned stuff)
