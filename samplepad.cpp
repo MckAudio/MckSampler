@@ -100,7 +100,7 @@ void CloseApplication(bool saveConnections = true)
 
 static void signal_handler(int sig)
 {
-    fprintf(stdout, "Signal %d received, exiting...\n");
+    fprintf(stdout, "Signal %d received, exiting...\n", sig);
     CloseApplication();
 }
 
