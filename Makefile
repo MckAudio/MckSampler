@@ -20,4 +20,8 @@ looper: ./src/midilooper.cpp ./src/Metronome.cpp ./src/Metronome.hpp
 	mkdir -p bin
 	g++ ./src/midilooper.cpp ./src/Metronome.cpp ./src/Metronome.hpp -o ./bin/looper -ljack -lsndfile -lsamplerate
 
+gui: ./src/wvtest.cpp
+	mkdir -p bin
+	g++ ./src/wvtest.cpp `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0` -o ./bin/wvtest
+
 all: release metronome looper

@@ -14,7 +14,10 @@ The desired WAV files have to go in the folder ```$HOME/.mck/sampler/audio/```.
 
 ```
 git submodule update --init
-sudo apt install build-essential libsamplerate0-dev libsndfile1-dev libjack-jackd2-dev
+
+sudo apt install build-essential node npm
+sudo apt install libsamplerate0-dev libsndfile1-dev libjack-jackd2-dev
+sudo apt install libgtk-3-dev libwebkit2gtk-4.0-dev
 
 make
 
