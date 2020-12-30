@@ -1,34 +1,94 @@
 <script>
-	export let name;
+	import { onMount, onDestroy } from "svelte";
+	import Pad from "../MckSvelte/controls/Pad.svelte";
+
+	let pads = Array.from({length: 16}, (_v, _i) => {idx: _i});
+	let content = undefined;
+	let contentHeight = 0;
+	let oldch = 0;
+	let contentWidth = 0;
+	let oldcw = 0;
+
+	$: if (contentHeight !== oldch || contentWidth !== oldcw)
+	{
+
+	} 
 
 	function ButtonHandler(_msg) {
-		SendMessage({"message": _msg});
+		SendMessage({ message: _msg });
 	}
-</script>
 
-<main>
-	<h1>Hello {name}!</h1>
-	<button on:click={()=>{ButtonHandler("Hello!")}}>Hello!</button>
-</main>
+	function PadHandler(_idx) {
+		SendMessage({
+			"section": "pads",
+			"msgType": "trigger",
+			"data": JSON.stringify(
+				{
+					index: _idx
+				}
+			)
+		});
+	}
+
+	function ReceiveBackendMessage(_event) {
+		console.log("Backend Message", _event.detail);
+	}
+
+	onMount(() => {
+		document.addEventListener("backendMessage", ReceiveBackendMessage);
+	});
+
+	onDestroy(() => {
+		document.removeEventListener("backendMessage", ReceiveBackendMessage);
+	});
+</script>
 
 <style>
 	main {
-		text-align: center;
-		padding: 1em;
-		max-width: 240px;
-		margin: 0 auto;
+		width: 100%;
+		height: 100%;
+		display: grid;
+		grid-template-columns: 140px 1fr auto;
 	}
-
-	h1 {
-		color: #ff3e00;
-		text-transform: uppercase;
-		font-size: 4em;
-		font-weight: 100;
-	}
-
-	@media (min-width: 640px) {
-		main {
-			max-width: none;
-		}
-	}
+  .settings {
+    grid-column: 1/2;
+    overflow-y: auto;
+    padding: 8px;
+    background-color: #f0f0f0;
+    z-index: 10;
+    box-shadow: 1px 0px 4px 1px #555;
+  }
+  .content {
+	  grid-column: 2/3;
+	  background-color: #fafafa;
+	  display: grid;
+	  grid-template-rows: 1fr auto;
+  }
+  .pads {
+	  grid-row: 2/-1;
+	  display: grid;
+	  padding: 16px;
+	  grid-gap: 16px;
+	  grid-template-columns: repeat(8, 1fr);
+	  grid-template-rows: repeat(2, 1fr);
+  }
 </style>
+
+<main>
+	<div class="settings">
+
+	</div>
+	<div class="content" bind:this={content} bind:clientHeight={contentHeight} bind:clientWidth={contentWidth}>
+		<div>
+
+		</div>
+		<div class="pads">
+			{#each pads as pad, i}
+				<Pad Handler={()=>PadHandler(i)}/>
+			{/each}
+		</div>
+	</div>
+	<div class="master">
+
+	</div>
+</main>

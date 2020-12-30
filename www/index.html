@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 	<meta charset='utf-8'>
 	<meta name='viewport' content='width=device-width,initial-scale=1'>
@@ -12,12 +13,22 @@
 
 	<script defer src='/build/bundle.js'></script>
 	<script>
-		function RecvMsg(_msg) {
-			alert(_msg);
+
+		function ReceiveMessage(_msg) {
+			//RecvMsg(_msg);
+			console.log(_msg);
+			var _event = new CustomEvent(
+				"backendMessage", {
+				detail: _msg,
+				bubbles: true,
+				cancelable: false
+			});
+			document.dispatchEvent(_event);
 		}
 	</script>
 </head>
 
 <body>
 </body>
+
 </html>

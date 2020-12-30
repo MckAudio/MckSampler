@@ -5,6 +5,8 @@
 #include <string>
 #include <string.h>
 #include <iostream>
+#include <vector>
+#include <deque>
 
 // Audio
 #include <jack/jack.h>
@@ -18,6 +20,16 @@
 #include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
+
+// Threading
+#include <thread>
+#include <atomic>
+#include <condition_variable>
+#include <mutex>
+
+// GUI
+#include "../webview/webview.h"
+#include "../cpp-httplib/httplib.h"
 
 // OWN Header
 #include "Config.hpp"
@@ -33,10 +45,18 @@ enum
     CONFIG_LENGTH
 };
 
+// GUI
+httplib::Server guiServer;
+std::thread guiServerThread;
+webview::webview guiWindow(true, nullptr);
+std::thread guiWindowThread;
+
+// FILES
 std::string wavFile = "../content/risset_long.wav";
 SNDFILE *sndFile;
 SF_INFO sndInfo;
 
+// JACK
 jack_client_t *client;
 jack_port_t *midi_in;
 jack_port_t *audio_out_l;
@@ -64,6 +84,12 @@ std::vector<MCK::AudioSample> m_samples;
 std::vector<MCK::AudioVoice> m_voices;
 unsigned numVoices;
 unsigned voiceIdx;
+
+// Pad Trigger
+std::deque<unsigned> m_trigger;
+std::mutex m_triggerMutex;
+std::atomic<bool> m_triggerActive = false;
+std::condition_variable m_triggerCond;
 
 void CloseApplication(bool saveConnections = true)
 {
@@ -95,6 +121,16 @@ void CloseApplication(bool saveConnections = true)
     configFile << std::setw(4) << j << std::endl;
     configFile.close();
 
+    if (guiWindowThread.joinable())
+    {
+        guiWindow.terminate();
+        guiWindowThread.join();
+    }
+    if (guiServerThread.joinable())
+    {
+        guiServer.stop();
+        guiServerThread.join();
+    }
     exit(0);
 }
 
@@ -195,6 +231,27 @@ static int process(jack_nframes_t nframes, void *arg)
         }
     }
 
+    m_triggerActive = true;
+    while (m_trigger.size() > 0)
+    {
+        unsigned idx = m_trigger[0];
+        m_trigger.pop_front();
+
+        if (idx < m_config.numPads)
+        {
+            m_voices[voiceIdx].playSample = true;
+            m_voices[voiceIdx].startIdx = 0;
+            m_voices[voiceIdx].bufferIdx = 0;
+            m_voices[voiceIdx].gain = m_config.pads[idx].gain;
+            m_voices[voiceIdx].sampleIdx = idx;
+            m_voices[voiceIdx].pitch = m_config.pads[idx].pitch;
+
+            voiceIdx = (voiceIdx + 1) % numVoices;
+        }
+    }
+    m_triggerActive = false;
+    m_triggerCond.notify_all();
+
     if (resetSample)
     {
         sf_seek(sndFile, 0, SEEK_SET);
@@ -275,10 +332,70 @@ static int process(jack_nframes_t nframes, void *arg)
     return 0;
 }
 
+std::string SendMessage(std::string msg)
+{
+    using json = nlohmann::json;
+    std::vector<MCK::Message> messages;
+    try
+    {
+        json j = json::parse(msg);
+        messages = j.get<std::vector<MCK::Message>>();
+    }
+    catch (std::exception &e)
+    {
+        std::cerr << "Failed to convert incoming message: " << e.what() << std::endl;
+        return e.what();
+    }
+    std::cout << msg << std::endl;
+
+    for (unsigned i = 0; i < messages.size(); i++)
+    {
+        if (messages[i].section == "pads")
+        {
+            if (messages[i].msgType == "trigger")
+            {
+                std::unique_lock<std::mutex> lock(m_triggerMutex);
+                while(m_triggerActive.load()) {
+                    m_triggerCond.wait(lock);
+                }
+                MCK::TriggerData data = json::parse(messages[i].data);
+                int triggerIdx = data.index;
+                if (triggerIdx >= 0)
+                {
+                    std::cout << "Triggering PAD #" << (triggerIdx+1) << std::endl;
+                    m_trigger.push_back(triggerIdx);
+                }
+            }
+        }
+    }
+
+    return "";
+}
+
 int main(int argc, char **argv)
 {
     using namespace std::filesystem;
     using namespace nlohmann;
+    using namespace webview;
+    using namespace httplib;
+
+    // HTTP Server
+    bool ret = guiServer.set_mount_point("/", "./www");
+    if (ret == false)
+    {
+        return EXIT_FAILURE;
+    }
+    guiServerThread = std::thread([&]() {
+        guiServer.listen("localhost", 9002);
+    });
+
+    // GUI Window
+    guiWindow.set_title("MckSampler");
+    guiWindow.set_size(1280, 720, WEBVIEW_HINT_NONE);
+    guiWindow.navigate("http://localhost:9002");
+    guiWindow.bind("SendMessage", SendMessage);
+    //guiWindowThread = std::thread([&]() {
+    //});
 
     // Read Config
     struct passwd *pw = getpwuid(getuid());
@@ -391,7 +508,7 @@ int main(int argc, char **argv)
     if ((client = jack_client_open("MckSampler", JackNullOption, NULL)) == 0)
     {
         fprintf(stderr, "JACK server not running?\n");
-        return 1;
+        return EXIT_FAILURE;
     }
 
     jack_set_process_callback(client, process, 0);
@@ -493,7 +610,7 @@ int main(int argc, char **argv)
     if (jack_activate(client))
     {
         fprintf(stderr, "Unable to activate JACK client\n");
-        return 1;
+        return EXIT_FAILURE;
     }
 
     // Connect inputs and outputs
@@ -534,8 +651,11 @@ int main(int argc, char **argv)
         CloseApplication();
     }
 
-    sleep(-1);
+    //sleep(-1);
 
-    jack_client_close(client);
-    return 0;
+    guiWindow.run();
+
+    CloseApplication();
+
+    return EXIT_SUCCESS;
 }

@@ -8,7 +8,7 @@ void SendMessage(std::string msg, std::string cmd, void* arg)
 
     std::cout << msg << " - " << cmd << std::endl;
     webview::webview *w = (webview::webview *)arg;
-    w->eval("RecvMsg(\"Hallo\")");
+    w->eval("ReceiveMessage(\"Hallo\")");
 }
 
 int main() {

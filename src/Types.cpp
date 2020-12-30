@@ -23,3 +23,25 @@ void MCK::from_json(const nlohmann::json &j, Port &p)
     p.isInput = j.at("isInput").get<bool>();
     p.connections = j.at("connections").get<std::vector<Connection>>();
 }
+
+void MCK::to_json(nlohmann::json &j, const Message &m)
+{
+    j["section"] = m.section;
+    j["msgType"] = m.msgType;
+    j["data"] = m.data; 
+}
+void MCK::from_json(const nlohmann::json &j, Message &m)
+{
+    m.section = j.at("section").get<std::string>();
+    m.msgType = j.at("msgType").get<std::string>();
+    m.data = j.at("data").get<std::string>();
+}
+
+void MCK::to_json(nlohmann::json &j, const TriggerData &t)
+{
+    j["index"] = t.index;
+}
+void MCK::from_json(const nlohmann::json &j, TriggerData &t)
+{
+    t.index = j.at("index").get<int>();
+}
