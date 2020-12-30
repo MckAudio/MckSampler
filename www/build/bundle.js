@@ -842,60 +842,13 @@ var app = (function () {
 
     function get_each_context(ctx, list, i) {
     	const child_ctx = ctx.slice();
-    	child_ctx[9] = list[i];
-    	child_ctx[11] = i;
+    	child_ctx[11] = list[i];
+    	child_ctx[13] = i;
     	return child_ctx;
     }
 
-    // (86:3) {#each pads as pad, i}
-    function create_each_block(ctx) {
-    	let pad;
-    	let current;
-
-    	function func() {
-    		return /*func*/ ctx[4](/*i*/ ctx[11]);
-    	}
-
-    	pad = new Pad({ props: { Handler: func }, $$inline: true });
-
-    	const block = {
-    		c: function create() {
-    			create_component(pad.$$.fragment);
-    		},
-    		m: function mount(target, anchor) {
-    			mount_component(pad, target, anchor);
-    			current = true;
-    		},
-    		p: function update(new_ctx, dirty) {
-    			ctx = new_ctx;
-    		},
-    		i: function intro(local) {
-    			if (current) return;
-    			transition_in(pad.$$.fragment, local);
-    			current = true;
-    		},
-    		o: function outro(local) {
-    			transition_out(pad.$$.fragment, local);
-    			current = false;
-    		},
-    		d: function destroy(detaching) {
-    			destroy_component(pad, detaching);
-    		}
-    	};
-
-    	dispatch_dev("SvelteRegisterBlock", {
-    		block,
-    		id: create_each_block.name,
-    		type: "each",
-    		source: "(86:3) {#each pads as pad, i}",
-    		ctx
-    	});
-
-    	return block;
-    }
-
-    function create_fragment$1(ctx) {
-    	let main;
+    // (88:1) {#if dataReady}
+    function create_if_block$1(ctx) {
     	let div0;
     	let t0;
     	let div3;
@@ -906,7 +859,7 @@ var app = (function () {
     	let t2;
     	let div4;
     	let current;
-    	let each_value = /*pads*/ ctx[3];
+    	let each_value = /*pads*/ ctx[4];
     	validate_each_argument(each_value);
     	let each_blocks = [];
 
@@ -920,7 +873,6 @@ var app = (function () {
 
     	const block = {
     		c: function create() {
-    			main = element("main");
     			div0 = element("div");
     			t0 = space();
     			div3 = element("div");
@@ -934,27 +886,21 @@ var app = (function () {
 
     			t2 = space();
     			div4 = element("div");
-    			attr_dev(div0, "class", "settings svelte-h48x9j");
-    			add_location(div0, file$1, 77, 1, 1453);
-    			add_location(div1, file$1, 81, 2, 1596);
-    			attr_dev(div2, "class", "pads svelte-h48x9j");
-    			add_location(div2, file$1, 84, 2, 1614);
-    			attr_dev(div3, "class", "content svelte-h48x9j");
-    			add_render_callback(() => /*div3_elementresize_handler*/ ctx[6].call(div3));
-    			add_location(div3, file$1, 80, 1, 1486);
+    			attr_dev(div0, "class", "settings svelte-aqxujj");
+    			add_location(div0, file$1, 88, 2, 1673);
+    			add_location(div1, file$1, 94, 3, 1823);
+    			attr_dev(div2, "class", "pads svelte-aqxujj");
+    			add_location(div2, file$1, 95, 3, 1834);
+    			attr_dev(div3, "class", "content svelte-aqxujj");
+    			add_render_callback(() => /*div3_elementresize_handler*/ ctx[7].call(div3));
+    			add_location(div3, file$1, 89, 2, 1700);
     			attr_dev(div4, "class", "master");
-    			add_location(div4, file$1, 90, 1, 1727);
-    			attr_dev(main, "class", "svelte-h48x9j");
-    			add_location(main, file$1, 76, 0, 1445);
-    		},
-    		l: function claim(nodes) {
-    			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
+    			add_location(div4, file$1, 101, 2, 1956);
     		},
     		m: function mount(target, anchor) {
-    			insert_dev(target, main, anchor);
-    			append_dev(main, div0);
-    			append_dev(main, t0);
-    			append_dev(main, div3);
+    			insert_dev(target, div0, anchor);
+    			insert_dev(target, t0, anchor);
+    			insert_dev(target, div3, anchor);
     			append_dev(div3, div1);
     			append_dev(div3, t1);
     			append_dev(div3, div2);
@@ -963,15 +909,15 @@ var app = (function () {
     				each_blocks[i].m(div2, null);
     			}
 
-    			/*div3_binding*/ ctx[5](div3);
-    			div3_resize_listener = add_resize_listener(div3, /*div3_elementresize_handler*/ ctx[6].bind(div3));
-    			append_dev(main, t2);
-    			append_dev(main, div4);
+    			/*div3_binding*/ ctx[6](div3);
+    			div3_resize_listener = add_resize_listener(div3, /*div3_elementresize_handler*/ ctx[7].bind(div3));
+    			insert_dev(target, t2, anchor);
+    			insert_dev(target, div4, anchor);
     			current = true;
     		},
-    		p: function update(ctx, [dirty]) {
+    		p: function update(ctx, dirty) {
     			if (dirty & /*PadHandler*/ 0) {
-    				each_value = /*pads*/ ctx[3];
+    				each_value = /*pads*/ ctx[4];
     				validate_each_argument(each_value);
     				let i;
 
@@ -1017,10 +963,131 @@ var app = (function () {
     			current = false;
     		},
     		d: function destroy(detaching) {
-    			if (detaching) detach_dev(main);
+    			if (detaching) detach_dev(div0);
+    			if (detaching) detach_dev(t0);
+    			if (detaching) detach_dev(div3);
     			destroy_each(each_blocks, detaching);
-    			/*div3_binding*/ ctx[5](null);
+    			/*div3_binding*/ ctx[6](null);
     			div3_resize_listener();
+    			if (detaching) detach_dev(t2);
+    			if (detaching) detach_dev(div4);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_if_block$1.name,
+    		type: "if",
+    		source: "(88:1) {#if dataReady}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (97:4) {#each pads as pad, i}
+    function create_each_block(ctx) {
+    	let pad;
+    	let current;
+
+    	function func() {
+    		return /*func*/ ctx[5](/*i*/ ctx[13]);
+    	}
+
+    	pad = new Pad({ props: { Handler: func }, $$inline: true });
+
+    	const block = {
+    		c: function create() {
+    			create_component(pad.$$.fragment);
+    		},
+    		m: function mount(target, anchor) {
+    			mount_component(pad, target, anchor);
+    			current = true;
+    		},
+    		p: function update(new_ctx, dirty) {
+    			ctx = new_ctx;
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(pad.$$.fragment, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(pad.$$.fragment, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			destroy_component(pad, detaching);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_each_block.name,
+    		type: "each",
+    		source: "(97:4) {#each pads as pad, i}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function create_fragment$1(ctx) {
+    	let main;
+    	let current;
+    	let if_block = /*dataReady*/ ctx[2] && create_if_block$1(ctx);
+
+    	const block = {
+    		c: function create() {
+    			main = element("main");
+    			if (if_block) if_block.c();
+    			attr_dev(main, "class", "svelte-aqxujj");
+    			add_location(main, file$1, 86, 0, 1647);
+    		},
+    		l: function claim(nodes) {
+    			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, main, anchor);
+    			if (if_block) if_block.m(main, null);
+    			current = true;
+    		},
+    		p: function update(ctx, [dirty]) {
+    			if (/*dataReady*/ ctx[2]) {
+    				if (if_block) {
+    					if_block.p(ctx, dirty);
+
+    					if (dirty & /*dataReady*/ 4) {
+    						transition_in(if_block, 1);
+    					}
+    				} else {
+    					if_block = create_if_block$1(ctx);
+    					if_block.c();
+    					transition_in(if_block, 1);
+    					if_block.m(main, null);
+    				}
+    			} else if (if_block) {
+    				group_outros();
+
+    				transition_out(if_block, 1, 1, () => {
+    					if_block = null;
+    				});
+
+    				check_outros();
+    			}
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(if_block);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(if_block);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(main);
+    			if (if_block) if_block.d();
     		}
     	};
 
@@ -1041,9 +1108,9 @@ var app = (function () {
 
     function PadHandler(_idx) {
     	SendMessage({
-    		"section": "pads",
-    		"msgType": "trigger",
-    		"data": JSON.stringify({ index: _idx })
+    		section: "pads",
+    		msgType: "trigger",
+    		data: JSON.stringify({ index: _idx })
     	});
     }
 
@@ -1054,6 +1121,8 @@ var app = (function () {
     function instance$1($$self, $$props, $$invalidate) {
     	let { $$slots: slots = {}, $$scope } = $$props;
     	validate_slots("App", slots, []);
+    	let data = undefined;
+    	let dataReady = false;
 
     	let pads = Array.from({ length: 16 }, (_v, _i) => {
     	});
@@ -1066,6 +1135,17 @@ var app = (function () {
 
     	onMount(() => {
     		document.addEventListener("backendMessage", ReceiveBackendMessage);
+
+    		/*SendMessage({
+    	section: "data",
+    	msgType: "get",
+    	data: "hoi"
+    });*/
+    		GetData().then(_data => {
+    			console.log(JSON.stringify(_data));
+    			data = _data;
+    			$$invalidate(2, dataReady = true);
+    		});
     	});
 
     	onDestroy(() => {
@@ -1083,7 +1163,7 @@ var app = (function () {
     	function div3_binding($$value) {
     		binding_callbacks[$$value ? "unshift" : "push"](() => {
     			content = $$value;
-    			$$invalidate(2, content);
+    			$$invalidate(3, content);
     		});
     	}
 
@@ -1098,6 +1178,8 @@ var app = (function () {
     		onMount,
     		onDestroy,
     		Pad,
+    		data,
+    		dataReady,
     		pads,
     		content,
     		contentHeight,
@@ -1110,12 +1192,14 @@ var app = (function () {
     	});
 
     	$$self.$inject_state = $$props => {
-    		if ("pads" in $$props) $$invalidate(3, pads = $$props.pads);
-    		if ("content" in $$props) $$invalidate(2, content = $$props.content);
+    		if ("data" in $$props) data = $$props.data;
+    		if ("dataReady" in $$props) $$invalidate(2, dataReady = $$props.dataReady);
+    		if ("pads" in $$props) $$invalidate(4, pads = $$props.pads);
+    		if ("content" in $$props) $$invalidate(3, content = $$props.content);
     		if ("contentHeight" in $$props) $$invalidate(0, contentHeight = $$props.contentHeight);
-    		if ("oldch" in $$props) $$invalidate(7, oldch = $$props.oldch);
+    		if ("oldch" in $$props) $$invalidate(9, oldch = $$props.oldch);
     		if ("contentWidth" in $$props) $$invalidate(1, contentWidth = $$props.contentWidth);
-    		if ("oldcw" in $$props) $$invalidate(8, oldcw = $$props.oldcw);
+    		if ("oldcw" in $$props) $$invalidate(10, oldcw = $$props.oldcw);
     	};
 
     	if ($$props && "$$inject" in $$props) {
@@ -1129,6 +1213,7 @@ var app = (function () {
     	return [
     		contentHeight,
     		contentWidth,
+    		dataReady,
     		content,
     		pads,
     		func,

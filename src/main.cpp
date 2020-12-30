@@ -134,13 +134,13 @@ void CloseApplication(bool saveConnections = true)
     exit(0);
 }
 
-static void signal_handler(int sig)
+static void SignalHandler(int sig)
 {
     fprintf(stdout, "Signal %d received, exiting...\n", sig);
     CloseApplication();
 }
 
-static int process(jack_nframes_t nframes, void *arg)
+static int AudioProcess(jack_nframes_t nframes, void *arg)
 {
     void *midi_buf = jack_port_get_buffer(midi_in, nframes);
 
@@ -332,6 +332,20 @@ static int process(jack_nframes_t nframes, void *arg)
     return 0;
 }
 
+void MsgToFrontEnd(MCK::Message &msg)
+{
+    nlohmann::json j = msg;
+    std::string out = "ReceiveMessage(\"" + j.dump() + "\");";
+    std::cout << "Out: " << out << std::endl;
+    guiWindow.eval(out);
+}
+
+std::string GetData(std::string msg)
+{
+    nlohmann::json jOut = m_config;
+    return jOut.dump();
+}
+
 std::string SendMessage(std::string msg)
 {
     using json = nlohmann::json;
@@ -355,16 +369,29 @@ std::string SendMessage(std::string msg)
             if (messages[i].msgType == "trigger")
             {
                 std::unique_lock<std::mutex> lock(m_triggerMutex);
-                while(m_triggerActive.load()) {
+                while (m_triggerActive.load())
+                {
                     m_triggerCond.wait(lock);
                 }
                 MCK::TriggerData data = json::parse(messages[i].data);
                 int triggerIdx = data.index;
                 if (triggerIdx >= 0)
                 {
-                    std::cout << "Triggering PAD #" << (triggerIdx+1) << std::endl;
+                    std::cout << "Triggering PAD #" << (triggerIdx + 1) << std::endl;
                     m_trigger.push_back(triggerIdx);
                 }
+            }
+        }
+        else if (messages[i].section == "data")
+        {
+            if (messages[i].msgType == "get")
+            {
+                auto outMsg = MCK::Message();
+                outMsg.section = "data";
+                outMsg.msgType = "full";
+                json jOut = m_config;
+                outMsg.data = jOut.dump();
+                MsgToFrontEnd(outMsg);
             }
         }
     }
@@ -394,6 +421,7 @@ int main(int argc, char **argv)
     guiWindow.set_size(1280, 720, WEBVIEW_HINT_NONE);
     guiWindow.navigate("http://localhost:9002");
     guiWindow.bind("SendMessage", SendMessage);
+    guiWindow.bind("GetData", GetData);
     //guiWindowThread = std::thread([&]() {
     //});
 
@@ -511,7 +539,7 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    jack_set_process_callback(client, process, 0);
+    jack_set_process_callback(client, AudioProcess, 0);
 
     midi_in = jack_port_register(client, "midi_in", JACK_DEFAULT_MIDI_TYPE, JackPortIsInput, 0);
     audio_out_l = jack_port_register(client, "audio_out_l", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
@@ -630,10 +658,10 @@ int main(int argc, char **argv)
         }
     }
 
-    signal(SIGQUIT, signal_handler);
-    signal(SIGTERM, signal_handler);
-    signal(SIGHUP, signal_handler);
-    signal(SIGINT, signal_handler);
+    signal(SIGQUIT, SignalHandler);
+    signal(SIGTERM, SignalHandler);
+    signal(SIGHUP, SignalHandler);
+    signal(SIGINT, SignalHandler);
 
     if (m_config.numPads > 0)
     {
