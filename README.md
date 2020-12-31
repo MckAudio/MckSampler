@@ -10,16 +10,32 @@ The configuration is created with the command ```./mck-sampler --config```.
 
 The desired WAV files have to go in the folder ```$HOME/.mck/sampler/audio/```.
 
+## Build Dependencies
+
+### Debian / Ubuntu
+```
+sudo apt install build-essential node npm git
+sudo apt install libsamplerate0-dev libsndfile1-dev libjack-jackd2-dev
+sudo apt install libgtk-3-dev libwebkit2gtk-4.0-dev
+```
+
+### Fedora
+```
+sudo dnf install make automake libtool gcc-c++ nodejs npm git
+sudo dnf install libsamplerate-devel libsndfile-devel jack-audio-connection-kit-devel
+sudo dnf install gtk3-devel webkit2gtk3-devel
+```
+
 ## Getting started
 
 ```
 git submodule update --init
-
-sudo apt install build-essential node npm
-sudo apt install libsamplerate0-dev libsndfile1-dev libjack-jackd2-dev
-sudo apt install libgtk-3-dev libwebkit2gtk-4.0-dev
+cd gui
+npm install
+cd ..
 
 make
+make gui
 
 sudo make install
 ```

@@ -1,10 +1,9 @@
 {
     "configurations": [
         {
-            "name": "Linux",
+            "name": "Debian",
             "includePath": [
-                "${workspaceFolder}/**", 
-
+                "${workspaceFolder}/**",
                 "/usr/include/webkitgtk-4.0",
                 "/usr/include/gtk-3.0",
                 "/usr/include/at-spi2-atk/2.0",
@@ -36,6 +35,39 @@
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "gnu17",
             "cppStandard": "gnu++17",
+            "intelliSenseMode": "gcc-x64"
+        },
+        {
+            "name": "Fedora",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/usr/include/gtk-3.0",
+                "/usr/include/pango-1.0",
+                "/usr/include/glib-2.0",
+                "/usr/lib64/glib-2.0/include",
+                "/usr/include/harfbuzz",
+                "/usr/include/freetype2",
+                "/usr/include/libpng16",
+                "/usr/include/libmount",
+                "/usr/include/blkid",
+                "/usr/include/fribidi",
+                "/usr/include/libxml2",
+                "/usr/include/cairo",
+                "/usr/include/pixman-1",
+                "/usr/include/gdk-pixbuf-2.0",
+                "/usr/include/gio-unix-2.0",
+                "/usr/include/atk-1.0",
+                "/usr/include/at-spi2-atk/2.0",
+                "/usr/include/dbus-1.0",
+                "/usr/lib64/dbus-1.0/include",
+                "/usr/include/at-spi-2.0",
+                "/usr/include/webkitgtk-4.0",
+                "/usr/include/libsoup-2.4"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/g++",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
             "intelliSenseMode": "gcc-x64"
         }
     ],

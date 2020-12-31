@@ -14,13 +14,14 @@ namespace SP
 namespace fs = std::filesystem;
 struct Sample
 {
+    bool available;
     std::string name;
     std::string relativePath;
     std::string fullPath;
     unsigned numChannels;
     unsigned numFrames;
     unsigned sampleRate;
-    Sample() : name(""), relativePath(""), fullPath(""), numChannels(0), numFrames(0), sampleRate(0) {}
+    Sample() : available(false), name(""), relativePath(""), fullPath(""), numChannels(0), numFrames(0), sampleRate(0) {}
 };
 void to_json(nlohmann::json &j, const Sample &s);
 void from_json(const nlohmann::json &j, Sample &s);

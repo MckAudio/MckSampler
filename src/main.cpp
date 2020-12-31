@@ -203,7 +203,7 @@ static int AudioProcess(jack_nframes_t nframes, void *arg)
                 {
                     for (unsigned j = 0; j < m_config.numPads; j++)
                     {
-                        if ((midiEvent.buffer[1] & 0x7f) == m_config.pads[j].tone)
+                        if ((midiEvent.buffer[1] & 0x7f) == m_config.pads[j].tone && m_config.pads[j].available)
                         {
                             m_voices[voiceIdx].playSample = true;
                             m_voices[voiceIdx].startIdx = midiEvent.time;
@@ -239,14 +239,17 @@ static int AudioProcess(jack_nframes_t nframes, void *arg)
 
         if (idx < m_config.numPads)
         {
-            m_voices[voiceIdx].playSample = true;
-            m_voices[voiceIdx].startIdx = 0;
-            m_voices[voiceIdx].bufferIdx = 0;
-            m_voices[voiceIdx].gain = m_config.pads[idx].gain;
-            m_voices[voiceIdx].sampleIdx = idx;
-            m_voices[voiceIdx].pitch = m_config.pads[idx].pitch;
+            if (m_config.pads[idx].available)
+            {
+                m_voices[voiceIdx].playSample = true;
+                m_voices[voiceIdx].startIdx = 0;
+                m_voices[voiceIdx].bufferIdx = 0;
+                m_voices[voiceIdx].gain = m_config.pads[idx].gain;
+                m_voices[voiceIdx].sampleIdx = idx;
+                m_voices[voiceIdx].pitch = m_config.pads[idx].pitch;
 
-            voiceIdx = (voiceIdx + 1) % numVoices;
+                voiceIdx = (voiceIdx + 1) % numVoices;
+            }
         }
     }
     m_triggerActive = false;
@@ -530,6 +533,11 @@ int main(int argc, char **argv)
             m_config.pads[i].sampleIdx = sampleIdx;
         }
     }
+    else if (m_config.numPads == 0)
+    {
+        m_config.pads.resize(16);
+        SP::VerifyConfiguration(m_config);
+    }
 
     SP::VerifyConfiguration(m_config);
 
@@ -561,8 +569,15 @@ int main(int argc, char **argv)
     float *tmpBuf;
     float *tmpSrcBuf;
     unsigned numSrcFrames;
+
     for (unsigned i = 0; i < m_config.numPads; i++)
     {
+        if (m_config.pads[i].sampleIdx >= m_config.numSamples)
+        {
+            m_config.pads[i].available = false;
+            continue;
+        }
+        m_config.pads[i].available = true;
         tmpInfo.format = 0;
         tmpSnd = sf_open(m_config.samples[m_config.pads[i].sampleIdx].fullPath.c_str(), SFM_READ, &tmpInfo);
         m_samples[i].numChans = tmpInfo.channels;

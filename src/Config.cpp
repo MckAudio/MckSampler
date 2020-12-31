@@ -2,6 +2,7 @@
 
 void SP::to_json(nlohmann::json &j, const SP::Sample &s)
 {
+    j["available"] = s.available;
     j["name"] = s.name;
     j["relativePath"] = s.relativePath;
     j["fullPath"] = s.fullPath;
@@ -12,6 +13,7 @@ void SP::to_json(nlohmann::json &j, const SP::Sample &s)
 
 void SP::from_json(const nlohmann::json &j, SP::Sample &s)
 {
+    s.available = j.at("available").get<bool>();
     s.name = j.at("name").get<std::string>();
     s.relativePath = j.at("relativePath").get<std::string>();
     s.fullPath = j.at("fullPath").get<std::string>();
