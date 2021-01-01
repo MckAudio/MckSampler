@@ -40,8 +40,10 @@ void MCK::from_json(const nlohmann::json &j, Message &m)
 void MCK::to_json(nlohmann::json &j, const TriggerData &t)
 {
     j["index"] = t.index;
+    j["strength"] = t.strength;
 }
 void MCK::from_json(const nlohmann::json &j, TriggerData &t)
 {
     t.index = j.at("index").get<int>();
+    t.strength = j.at("strength").get<double>();
 }

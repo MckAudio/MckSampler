@@ -48,6 +48,8 @@ sudo make install
 - [x] Configuration of pads, samples and controls per cli
 - [ ] Web interface
 - [ ] Sample import from any directory
+- [ ] Choke groups (stop one sample if another is triggered)
+- [ ] N * 16 Step Sequencer
 - [ ] Modification per pad
   - [ ] Pitch
   - [ ] LowPass Filter

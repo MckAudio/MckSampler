@@ -86,7 +86,7 @@ unsigned numVoices;
 unsigned voiceIdx;
 
 // Pad Trigger
-std::deque<unsigned> m_trigger;
+std::deque<std::pair<unsigned, double>> m_trigger;
 std::mutex m_triggerMutex;
 std::atomic<bool> m_triggerActive = false;
 std::condition_variable m_triggerCond;
@@ -234,7 +234,8 @@ static int AudioProcess(jack_nframes_t nframes, void *arg)
     m_triggerActive = true;
     while (m_trigger.size() > 0)
     {
-        unsigned idx = m_trigger[0];
+        unsigned idx = m_trigger[0].first;
+        double strength = m_trigger[0].second;
         m_trigger.pop_front();
 
         if (idx < m_config.numPads)
@@ -244,7 +245,7 @@ static int AudioProcess(jack_nframes_t nframes, void *arg)
                 m_voices[voiceIdx].playSample = true;
                 m_voices[voiceIdx].startIdx = 0;
                 m_voices[voiceIdx].bufferIdx = 0;
-                m_voices[voiceIdx].gain = m_config.pads[idx].gain;
+                m_voices[voiceIdx].gain = m_config.pads[idx].gain * strength;
                 m_voices[voiceIdx].sampleIdx = idx;
                 m_voices[voiceIdx].pitch = m_config.pads[idx].pitch;
 
@@ -381,7 +382,7 @@ std::string SendMessage(std::string msg)
                 if (triggerIdx >= 0)
                 {
                     std::cout << "Triggering PAD #" << (triggerIdx + 1) << std::endl;
-                    m_trigger.push_back(triggerIdx);
+                    m_trigger.push_back(std::pair<unsigned, double>(triggerIdx, data.strength));
                 }
             }
         }

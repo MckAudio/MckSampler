@@ -53,7 +53,8 @@ namespace MCK {
 
     struct TriggerData {
         int index;
-        TriggerData() : index(-1) {}
+        double strength;
+        TriggerData() : index(-1), strength(0.0) {}
     };
     void to_json(nlohmann::json &j, const TriggerData &t);
     void from_json(const nlohmann::json &j, TriggerData &t);

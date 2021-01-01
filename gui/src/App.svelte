@@ -3,7 +3,7 @@
 	import Pad from "../MckSvelte/controls/Pad.svelte";
 
 	let data = undefined;
-	let dataReady = false;
+	let dataReady = true;
 	let pads = Array.from({ length: 16 }, (_v, _i) => {
 		idx: _i;
 	});
@@ -16,16 +16,13 @@
 	$: if (contentHeight !== oldch || contentWidth !== oldcw) {
 	}
 
-	function ButtonHandler(_msg) {
-		SendMessage({ message: _msg });
-	}
-
-	function PadHandler(_idx) {
+	function PadHandler(_idx, _val) {
 		SendMessage({
 			section: "pads",
 			msgType: "trigger",
 			data: JSON.stringify({
 				index: _idx,
+				strength: _val
 			}),
 		});
 	}
@@ -36,16 +33,21 @@
 
 	onMount(() => {
 		document.addEventListener("backendMessage", ReceiveBackendMessage);
-		/*SendMessage({
-			section: "data",
-			msgType: "get",
-			data: "hoi"
-		});*/
-		GetData().then((_data) => {
-			console.log(JSON.stringify(_data));
-			data = _data;
-			dataReady = true;
-		});
+		if (GetData) {
+			GetData().then((_data) => {
+				console.log(JSON.stringify(_data));
+				data = _data;
+				dataReady = true;
+			});
+		}
+
+		document.addEventListener(
+			"touchstart",
+			(_evt) => {
+				_evt.preventDefault();
+			},
+			{ passive: false }
+		);
 	});
 
 	onDestroy(() => {
@@ -95,7 +97,7 @@
 			<div />
 			<div class="pads">
 				{#each pads as pad, i}
-					<Pad Handler={() => PadHandler(i)} />
+					<Pad Handler={(_val) => PadHandler(i, _val)} />
 				{/each}
 			</div>
 		</div>
