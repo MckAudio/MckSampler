@@ -1,0 +1,20 @@
+@font-face {
+	font-family: mck-lato;
+	src: url(./Lato/Lato-Regular.ttf);
+}
+@font-face {
+	font-family: mck-lato;
+	src: url(./Lato/Lato-Italic.ttf);
+	font-style: italic;
+}
+@font-face {
+	font-family: mck-lato;
+	src: url(./Lato/Lato-Bold.ttf);
+	font-weight: bold;
+}
+@font-face {
+	font-family: mck-lato;
+	src: url(./Lato/Lato-BoldItalic.ttf);
+	font-weight: bold;
+	font-style: italic;
+}
