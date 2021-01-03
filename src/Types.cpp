@@ -47,3 +47,16 @@ void MCK::from_json(const nlohmann::json &j, TriggerData &t)
     t.index = j.at("index").get<int>();
     t.strength = j.at("strength").get<double>();
 }
+
+void MCK::to_json(nlohmann::json &j, const PadData &p)
+{
+    j["type"] = p.type;
+    j["index"] = p.index;
+    j["value"] = p.value;
+}
+void MCK::from_json(const nlohmann::json &j, PadData &p)
+{
+    p.type = j.at("type").get<std::string>();
+    p.index = j.at("index").get<int>();
+    p.value = j.at("value").get<double>();
+}

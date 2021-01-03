@@ -23,7 +23,7 @@ namespace MCK {
         unsigned bufferIdx;
         float gain;
         float pitch;
-        AudioVoice() : playSample(false), sampleIdx(0), startIdx(0), bufferIdx(0), gain(1.0f), pitch(1.0) {}
+        AudioVoice() : playSample(false), sampleIdx(0), startIdx(0), bufferIdx(0), gain(0.0), pitch(1.0) {}
     };
     struct Connection {
         std::string name;
@@ -58,4 +58,13 @@ namespace MCK {
     };
     void to_json(nlohmann::json &j, const TriggerData &t);
     void from_json(const nlohmann::json &j, TriggerData &t);
+
+    struct PadData {
+        std::string type;
+        int index;
+        double value;
+        PadData() : type(""), index(-1), value(0.0) {}
+    };
+    void to_json(nlohmann::json &j, const PadData &p);
+    void from_json(const nlohmann::json &j, PadData &p);
 }

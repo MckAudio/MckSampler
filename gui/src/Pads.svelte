@@ -1,5 +1,7 @@
 <script>
     import Pad from "./mck/controls/Pad.svelte";
+    import { SelectedPad } from "./Stores.js";
+
     export let data = undefined;
 
     let dataReady = false;
@@ -19,6 +21,7 @@
                 strength: _val,
             }),
         });
+        SelectedPad.set(_idx);
     }
 </script>
 
@@ -38,7 +41,7 @@
         grid-column: 1/-1;
         font-family: mck-lato;
         font-size: 14px;
-        font-style: italic;
+        font-weight: bold;
     }
     .empty {
         grid-column: 1/-1;
@@ -47,11 +50,11 @@
 
 <div class="main">
     <div class="label">Drum Trigger:</div>
-    {#each upperPads as pad, i}
-        <Pad label={pad.name} Handler={(_val) => PadHandler(pad.index, _val)} />
+    {#each upperPads as pad}
+        <Pad selected={$SelectedPad === pad.index} label={pad.name} Handler={(_val) => PadHandler(pad.index, _val)} />
     {/each}
     <div class="empty"/>
-    {#each lowerPads as pad, i}
-        <Pad label={pad.name} Handler={(_val) => PadHandler(pad.index, _val)} />
+    {#each lowerPads as pad}
+        <Pad selected={$SelectedPad === pad.index} label={pad.name} Handler={(_val) => PadHandler(pad.index, _val)} />
     {/each}
 </div>

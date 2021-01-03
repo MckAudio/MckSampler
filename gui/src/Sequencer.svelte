@@ -24,7 +24,7 @@
         grid-column: 1/-1;
         font-family: mck-lato;
         font-size: 14px;
-        font-style: italic;
+        font-weight: bold;
     }
 </style>
 

@@ -32,9 +32,10 @@ struct Pad
     unsigned ctrl;
     std::string sample;
     unsigned sampleIdx;
-    float gain;
-    float pitch;
-    Pad() : available(false), tone(255), ctrl(255), sample(""), sampleIdx(0), gain(1.0f), pitch(1.0f) {};
+    double gain;
+    double gainLin;
+    double pitch;
+    Pad() : available(false), tone(255), ctrl(255), sample(""), sampleIdx(0), gain(1.0), pitch(1.0) {};
 };
 void to_json(nlohmann::json &j, const Pad &p);
 void from_json(const nlohmann::json &j, Pad &p);

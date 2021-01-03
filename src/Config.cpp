@@ -1,4 +1,5 @@
 #include "Config.hpp"
+#include "helper/DspHelper.hpp"
 
 void SP::to_json(nlohmann::json &j, const SP::Sample &s)
 {
@@ -40,8 +41,8 @@ void SP::from_json(const nlohmann::json &j, SP::Pad &p)
     p.ctrl = j.at("ctrl").get<unsigned>();
     p.sample = j.at("sample").get<std::string>();
     p.sampleIdx = j.at("sampleIdx").get<unsigned>();
-    p.gain = j.at("gain").get<float>();
-    p.ctrl = j.at("ctrl").get<float>();
+    p.gain = j.at("gain").get<double>();
+    p.pitch = j.at("pitch").get<double>();
 }
 
 void SP::to_json(nlohmann::json &j, const SP::Config &c)
@@ -120,6 +121,8 @@ bool SP::VerifyConfiguration(Config &config)
             {
                 config.pads[i].sampleIdx = j;
                 config.pads[i].available = true;
+                config.pads[i].gain = std::min(6.0, std::max(-200.0, config.pads[i].gain));
+                config.pads[i].gainLin = mck::DbToLin(config.pads[i].gain);
                 break;
             }
         }

@@ -208,7 +208,7 @@ static int AudioProcess(jack_nframes_t nframes, void *arg)
                             m_voices[voiceIdx].playSample = true;
                             m_voices[voiceIdx].startIdx = midiEvent.time;
                             m_voices[voiceIdx].bufferIdx = 0;
-                            m_voices[voiceIdx].gain = ((float)(midiEvent.buffer[2] & 0x7f) / 127.0f) * m_config.pads[j].gain;
+                            m_voices[voiceIdx].gain = ((float)(midiEvent.buffer[2] & 0x7f) / 127.0f) * m_config.pads[j].gainLin;
                             m_voices[voiceIdx].sampleIdx = j;
                             m_voices[voiceIdx].pitch = m_config.pads[j].pitch;
 
@@ -245,7 +245,7 @@ static int AudioProcess(jack_nframes_t nframes, void *arg)
                 m_voices[voiceIdx].playSample = true;
                 m_voices[voiceIdx].startIdx = 0;
                 m_voices[voiceIdx].bufferIdx = 0;
-                m_voices[voiceIdx].gain = m_config.pads[idx].gain * strength;
+                m_voices[voiceIdx].gain = m_config.pads[idx].gainLin * strength;
                 m_voices[voiceIdx].sampleIdx = idx;
                 m_voices[voiceIdx].pitch = m_config.pads[idx].pitch;
 
@@ -344,16 +344,41 @@ void MsgToFrontEnd(MCK::Message &msg)
     guiWindow.eval(out);
 }
 
+template <typename T>
+void MsgToGui(std::string section, std::string msgType, T &data)
+{
+    auto outMsg = MCK::Message();
+    outMsg.section = "data";
+    outMsg.msgType = "full";
+    nlohmann::json j = outMsg;
+    j["data"] = data;
+    std::string out = "ReceiveMessage(" + j.dump() + ");";
+    guiWindow.eval(out);
+}
+
 std::string GetData(std::string msg)
 {
     nlohmann::json jOut = m_config;
     return jOut.dump();
 }
 
+/*
+std::string ChangePadValue(std::string msg)
+{
+    using json = nlohmann::json;
+    std::vector<MCK::PadData> messages;
+    try {
+        json j = json::parse(msg);
+        messages = j.get<std::vector<MCK::PadData>>();
+    }
+    catch (std::)
+}*/
+
 std::string SendMessage(std::string msg)
 {
     using json = nlohmann::json;
     std::vector<MCK::Message> messages;
+    bool update = false;
     try
     {
         json j = json::parse(msg);
@@ -385,19 +410,39 @@ std::string SendMessage(std::string msg)
                     m_trigger.push_back(std::pair<unsigned, double>(triggerIdx, data.strength));
                 }
             }
+            else if (messages[i].msgType == "change")
+            {
+                MCK::PadData data = json::parse(messages[i].data);
+                if (data.index >= 0 && data.index < m_config.numPads)
+                {
+                    if (data.type == "gain")
+                    {
+                        m_config.pads[data.index].gain = data.value;
+                        update = true;
+                    } else if (data.type == "sample")
+                    {
+                        unsigned idx = (unsigned)data.value;
+                        if (idx < m_config.numSamples) {
+                            m_config.pads[data.index].sampleIdx = (unsigned)data.value;
+                            update = true;
+                        }
+                    }
+                }
+            }
         }
         else if (messages[i].section == "data")
         {
             if (messages[i].msgType == "get")
             {
-                auto outMsg = MCK::Message();
-                outMsg.section = "data";
-                outMsg.msgType = "full";
-                json jOut = m_config;
-                outMsg.data = jOut.dump();
-                MsgToFrontEnd(outMsg);
+                MsgToGui("data", "full", m_config);
             }
         }
+    }
+
+    if (update)
+    {
+        SP::VerifyConfiguration(m_config);
+        MsgToGui("data", "full", m_config);
     }
 
     return "";

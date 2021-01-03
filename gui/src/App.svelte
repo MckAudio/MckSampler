@@ -1,7 +1,9 @@
 <script>
 	import { onMount, onDestroy } from "svelte";
-	import Pads from "./Pads.svelte";
+
+	import Controls from "./Controls.svelte";
 	import Sequencer from "./Sequencer.svelte";
+	import Pads from "./Pads.svelte";
 
 	let data = undefined;
 	let dataReady = true;
@@ -18,7 +20,10 @@
 	}
 
 	function ReceiveBackendMessage(_event) {
-		console.log("Backend Message", _event.detail);
+		if (_event.detail.section === "data" && _event.detail.msgType === "full")
+		{
+			data = _event.detail.data;
+		}
 	}
 
 	onMount(() => {
@@ -78,7 +83,7 @@
 			bind:this={content}
 			bind:clientHeight={contentHeight}
 			bind:clientWidth={contentWidth}>
-			<div />
+			<Controls {data} />
 			<Sequencer {data} />
 			<Pads {data} />
 		</div>

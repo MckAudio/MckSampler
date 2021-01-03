@@ -1,14 +1,15 @@
 REL_FLAGS = -O2 -DNDEBUG -std=c++17
 DEB_FLAGS = -O0 -DDEBUG -ggdb3 -std=c++17
 INCLUDES = -I./src/json/include `pkg-config --cflags gtk+-3.0 webkit2gtk-4.0`
-SOURCES = ./src/main.cpp ./src/Config.cpp ./src/helper/JackHelper.cpp ./src/Types.cpp
+SOURCES = ./src/main.cpp ./src/Config.cpp ./src/helper/JackHelper.cpp ./src/helper/DspHelper.cpp ./src/Types.cpp
+HEADER = ./src/Config.hpp ./src/helper/JackHelper.hpp ./src/helper/DspHelper.hpp ./src/Types.hpp
 LINKS = `pkg-config --libs gtk+-3.0 webkit2gtk-4.0` -ljack -lsndfile -lsamplerate #-lrubberband
 
-release: ./src/main.cpp ./src/Config.cpp ./src/Config.hpp ./src/helper/JackHelper.cpp ./src/helper/JackHelper.hpp ./src/Types.cpp ./src/Types.hpp
+release: ${SOURCES} ${HEADER}
 	mkdir -p bin/release
 	g++ $(REL_FLAGS) $(INCLUDES) $(SOURCES) -o ./bin/release/mck-sampler $(LINKS)
 
-debug: ./src/main.cpp ./src/Config.cpp ./src/Config.hpp ./src/JackHelper.cpp ./src/JackHelper.hpp ./src/Types.cpp ./src/Types.hpp
+debug: ${SOURCES} ${HEADER}
 	mkdir -p bin/debug
 	g++ $(DEB_FLAGS) $(INCLUDES) $(SOURCES) -o ./bin/debug/mck-sampler $(LINKS)
 

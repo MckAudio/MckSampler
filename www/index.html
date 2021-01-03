@@ -15,8 +15,6 @@
 	<script>
 
 		function ReceiveMessage(_msg) {
-			//RecvMsg(_msg);
-			console.log(_msg);
 			var _event = new CustomEvent(
 				"backendMessage", {
 				detail: _msg,
