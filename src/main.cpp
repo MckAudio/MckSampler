@@ -28,12 +28,12 @@
 #include <mutex>
 
 // GUI
-#include "../webview/webview.h"
-#include "../cpp-httplib/httplib.h"
+#include "webview/webview.h"
+#include "cpp-httplib/httplib.h"
 
 // OWN Header
 #include "Config.hpp"
-#include "JackHelper.hpp"
+#include "helper/JackHelper.hpp"
 
 enum
 {
@@ -101,9 +101,9 @@ void CloseApplication(bool saveConnections = true)
         // Save Connections
         if (saveConnections)
         {
-            MCK::JACK::GetConnections(client, midi_in, m_config.midiConnections);
-            MCK::JACK::GetConnections(client, audio_out_l, m_config.audioLeftConnections);
-            MCK::JACK::GetConnections(client, audio_out_r, m_config.audioRightConnections);
+            mck::GetConnections(client, midi_in, m_config.midiConnections);
+            mck::GetConnections(client, audio_out_l, m_config.audioLeftConnections);
+            mck::GetConnections(client, audio_out_r, m_config.audioRightConnections);
         }
         jack_client_close(client);
     }
@@ -660,15 +660,15 @@ int main(int argc, char **argv)
     // Connect inputs and outputs
     if (m_config.reconnect)
     {
-        if (MCK::JACK::SetConnections(client, midi_in, m_config.midiConnections, true) == false)
+        if (mck::SetConnections(client, midi_in, m_config.midiConnections, true) == false)
         {
             printf("Failed to connect port %s\n", jack_port_name(midi_in));
         }
-        if (MCK::JACK::SetConnections(client, audio_out_l, m_config.audioLeftConnections, false) == false)
+        if (mck::SetConnections(client, audio_out_l, m_config.audioLeftConnections, false) == false)
         {
             printf("Failed to connect port %s\n", jack_port_name(audio_out_l));
         }
-        if (MCK::JACK::SetConnections(client, audio_out_r, m_config.audioRightConnections, false) == false)
+        if (mck::SetConnections(client, audio_out_r, m_config.audioRightConnections, false) == false)
         {
             printf("Failed to connect port %s\n", jack_port_name(audio_out_r));
         }

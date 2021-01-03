@@ -1,7 +1,7 @@
 <script>
 	import { onMount, onDestroy } from "svelte";
 	import Pads from "./Pads.svelte";
-import Sequencer from "./Sequencer.svelte";
+	import Sequencer from "./Sequencer.svelte";
 
 	let data = undefined;
 	let dataReady = true;
@@ -79,8 +79,8 @@ import Sequencer from "./Sequencer.svelte";
 			bind:clientHeight={contentHeight}
 			bind:clientWidth={contentWidth}>
 			<div />
-			<Sequencer {data}/>
-			<Pads {data}/>
+			<Sequencer {data} />
+			<Pads {data} />
 		</div>
 		<div class="master" />
 	{/if}

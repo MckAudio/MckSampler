@@ -46,9 +46,9 @@ struct Config
     std::vector<Sample> samples;
     unsigned midiChan;
     bool reconnect;
-    std::vector<MCK::Connection> midiConnections;
-    std::vector<MCK::Connection> audioLeftConnections;
-    std::vector<MCK::Connection> audioRightConnections;
+    std::vector<std::string> midiConnections;
+    std::vector<std::string> audioLeftConnections;
+    std::vector<std::string> audioRightConnections;
     Config() : numPads(0), midiChan(0), numSamples(0), reconnect(true)
     {
         pads.resize(numPads);

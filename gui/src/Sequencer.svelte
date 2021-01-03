@@ -1,5 +1,5 @@
 <script>
-    import TogglePad from "../MckSvelte/controls/TogglePad.svelte";
+    import TogglePad from "./mck/controls/TogglePad.svelte";
 
     export let data = undefined;
 

@@ -1,10 +1,10 @@
 REL_FLAGS = -O2 -DNDEBUG -std=c++17
 DEB_FLAGS = -O0 -DDEBUG -ggdb3 -std=c++17
-INCLUDES = -I./json/include `pkg-config --cflags gtk+-3.0 webkit2gtk-4.0`
-SOURCES = ./src/main.cpp ./src/Config.cpp ./src/JackHelper.cpp ./src/Types.cpp
+INCLUDES = -I./src/json/include `pkg-config --cflags gtk+-3.0 webkit2gtk-4.0`
+SOURCES = ./src/main.cpp ./src/Config.cpp ./src/helper/JackHelper.cpp ./src/Types.cpp
 LINKS = `pkg-config --libs gtk+-3.0 webkit2gtk-4.0` -ljack -lsndfile -lsamplerate #-lrubberband
 
-release: ./src/main.cpp ./src/Config.cpp ./src/Config.hpp ./src/JackHelper.cpp ./src/JackHelper.hpp ./src/Types.cpp ./src/Types.hpp
+release: ./src/main.cpp ./src/Config.cpp ./src/Config.hpp ./src/helper/JackHelper.cpp ./src/helper/JackHelper.hpp ./src/Types.cpp ./src/Types.hpp
 	mkdir -p bin/release
 	g++ $(REL_FLAGS) $(INCLUDES) $(SOURCES) -o ./bin/release/mck-sampler $(LINKS)
 

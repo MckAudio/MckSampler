@@ -65,9 +65,9 @@ void SP::from_json(const nlohmann::json &j, SP::Config &c)
     c.samples = j.at("samples").get<std::vector<SP::Sample>>();
     c.midiChan = j.at("midiChan").get<unsigned>();
     c.reconnect = j.at("reconnect").get<bool>();
-    c.midiConnections = j.at("midiConnections").get<std::vector<MCK::Connection>>();
-    c.audioLeftConnections = j.at("audioLeftConnections").get<std::vector<MCK::Connection>>();
-    c.audioRightConnections = j.at("audioRightConnections").get<std::vector<MCK::Connection>>();
+    c.midiConnections = j.at("midiConnections").get<std::vector<std::string>>();
+    c.audioLeftConnections = j.at("audioLeftConnections").get<std::vector<std::string>>();
+    c.audioRightConnections = j.at("audioRightConnections").get<std::vector<std::string>>();
 }
 
 bool SP::ScanSampleFolder(std::string path, std::vector<Sample> &sampleList)

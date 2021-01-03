@@ -1,5 +1,5 @@
 <script>
-    import Pad from "../MckSvelte/controls/Pad.svelte";
+    import Pad from "./mck/controls/Pad.svelte";
     export let data = undefined;
 
     let dataReady = false;
@@ -7,7 +7,7 @@
         return { index: _i, name: `Pad #${_i + 1}` };
     });
     let lowerPads = Array.from({ length: 8 }, (_v, _i) => {
-        return { index: _i+8, name: `Pad #${_i + 0}` };
+        return { index: _i+8, name: `Pad #${_i + 9}` };
     });
 
     function PadHandler(_idx, _val) {
@@ -48,10 +48,10 @@
 <div class="main">
     <div class="label">Drum Trigger:</div>
     {#each upperPads as pad, i}
-        <Pad label={pad.name} Handler={(_val) => PadHandler(i, _val)} />
+        <Pad label={pad.name} Handler={(_val) => PadHandler(pad.index, _val)} />
     {/each}
     <div class="empty"/>
     {#each lowerPads as pad, i}
-        <Pad label={pad.name} Handler={(_val) => PadHandler(i, _val)} />
+        <Pad label={pad.name} Handler={(_val) => PadHandler(pad.index, _val)} />
     {/each}
 </div>
