@@ -1506,8 +1506,8 @@ var app = (function () {
 
     function get_each_context(ctx, list, i) {
     	const child_ctx = ctx.slice();
-    	child_ctx[12] = list[i];
-    	child_ctx[14] = i;
+    	child_ctx[13] = list[i];
+    	child_ctx[15] = i;
     	return child_ctx;
     }
 
@@ -1631,7 +1631,7 @@ var app = (function () {
     		c: function create() {
     			i = element("i");
     			i.textContent = "Select";
-    			add_location(i, file$1, 75, 4, 1638);
+    			add_location(i, file$1, 75, 4, 1665);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, i, anchor);
@@ -1738,7 +1738,7 @@ var app = (function () {
     			set_style(div, "left", /*pos*/ ctx[6][0] + "px");
     			set_style(div, "top", /*pos*/ ctx[6][1] + "px");
     			set_style(div, "min-width", /*pos*/ ctx[6][2] + "px");
-    			add_location(div, file$1, 83, 2, 1904);
+    			add_location(div, file$1, 83, 2, 1931);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div, anchor);
@@ -1804,14 +1804,18 @@ var app = (function () {
     // (85:4) {#each items as item, i}
     function create_each_block(ctx) {
     	let div;
-    	let t0_value = /*item*/ ctx[12] + "";
+    	let t0_value = /*item*/ ctx[13] + "";
     	let t0;
     	let t1;
     	let mounted;
     	let dispose;
 
     	function click_handler() {
-    		return /*click_handler*/ ctx[11](/*i*/ ctx[14], /*item*/ ctx[12]);
+    		return /*click_handler*/ ctx[11](/*i*/ ctx[15], /*item*/ ctx[13]);
+    	}
+
+    	function touchstart_handler() {
+    		return /*touchstart_handler*/ ctx[12](/*i*/ ctx[15], /*item*/ ctx[13]);
     	}
 
     	const block = {
@@ -1820,7 +1824,7 @@ var app = (function () {
     			t0 = text(t0_value);
     			t1 = space();
     			attr_dev(div, "class", "svelte-1c1l7vg");
-    			add_location(div, file$1, 85, 6, 2026);
+    			add_location(div, file$1, 85, 6, 2053);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div, anchor);
@@ -1828,18 +1832,22 @@ var app = (function () {
     			append_dev(div, t1);
 
     			if (!mounted) {
-    				dispose = listen_dev(div, "click", click_handler, false, false, false);
+    				dispose = [
+    					listen_dev(div, "click", click_handler, false, false, false),
+    					listen_dev(div, "touchstart", touchstart_handler, { passive: true }, false, false)
+    				];
+
     				mounted = true;
     			}
     		},
     		p: function update(new_ctx, dirty) {
     			ctx = new_ctx;
-    			if (dirty & /*items*/ 1 && t0_value !== (t0_value = /*item*/ ctx[12] + "")) set_data_dev(t0, t0_value);
+    			if (dirty & /*items*/ 1 && t0_value !== (t0_value = /*item*/ ctx[13] + "")) set_data_dev(t0, t0_value);
     		},
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(div);
     			mounted = false;
-    			dispose();
+    			run_all(dispose);
     		}
     	};
 
@@ -1887,13 +1895,13 @@ var app = (function () {
     			if (if_block1) if_block1.c();
     			if_block1_anchor = empty();
     			attr_dev(span0, "class", "text svelte-1c1l7vg");
-    			add_location(span0, file$1, 73, 0, 1570);
+    			add_location(span0, file$1, 73, 0, 1597);
 
     			attr_dev(span1, "class", span1_class_value = /*show*/ ctx[5]
     			? "mck-arrow_drop_up"
     			: "mck-arrow_drop_down");
 
-    			add_location(span1, file$1, 80, 2, 1816);
+    			add_location(span1, file$1, 80, 2, 1843);
     			attr_dev(div, "class", "opener svelte-1c1l7vg");
     			add_location(div, file$1, 72, 0, 1508);
     		},
@@ -1912,7 +1920,11 @@ var app = (function () {
     			insert_dev(target, if_block1_anchor, anchor);
 
     			if (!mounted) {
-    				dispose = listen_dev(div, "click", /*OpenSelect*/ ctx[8], false, false, false);
+    				dispose = [
+    					listen_dev(div, "click", /*OpenSelect*/ ctx[8], false, false, false),
+    					listen_dev(div, "touchstart", /*OpenSelect*/ ctx[8], false, false, false)
+    				];
+
     				mounted = true;
     			}
     		},
@@ -1958,7 +1970,7 @@ var app = (function () {
     			if (if_block1) if_block1.d(detaching);
     			if (detaching) detach_dev(if_block1_anchor);
     			mounted = false;
-    			dispose();
+    			run_all(dispose);
     		}
     	};
 
@@ -2012,6 +2024,16 @@ var app = (function () {
     	}
 
     	const click_handler = (i, item) => {
+    		if (numeric) {
+    			Handler(i);
+    		} else {
+    			Handler(item);
+    		}
+
+    		$$invalidate(5, show = false);
+    	};
+
+    	const touchstart_handler = (i, item) => {
     		if (numeric) {
     			Handler(i);
     		} else {
@@ -2075,7 +2097,8 @@ var app = (function () {
     		OpenSelect,
     		Opener,
     		div_binding,
-    		click_handler
+    		click_handler,
+    		touchstart_handler
     	];
     }
 
