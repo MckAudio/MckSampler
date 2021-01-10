@@ -34,6 +34,7 @@
 // OWN Header
 #include "Config.hpp"
 #include "helper/JackHelper.hpp"
+#include "helper/Transport.hpp"
 
 enum
 {
@@ -44,6 +45,9 @@ enum
     CONFIG_MODES,
     CONFIG_LENGTH
 };
+
+// APP
+std::atomic<bool> m_done = false;
 
 // GUI
 httplib::Server guiServer;
@@ -59,6 +63,7 @@ SF_INFO sndInfo;
 // JACK
 jack_client_t *client;
 jack_port_t *midi_in;
+jack_port_t *midi_out;
 jack_port_t *audio_out_l;
 jack_port_t *audio_out_r;
 
@@ -91,17 +96,25 @@ std::mutex m_triggerMutex;
 std::atomic<bool> m_triggerActive = false;
 std::condition_variable m_triggerCond;
 
+// Transport
+mck::Transport m_transport;
+mck::TransportState m_transportState;
+std::thread m_transportThread;
+
 void CloseApplication(bool saveConnections = true)
 {
     using namespace std::filesystem;
     using namespace nlohmann;
+
+    m_done = true;
 
     if (client != nullptr)
     {
         // Save Connections
         if (saveConnections)
         {
-            mck::GetConnections(client, midi_in, m_config.midiConnections);
+            mck::GetConnections(client, midi_in, m_config.midiInConnections);
+            mck::GetConnections(client, midi_out, m_config.midiOutConnections);
             mck::GetConnections(client, audio_out_l, m_config.audioLeftConnections);
             mck::GetConnections(client, audio_out_r, m_config.audioRightConnections);
         }
@@ -120,7 +133,10 @@ void CloseApplication(bool saveConnections = true)
     json j = m_config;
     configFile << std::setw(4) << j << std::endl;
     configFile.close();
-
+    if (m_transportThread.joinable())
+    {
+        m_transportThread.join();
+    }
     if (guiWindowThread.joinable())
     {
         guiWindow.terminate();
@@ -140,8 +156,11 @@ static void SignalHandler(int sig)
     CloseApplication();
 }
 
-static int AudioProcess(jack_nframes_t nframes, void *arg)
+static int JackProcess(jack_nframes_t nframes, void *arg)
 {
+    m_transport.Process(midi_out, nframes, m_transportState);
+
+
     void *midi_buf = jack_port_get_buffer(midi_in, nframes);
 
     jack_nframes_t midiEventCount = jack_midi_get_event_count(midi_buf);
@@ -593,9 +612,10 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    jack_set_process_callback(client, AudioProcess, 0);
+    jack_set_process_callback(client, JackProcess, 0);
 
     midi_in = jack_port_register(client, "midi_in", JACK_DEFAULT_MIDI_TYPE, JackPortIsInput, 0);
+    midi_out = jack_port_register(client, "midi_out", JACK_DEFAULT_MIDI_TYPE, JackPortIsOutput, 0);
     audio_out_l = jack_port_register(client, "audio_out_l", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
     audio_out_r = jack_port_register(client, "audio_out_r", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
 
@@ -696,6 +716,24 @@ int main(int argc, char **argv)
         //m_samples[i].pitcher->setMaxProcessSize(bufferSize);
     }
 
+    // Prepare Transport
+    m_transport.Init(sampleRate, bufferSize, m_config.tempo);
+    m_transportThread = std::thread([&](){
+        while(true) {
+            if (m_done.load())
+            {
+                return;
+            }
+
+            mck::TransportState ts;
+            m_transport.GetRTData(ts);
+
+            //MsgToGui("transport", "realtime", ts);
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(30));
+        }
+    });
+
     if (jack_activate(client))
     {
         fprintf(stderr, "Unable to activate JACK client\n");
@@ -705,9 +743,13 @@ int main(int argc, char **argv)
     // Connect inputs and outputs
     if (m_config.reconnect)
     {
-        if (mck::SetConnections(client, midi_in, m_config.midiConnections, true) == false)
+        if (mck::SetConnections(client, midi_in, m_config.midiInConnections, true) == false)
         {
             printf("Failed to connect port %s\n", jack_port_name(midi_in));
+        }
+        if (mck::SetConnections(client, midi_out, m_config.midiOutConnections, true) == false)
+        {
+            printf("Failed to connect port %s\n", jack_port_name(midi_out));
         }
         if (mck::SetConnections(client, audio_out_l, m_config.audioLeftConnections, false) == false)
         {

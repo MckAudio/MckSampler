@@ -41,16 +41,18 @@ void to_json(nlohmann::json &j, const Pad &p);
 void from_json(const nlohmann::json &j, Pad &p);
 struct Config
 {
+    double tempo;
     unsigned numPads;
     unsigned numSamples;
     std::vector<Pad> pads;
     std::vector<Sample> samples;
     unsigned midiChan;
     bool reconnect;
-    std::vector<std::string> midiConnections;
+    std::vector<std::string> midiInConnections;
+    std::vector<std::string> midiOutConnections;
     std::vector<std::string> audioLeftConnections;
     std::vector<std::string> audioRightConnections;
-    Config() : numPads(0), midiChan(0), numSamples(0), reconnect(true)
+    Config() : tempo(110.0), numPads(0), midiChan(0), numSamples(0), reconnect(true)
     {
         pads.resize(numPads);
     };

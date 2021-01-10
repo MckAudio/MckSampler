@@ -47,26 +47,30 @@ void SP::from_json(const nlohmann::json &j, SP::Pad &p)
 
 void SP::to_json(nlohmann::json &j, const SP::Config &c)
 {
+    j["tempo"] = c.tempo;
     j["numPads"] = c.numPads;
     j["numSamples"] = c.numSamples;
     j["pads"] = c.pads;
     j["samples"] = c.samples;
     j["midiChan"] = c.midiChan;
     j["reconnect"] = c.reconnect;
-    j["midiConnections"] = c.midiConnections;
+    j["midiInConnections"] = c.midiInConnections;
+    j["midiOutConnections"] = c.midiOutConnections;
     j["audioLeftConnections"] = c.audioLeftConnections;
     j["audioRightConnections"] = c.audioRightConnections;
 }
 
 void SP::from_json(const nlohmann::json &j, SP::Config &c)
 {
+    c.tempo = j.at("tempo").get<double>();
     c.numPads = j.at("numPads").get<unsigned>();
     c.numSamples = j.at("numSamples").get<unsigned>();
     c.pads = j.at("pads").get<std::vector<SP::Pad>>();
     c.samples = j.at("samples").get<std::vector<SP::Sample>>();
     c.midiChan = j.at("midiChan").get<unsigned>();
     c.reconnect = j.at("reconnect").get<bool>();
-    c.midiConnections = j.at("midiConnections").get<std::vector<std::string>>();
+    c.midiInConnections = j.at("midiInConnections").get<std::vector<std::string>>();
+    c.midiOutConnections = j.at("midiOutConnections").get<std::vector<std::string>>();
     c.audioLeftConnections = j.at("audioLeftConnections").get<std::vector<std::string>>();
     c.audioRightConnections = j.at("audioRightConnections").get<std::vector<std::string>>();
 }
