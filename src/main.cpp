@@ -28,8 +28,7 @@
 #include <mutex>
 
 // GUI
-#include "webview/webview.h"
-#include "cpp-httplib/httplib.h"
+#include "GuiWindow.hpp"
 
 // OWN Header
 #include "Config.hpp"
@@ -50,10 +49,7 @@ enum
 std::atomic<bool> m_done = false;
 
 // GUI
-httplib::Server guiServer;
-std::thread guiServerThread;
-webview::webview guiWindow(true, nullptr);
-std::thread guiWindowThread;
+GuiWindow m_gui;
 
 // FILES
 std::string wavFile = "../content/risset_long.wav";
@@ -137,16 +133,7 @@ void CloseApplication(bool saveConnections = true)
     {
         m_transportThread.join();
     }
-    if (guiWindowThread.joinable())
-    {
-        guiWindow.terminate();
-        guiWindowThread.join();
-    }
-    if (guiServerThread.joinable())
-    {
-        guiServer.stop();
-        guiServerThread.join();
-    }
+    m_gui.Close();
     exit(0);
 }
 
@@ -355,125 +342,13 @@ static int JackProcess(jack_nframes_t nframes, void *arg)
     return 0;
 }
 
-void MsgToFrontEnd(MCK::Message &msg)
-{
-    nlohmann::json j = msg;
-    std::string out = "ReceiveMessage(\"" + j.dump() + "\");";
-    std::cout << "Out: " << out << std::endl;
-    guiWindow.eval(out);
-}
-
-template <typename T>
-void MsgToGui(std::string section, std::string msgType, T &data)
-{
-    auto outMsg = MCK::Message();
-    outMsg.section = "data";
-    outMsg.msgType = "full";
-    nlohmann::json j = outMsg;
-    j["data"] = data;
-    std::string out = "ReceiveMessage(" + j.dump() + ");";
-    guiWindow.eval(out);
-}
-
-std::string GetData(std::string msg)
-{
-    nlohmann::json jOut = m_config;
-    return jOut.dump();
-}
-
-/*
-std::string ChangePadValue(std::string msg)
-{
-    using json = nlohmann::json;
-    std::vector<MCK::PadData> messages;
-    try {
-        json j = json::parse(msg);
-        messages = j.get<std::vector<MCK::PadData>>();
-    }
-    catch (std::)
-}*/
-
-std::string SendMessage(std::string msg)
-{
-    using json = nlohmann::json;
-    std::vector<MCK::Message> messages;
-    bool update = false;
-    try
-    {
-        json j = json::parse(msg);
-        messages = j.get<std::vector<MCK::Message>>();
-    }
-    catch (std::exception &e)
-    {
-        std::cerr << "Failed to convert incoming message: " << e.what() << std::endl;
-        return e.what();
-    }
-    std::cout << msg << std::endl;
-
-    for (unsigned i = 0; i < messages.size(); i++)
-    {
-        if (messages[i].section == "pads")
-        {
-            if (messages[i].msgType == "trigger")
-            {
-                std::unique_lock<std::mutex> lock(m_triggerMutex);
-                while (m_triggerActive.load())
-                {
-                    m_triggerCond.wait(lock);
-                }
-                MCK::TriggerData data = json::parse(messages[i].data);
-                int triggerIdx = data.index;
-                if (triggerIdx >= 0)
-                {
-                    std::cout << "Triggering PAD #" << (triggerIdx + 1) << std::endl;
-                    m_trigger.push_back(std::pair<unsigned, double>(triggerIdx, data.strength));
-                }
-            }
-            else if (messages[i].msgType == "change")
-            {
-                MCK::PadData data = json::parse(messages[i].data);
-                if (data.index >= 0 && data.index < m_config.numPads)
-                {
-                    if (data.type == "gain")
-                    {
-                        m_config.pads[data.index].gain = data.value;
-                        update = true;
-                    } else if (data.type == "sample")
-                    {
-                        unsigned idx = (unsigned)data.value;
-                        if (idx < m_config.numSamples) {
-                            m_config.pads[data.index].sampleIdx = (unsigned)data.value;
-                            update = true;
-                        }
-                    }
-                }
-            }
-        }
-        else if (messages[i].section == "data")
-        {
-            if (messages[i].msgType == "get")
-            {
-                MsgToGui("data", "full", m_config);
-            }
-        }
-    }
-
-    if (update)
-    {
-        SP::VerifyConfiguration(m_config);
-        MsgToGui("data", "full", m_config);
-    }
-
-    return "";
-}
-
 int main(int argc, char **argv)
 {
     using namespace std::filesystem;
     using namespace nlohmann;
     using namespace webview;
     using namespace httplib;
-
+/*
     // HTTP Server
     bool ret = guiServer.set_mount_point("/", "./www");
     if (ret == false)
@@ -492,6 +367,7 @@ int main(int argc, char **argv)
     guiWindow.bind("GetData", GetData);
     //guiWindowThread = std::thread([&]() {
     //});
+    */
 
     // Read Config
     struct passwd *pw = getpwuid(getuid());
@@ -728,7 +604,7 @@ int main(int argc, char **argv)
             mck::TransportState ts;
             m_transport.GetRTData(ts);
 
-            //MsgToGui("transport", "realtime", ts);
+            m_gui.SendMessage("transport", "realtime", ts);
 
             std::this_thread::sleep_for(std::chrono::milliseconds(30));
         }
@@ -782,9 +658,11 @@ int main(int argc, char **argv)
         CloseApplication();
     }
 
+    m_gui.Show("MckSampler", "./www", 9002);
+
     //sleep(-1);
 
-    guiWindow.run();
+    //guiWindow.run();
 
     CloseApplication();
 

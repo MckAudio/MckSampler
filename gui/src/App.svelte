@@ -20,6 +20,7 @@
 	}
 
 	function ReceiveBackendMessage(_event) {
+		console.log("MSG", _event.detail);
 		if (_event.detail.section === "data" && _event.detail.msgType === "full")
 		{
 			data = _event.detail.data;
