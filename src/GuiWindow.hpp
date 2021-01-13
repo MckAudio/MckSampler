@@ -24,11 +24,17 @@ public:
     ~GuiWindow();
     bool Show(std::string title, std::string path, unsigned port = 9002);
     void Close();
+    void SetIsOpen(bool isOpen) { m_isOpen = isOpen; };
 
     template <typename T>
     bool SendMessage(std::string section, std::string msgType, T &data)
     {
         if (m_isInitialized == false)
+        {
+            return false;
+        }
+
+        if (m_isOpen == false)
         {
             return false;
         }
@@ -41,7 +47,6 @@ public:
             nlohmann::json j = outMsg;
             j["data"] = data;
             std::string out = "ReceiveMessage(" + j.dump() + ");";
-            out = "1+2";
             return Evaluate(out);
         }
         catch (std::exception &e)
@@ -55,6 +60,7 @@ public:
 private:
     bool Evaluate(std::string msg);
     bool m_isInitialized;
+    bool m_isOpen;
     std::atomic<bool> m_done;
     httplib::Server *m_server;
     webview::webview *m_window;

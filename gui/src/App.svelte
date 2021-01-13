@@ -24,6 +24,7 @@
 		if (_event.detail.section === "data" && _event.detail.msgType === "full")
 		{
 			data = _event.detail.data;
+			dataReady = true;
 		}
 	}
 

@@ -1,7 +1,7 @@
 #include "Config.hpp"
 #include "helper/DspHelper.hpp"
 
-void SP::to_json(nlohmann::json &j, const SP::Sample &s)
+void mck::sampler::to_json(nlohmann::json &j, const mck::sampler::Sample &s)
 {
     j["available"] = s.available;
     j["name"] = s.name;
@@ -12,7 +12,7 @@ void SP::to_json(nlohmann::json &j, const SP::Sample &s)
     j["sampleRate"] = s.sampleRate;
 }
 
-void SP::from_json(const nlohmann::json &j, SP::Sample &s)
+void mck::sampler::from_json(const nlohmann::json &j, mck::sampler::Sample &s)
 {
     s.available = j.at("available").get<bool>();
     s.name = j.at("name").get<std::string>();
@@ -23,7 +23,7 @@ void SP::from_json(const nlohmann::json &j, SP::Sample &s)
     s.sampleRate = j.at("sampleRate").get<unsigned>();
 }
 
-void SP::to_json(nlohmann::json &j, const SP::Pad &p)
+void mck::sampler::to_json(nlohmann::json &j, const mck::sampler::Pad &p)
 {
     j["available"] = p.available;
     j["tone"] = p.tone;
@@ -34,7 +34,7 @@ void SP::to_json(nlohmann::json &j, const SP::Pad &p)
     j["pitch"] = p.pitch;
 }
 
-void SP::from_json(const nlohmann::json &j, SP::Pad &p)
+void mck::sampler::from_json(const nlohmann::json &j, mck::sampler::Pad &p)
 {
     p.available = j.at("available").get<bool>();
     p.tone = j.at("tone").get<unsigned>();
@@ -45,7 +45,7 @@ void SP::from_json(const nlohmann::json &j, SP::Pad &p)
     p.pitch = j.at("pitch").get<double>();
 }
 
-void SP::to_json(nlohmann::json &j, const SP::Config &c)
+void mck::sampler::to_json(nlohmann::json &j, const mck::sampler::Config &c)
 {
     j["tempo"] = c.tempo;
     j["numPads"] = c.numPads;
@@ -60,13 +60,13 @@ void SP::to_json(nlohmann::json &j, const SP::Config &c)
     j["audioRightConnections"] = c.audioRightConnections;
 }
 
-void SP::from_json(const nlohmann::json &j, SP::Config &c)
+void mck::sampler::from_json(const nlohmann::json &j, mck::sampler::Config &c)
 {
     c.tempo = j.at("tempo").get<double>();
     c.numPads = j.at("numPads").get<unsigned>();
     c.numSamples = j.at("numSamples").get<unsigned>();
-    c.pads = j.at("pads").get<std::vector<SP::Pad>>();
-    c.samples = j.at("samples").get<std::vector<SP::Sample>>();
+    c.pads = j.at("pads").get<std::vector<mck::sampler::Pad>>();
+    c.samples = j.at("samples").get<std::vector<mck::sampler::Sample>>();
     c.midiChan = j.at("midiChan").get<unsigned>();
     c.reconnect = j.at("reconnect").get<bool>();
     c.midiInConnections = j.at("midiInConnections").get<std::vector<std::string>>();
@@ -75,7 +75,7 @@ void SP::from_json(const nlohmann::json &j, SP::Config &c)
     c.audioRightConnections = j.at("audioRightConnections").get<std::vector<std::string>>();
 }
 
-bool SP::ScanSampleFolder(std::string path, std::vector<Sample> &sampleList)
+bool mck::sampler::ScanSampleFolder(std::string path, std::vector<Sample> &sampleList)
 {
     sampleList.clear();
     Sample tmp;
@@ -111,7 +111,7 @@ bool SP::ScanSampleFolder(std::string path, std::vector<Sample> &sampleList)
     return true;
 }
 
-bool SP::VerifyConfiguration(Config &config)
+bool mck::sampler::VerifyConfiguration(Config &config)
 {
     config.numPads = config.pads.size();
     config.numSamples = config.samples.size();

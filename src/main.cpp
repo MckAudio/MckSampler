@@ -34,6 +34,7 @@
 #include "Config.hpp"
 #include "helper/JackHelper.hpp"
 #include "helper/Transport.hpp"
+#include "Processing.hpp"
 
 enum
 {
@@ -51,20 +52,14 @@ std::atomic<bool> m_done = false;
 // GUI
 GuiWindow m_gui;
 
+// PROCESSING
+mck::Processing m_processing;
+
 // FILES
 std::string wavFile = "../content/risset_long.wav";
 SNDFILE *sndFile;
 SF_INFO sndInfo;
 
-// JACK
-jack_client_t *client;
-jack_port_t *midi_in;
-jack_port_t *midi_out;
-jack_port_t *audio_out_l;
-jack_port_t *audio_out_r;
-
-jack_nframes_t bufferSize;
-jack_nframes_t sampleRate;
 
 bool playSample = false;
 bool resetSample = false;
@@ -76,7 +71,7 @@ unsigned configIdx = CONFIG_NONE;
 float *wavBuffer;
 float gain = 1.0;
 
-SP::Config m_config;
+mck::sampler::Config m_config;
 std::filesystem::path m_configPath;
 std::filesystem::path m_samplePath;
 
@@ -92,30 +87,16 @@ std::mutex m_triggerMutex;
 std::atomic<bool> m_triggerActive = false;
 std::condition_variable m_triggerCond;
 
-// Transport
-mck::Transport m_transport;
-mck::TransportState m_transportState;
-std::thread m_transportThread;
 
 void CloseApplication(bool saveConnections = true)
 {
+
+
     using namespace std::filesystem;
     using namespace nlohmann;
 
     m_done = true;
 
-    if (client != nullptr)
-    {
-        // Save Connections
-        if (saveConnections)
-        {
-            mck::GetConnections(client, midi_in, m_config.midiInConnections);
-            mck::GetConnections(client, midi_out, m_config.midiOutConnections);
-            mck::GetConnections(client, audio_out_l, m_config.audioLeftConnections);
-            mck::GetConnections(client, audio_out_r, m_config.audioRightConnections);
-        }
-        jack_client_close(client);
-    }
 
     for (auto &s : m_samples)
     {
@@ -129,10 +110,8 @@ void CloseApplication(bool saveConnections = true)
     json j = m_config;
     configFile << std::setw(4) << j << std::endl;
     configFile.close();
-    if (m_transportThread.joinable())
-    {
-        m_transportThread.join();
-    }
+
+    m_processing.Close();
     m_gui.Close();
     exit(0);
 }
@@ -143,231 +122,17 @@ static void SignalHandler(int sig)
     CloseApplication();
 }
 
-static int JackProcess(jack_nframes_t nframes, void *arg)
-{
-    m_transport.Process(midi_out, nframes, m_transportState);
-
-
-    void *midi_buf = jack_port_get_buffer(midi_in, nframes);
-
-    jack_nframes_t midiEventCount = jack_midi_get_event_count(midi_buf);
-    jack_midi_event_t midiEvent;
-
-    bool sysMsg = false;
-    unsigned char chan = 0;
-
-    for (unsigned i = 0; i < midiEventCount; i++)
-    {
-        jack_midi_event_get(&midiEvent, midi_buf, i);
-        sysMsg = (midiEvent.buffer[0] & 0xf0) == 0xf0;
-        chan = (midiEvent.buffer[0] & 0x0f);
-
-        if (sysMsg == false && chan == m_config.midiChan)
-        {
-            if (configMode == CONFIG_PADS)
-            {
-                if ((midiEvent.buffer[0] & 0xf0) == 0x90)
-                {
-                    m_config.pads[configIdx].tone = (midiEvent.buffer[1] & 0x7f);
-                    printf("Saved note %X for pad #%d.\n\n", m_config.pads[configIdx].tone, configIdx + 1);
-                    configIdx += 1;
-                    if (configIdx >= m_config.numPads)
-                    {
-                        printf("Finished configuration, entering play mode...\n");
-                        configMode = false;
-                        break;
-                    }
-                    printf("Please play note for pad #%d on MIDI channel %d:\n", configIdx + 1, m_config.midiChan + 1);
-                    break;
-                }
-            }
-            else if (configMode == CONFIG_CTRLS)
-            {
-                if ((midiEvent.buffer[0] & 0xf0) == 0xb0)
-                {
-
-                    if (configIdx > 0 && (midiEvent.buffer[1] & 0x7f) == m_config.pads[configIdx - 1].ctrl)
-                    {
-                        continue;
-                    }
-                    m_config.pads[configIdx].ctrl = (midiEvent.buffer[1] & 0x7f);
-                    printf("Saved control %X for pad #%d.\n\n", m_config.pads[configIdx].ctrl, configIdx + 1);
-                    configIdx += 1;
-                    if (configIdx >= m_config.numPads)
-                    {
-                        printf("Finished configuration, entering play mode...\n");
-                        configMode = CONFIG_NONE;
-                        break;
-                    }
-                    printf("Please turn the controller for pad #%d on MIDI channel %d:\n", configIdx + 1, m_config.midiChan + 1);
-                    break;
-                }
-            }
-            else
-            {
-                if ((midiEvent.buffer[0] & 0xf0) == 0x90)
-                {
-                    for (unsigned j = 0; j < m_config.numPads; j++)
-                    {
-                        if ((midiEvent.buffer[1] & 0x7f) == m_config.pads[j].tone && m_config.pads[j].available)
-                        {
-                            m_voices[voiceIdx].playSample = true;
-                            m_voices[voiceIdx].startIdx = midiEvent.time;
-                            m_voices[voiceIdx].bufferIdx = 0;
-                            m_voices[voiceIdx].gain = ((float)(midiEvent.buffer[2] & 0x7f) / 127.0f) * m_config.pads[j].gainLin;
-                            m_voices[voiceIdx].sampleIdx = j;
-                            m_voices[voiceIdx].pitch = m_config.pads[j].pitch;
-
-                            voiceIdx = (voiceIdx + 1) % numVoices;
-                        }
-                    }
-                }
-                else if ((midiEvent.buffer[0] & 0xf0) == 0xb0)
-                {
-                    for (unsigned j = 0; j < m_config.numPads; j++)
-                    {
-                        if ((midiEvent.buffer[1] & 0x7f) == m_config.pads[j].ctrl)
-                        {
-                            m_config.pads[j].gain = (float)(midiEvent.buffer[2] & 0x7f) / 127.0f;
-                            //m_config.pads[j].pitch = ((float)(midiEvent.buffer[2] & 0x7f) / 127.0f) * 1.5f + 0.5;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    m_triggerActive = true;
-    while (m_trigger.size() > 0)
-    {
-        unsigned idx = m_trigger[0].first;
-        double strength = m_trigger[0].second;
-        m_trigger.pop_front();
-
-        if (idx < m_config.numPads)
-        {
-            if (m_config.pads[idx].available)
-            {
-                m_voices[voiceIdx].playSample = true;
-                m_voices[voiceIdx].startIdx = 0;
-                m_voices[voiceIdx].bufferIdx = 0;
-                m_voices[voiceIdx].gain = m_config.pads[idx].gainLin * strength;
-                m_voices[voiceIdx].sampleIdx = idx;
-                m_voices[voiceIdx].pitch = m_config.pads[idx].pitch;
-
-                voiceIdx = (voiceIdx + 1) % numVoices;
-            }
-        }
-    }
-    m_triggerActive = false;
-    m_triggerCond.notify_all();
-
-    if (resetSample)
-    {
-        sf_seek(sndFile, 0, SEEK_SET);
-        resetSample = false;
-    }
-
-    jack_default_audio_sample_t *out_l = (jack_default_audio_sample_t *)jack_port_get_buffer(audio_out_l, nframes);
-    jack_default_audio_sample_t *out_r = (jack_default_audio_sample_t *)jack_port_get_buffer(audio_out_r, nframes);
-
-    memset(out_l, 0, nframes * sizeof(jack_default_audio_sample_t));
-    memset(out_r, 0, nframes * sizeof(jack_default_audio_sample_t));
-
-    unsigned len = 0;
-    for (auto &v : m_voices)
-    {
-        if (v.playSample == false)
-        {
-            continue;
-        }
-
-        MCK::AudioSample *s = &m_samples[v.sampleIdx];
-        /*
-        for (unsigned i = 0; i < s->numChans; i++)
-        {
-            memset(s->pitchBuffer[i], 0, bufferSize * sizeof(float));
-        }*/
-        len = std::min(bufferSize, s->numFrames - v.bufferIdx) - v.startIdx;
-
-        if (s->numChans > 1)
-        {
-            for (unsigned i = 0; i < len; i++)
-            {
-                out_l[v.startIdx + i] += s->buffer[v.bufferIdx + i] * v.gain;
-                out_r[v.startIdx + i] += s->buffer[s->numFrames + v.bufferIdx + i] * v.gain;
-            }
-        }
-        else
-        {
-            for (unsigned i = 0; i < len; i++)
-            {
-                out_l[v.startIdx + i] += s->buffer[v.bufferIdx + i] * v.gain * 0.707f;
-                out_r[v.startIdx + i] += s->buffer[v.bufferIdx + i] * v.gain * 0.707f;
-            }
-
-            /*
-            memcpy(s->pitchBuffer[0] + v.startIdx, s->buffer + v.bufferIdx, len);
-            s->pitcher->setPitchScale(v.pitch);
-            unsigned processed = 0;
-            unsigned procOut = 0;
-            while (processed < bufferSize)
-            {
-                unsigned procIn = s->pitcher->getSamplesRequired();
-                procIn = std::min(bufferSize - processed, procIn);
-                s->pitcher->process(s->pitchBuffer + processed, procIn, false);
-                processed += procIn;
-                int avail = s->pitcher->available();
-                int actual = s->pitcher->retrieve(s->outBuffer + procOut, avail);
-                procOut += actual;
-            }
-
-            for (unsigned i = 0; i < len; i++)
-            {
-                out_l[v.startIdx + i] += s->outBuffer[0][i] * v.gain * 0.707f;
-                out_r[v.startIdx + i] += s->outBuffer[0][i] * v.gain * 0.707f;
-            }
-            */
-        }
-        v.bufferIdx += len;
-        v.startIdx = 0;
-
-        if (v.bufferIdx >= s->numFrames)
-        {
-            // Stop Sample
-            v.playSample = false;
-        }
-    }
-
-    return 0;
-}
-
 int main(int argc, char **argv)
 {
     using namespace std::filesystem;
     using namespace nlohmann;
-    using namespace webview;
-    using namespace httplib;
-/*
-    // HTTP Server
-    bool ret = guiServer.set_mount_point("/", "./www");
-    if (ret == false)
-    {
+
+    // Init Processing
+    bool ret = m_processing.Init();
+    if (ret == false) {
         return EXIT_FAILURE;
     }
-    guiServerThread = std::thread([&]() {
-        guiServer.listen("localhost", 9002);
-    });
 
-    // GUI Window
-    guiWindow.set_title("MckSampler");
-    guiWindow.set_size(1280, 720, WEBVIEW_HINT_NONE);
-    guiWindow.navigate("http://localhost:9002");
-    guiWindow.bind("SendMessage", SendMessage);
-    guiWindow.bind("GetData", GetData);
-    //guiWindowThread = std::thread([&]() {
-    //});
-    */
 
     // Read Config
     struct passwd *pw = getpwuid(getuid());
@@ -393,7 +158,7 @@ int main(int argc, char **argv)
         configFile.close();
         try
         {
-            m_config = j.get<SP::Config>();
+            m_config = j.get<mck::sampler::Config>();
             createFile = false;
         }
         catch (std::exception &e)
@@ -412,7 +177,7 @@ int main(int argc, char **argv)
     m_configPath = configPath;
 
     // Scan wav files
-    SP::ScanSampleFolder(m_samplePath.string(), m_config.samples);
+    mck::sampler::ScanSampleFolder(m_samplePath.string(), m_config.samples);
     m_config.numSamples = m_config.samples.size();
 
     // Get Arguments
@@ -477,26 +242,11 @@ int main(int argc, char **argv)
     else if (m_config.numPads == 0)
     {
         m_config.pads.resize(16);
-        SP::VerifyConfiguration(m_config);
+        mck::sampler::VerifyConfiguration(m_config);
     }
 
-    SP::VerifyConfiguration(m_config);
+    mck::sampler::VerifyConfiguration(m_config);
 
-    if ((client = jack_client_open("MckSampler", JackNullOption, NULL)) == 0)
-    {
-        fprintf(stderr, "JACK server not running?\n");
-        return EXIT_FAILURE;
-    }
-
-    jack_set_process_callback(client, JackProcess, 0);
-
-    midi_in = jack_port_register(client, "midi_in", JACK_DEFAULT_MIDI_TYPE, JackPortIsInput, 0);
-    midi_out = jack_port_register(client, "midi_out", JACK_DEFAULT_MIDI_TYPE, JackPortIsOutput, 0);
-    audio_out_l = jack_port_register(client, "audio_out_l", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
-    audio_out_r = jack_port_register(client, "audio_out_r", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
-
-    bufferSize = jack_get_buffer_size(client);
-    sampleRate = jack_get_sample_rate(client);
 
     // Prepare Sound Files and Voices
     numVoices = 4 * m_config.numPads;
@@ -590,51 +340,6 @@ int main(int argc, char **argv)
         // init pitcher
         //m_samples[i].pitcher = new RubberBand::RubberBandStretcher(sampleRate, m_samples[i].numChans, RubberBand::RubberBandStretcher::OptionProcessRealTime, 1.0, 1.0);
         //m_samples[i].pitcher->setMaxProcessSize(bufferSize);
-    }
-
-    // Prepare Transport
-    m_transport.Init(sampleRate, bufferSize, m_config.tempo);
-    m_transportThread = std::thread([&](){
-        while(true) {
-            if (m_done.load())
-            {
-                return;
-            }
-
-            mck::TransportState ts;
-            m_transport.GetRTData(ts);
-
-            m_gui.SendMessage("transport", "realtime", ts);
-
-            std::this_thread::sleep_for(std::chrono::milliseconds(30));
-        }
-    });
-
-    if (jack_activate(client))
-    {
-        fprintf(stderr, "Unable to activate JACK client\n");
-        return EXIT_FAILURE;
-    }
-
-    // Connect inputs and outputs
-    if (m_config.reconnect)
-    {
-        if (mck::SetConnections(client, midi_in, m_config.midiInConnections, true) == false)
-        {
-            printf("Failed to connect port %s\n", jack_port_name(midi_in));
-        }
-        if (mck::SetConnections(client, midi_out, m_config.midiOutConnections, true) == false)
-        {
-            printf("Failed to connect port %s\n", jack_port_name(midi_out));
-        }
-        if (mck::SetConnections(client, audio_out_l, m_config.audioLeftConnections, false) == false)
-        {
-            printf("Failed to connect port %s\n", jack_port_name(audio_out_l));
-        }
-        if (mck::SetConnections(client, audio_out_r, m_config.audioRightConnections, false) == false)
-        {
-            printf("Failed to connect port %s\n", jack_port_name(audio_out_r));
-        }
     }
 
     signal(SIGQUIT, SignalHandler);
