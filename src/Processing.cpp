@@ -3,6 +3,7 @@
 
 // System
 #include <cstdio>
+#include <filesystem>
 
 // Audio
 #include <jack/jack.h>
@@ -13,19 +14,25 @@
 static int JackProcess(jack_nframes_t nframes, void *arg)
 {
     auto proc = (mck::Processing *)arg;
-    proc->ProcessAudioMidi(nframes);
+    return proc->ProcessAudioMidi(nframes);
 }
 
 mck::Processing::Processing()
     : m_isInitialized(false),
       m_config(),
+      m_configFile(),
+      m_configPath(""),
       m_client(nullptr),
       m_midiIn(nullptr),
       m_midiOut(nullptr),
       m_audioOutL(nullptr),
       m_audioOutR(nullptr),
       m_bufferSize(0),
-      m_sampleRate(0)
+      m_samplePath(""),
+      m_sampleRate(0),
+      m_numVoices(0),
+      m_voiceIdx(0),
+      m_triggerActive(false)
 {
 }
 
@@ -44,7 +51,44 @@ bool mck::Processing::Init()
         return false;
     }
 
-    int err = jack_set_process_callback(m_client, JackProcess, 0);
+    // 1A - Load Configuration
+    std::string homeDir = ConfigFile::GetHomeDir();
+    std::filesystem::path configPath(homeDir);
+    configPath.append(".mck").append("sampler").append("config.json");
+    m_configPath = configPath.string();
+    if (m_configFile.ReadFile(m_configPath))
+    {
+        m_configFile.GetConfig(m_config);
+    }
+    if (m_config.numPads == 0)
+    {
+        m_config.pads.resize(16);
+    }
+    
+    // 1B - Scan Samples
+    std::filesystem::path samplePath(homeDir);
+    samplePath.append(".mck").append("sampler").append("audio");
+    if (std::filesystem::exists(samplePath) == false)
+    {
+        std::filesystem::create_directories(samplePath);
+    }
+    mck::sampler::ScanSampleFolder(samplePath.string(), m_config.samples);
+    m_config.numSamples = m_config.samples.size();
+    m_samplePath = samplePath.string();
+
+    // 1C - Update File
+    mck::sampler::VerifyConfiguration(m_config);
+    m_configFile.SetConfig(m_config);
+    m_configFile.WriteFile(m_configPath);
+
+
+    // 2 - Init JACK
+    if ((m_client = jack_client_open("MckSampler", JackNullOption, NULL)) == 0)
+    {
+        std::fprintf(stderr, "JACK server not running?\n");
+        return false;
+    }
+    int err = jack_set_process_callback(m_client, JackProcess, this);
 
     if (err)
     {
@@ -60,13 +104,15 @@ bool mck::Processing::Init()
     m_bufferSize = jack_get_buffer_size(m_client);
     m_sampleRate = jack_get_sample_rate(m_client);
 
-    if ((m_client = jack_client_open("MckSampler", JackNullOption, NULL)) == 0)
+
+    // 3 - Prepare Samples & Voices
+
+    if (PrepareSamples() == false)
     {
-        std::fprintf(stderr, "JACK server not running?\n");
         return false;
     }
 
-    // Activate Client
+    // 4 - Start JACK Processing
     err = jack_activate(m_client);
     if (err)
     {
@@ -95,7 +141,8 @@ bool mck::Processing::Init()
     }
 
 
-    // Initialized Transport
+    // 5 - Initialized Transport
+    
     if (m_transport.Init(m_sampleRate, m_bufferSize, m_config.tempo) == false) {
         return false;
     }
@@ -119,6 +166,24 @@ void mck::Processing::Close()
             mck::GetConnections(m_client, m_audioOutR, m_config.audioRightConnections);
         }
         jack_client_close(m_client);
+    }
+
+    // Save File
+    m_configFile.SetConfig(m_config);
+    m_configFile.WriteFile(m_configPath);
+
+    for (auto &s : m_samples)
+    {
+        if (s.buffer != nullptr)
+        {
+            delete s.buffer;
+            s.buffer = nullptr;
+        }
+    }
+
+    if (m_transportThread.joinable())
+    {
+        m_transportThread.join();
     }
 
     m_isInitialized = false;
@@ -197,14 +262,14 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
                     {
                         if ((midiEvent.buffer[1] & 0x7f) == m_config.pads[j].tone && m_config.pads[j].available)
                         {
-                            m_voices[voiceIdx].playSample = true;
-                            m_voices[voiceIdx].startIdx = midiEvent.time;
-                            m_voices[voiceIdx].bufferIdx = 0;
-                            m_voices[voiceIdx].gain = ((float)(midiEvent.buffer[2] & 0x7f) / 127.0f) * m_config.pads[j].gainLin;
-                            m_voices[voiceIdx].sampleIdx = j;
-                            m_voices[voiceIdx].pitch = m_config.pads[j].pitch;
+                            m_voices[m_voiceIdx].playSample = true;
+                            m_voices[m_voiceIdx].startIdx = midiEvent.time;
+                            m_voices[m_voiceIdx].bufferIdx = 0;
+                            m_voices[m_voiceIdx].gain = ((float)(midiEvent.buffer[2] & 0x7f) / 127.0f) * m_config.pads[j].gainLin;
+                            m_voices[m_voiceIdx].sampleIdx = j;
+                            m_voices[m_voiceIdx].pitch = m_config.pads[j].pitch;
 
-                            voiceIdx = (voiceIdx + 1) % numVoices;
+                            m_voiceIdx = (m_voiceIdx + 1) % m_numVoices;
                         }
                     }
                 }
@@ -234,25 +299,26 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
         {
             if (m_config.pads[idx].available)
             {
-                m_voices[voiceIdx].playSample = true;
-                m_voices[voiceIdx].startIdx = 0;
-                m_voices[voiceIdx].bufferIdx = 0;
-                m_voices[voiceIdx].gain = m_config.pads[idx].gainLin * strength;
-                m_voices[voiceIdx].sampleIdx = idx;
-                m_voices[voiceIdx].pitch = m_config.pads[idx].pitch;
+                m_voices[m_voiceIdx].playSample = true;
+                m_voices[m_voiceIdx].startIdx = 0;
+                m_voices[m_voiceIdx].bufferIdx = 0;
+                m_voices[m_voiceIdx].gain = m_config.pads[idx].gainLin * strength;
+                m_voices[m_voiceIdx].sampleIdx = idx;
+                m_voices[m_voiceIdx].pitch = m_config.pads[idx].pitch;
 
-                voiceIdx = (voiceIdx + 1) % numVoices;
+                m_voiceIdx = (m_voiceIdx + 1) % m_numVoices;
             }
         }
     }
     m_triggerActive = false;
     m_triggerCond.notify_all();
 
+    /*
     if (resetSample)
     {
         sf_seek(sndFile, 0, SEEK_SET);
         resetSample = false;
-    }
+    }*/
 
     jack_default_audio_sample_t *out_l = (jack_default_audio_sample_t *)jack_port_get_buffer(m_audioOutL, nframes);
     jack_default_audio_sample_t *out_r = (jack_default_audio_sample_t *)jack_port_get_buffer(m_audioOutR, nframes);
@@ -344,4 +410,111 @@ void mck::Processing::TransportThread()
 
         std::this_thread::sleep_for(std::chrono::milliseconds(30));
     }
+}
+
+bool mck::Processing::PrepareSamples()
+{
+    if (m_isInitialized)
+    {
+        return false;
+    }
+
+
+    // Prepare Sound Files and Voices
+    m_numVoices = 4 * m_config.numPads;
+    m_voiceIdx = 0;
+
+    m_samples.resize(m_config.numPads);
+    m_voices.resize(m_numVoices);
+
+    SNDFILE *tmpSnd;
+    SF_INFO tmpInfo;
+    SRC_DATA tmpSrc;
+    float *tmpBuf;
+    float *tmpSrcBuf;
+    unsigned numSrcFrames;
+
+    for (unsigned i = 0; i < m_config.numPads; i++)
+    {
+        if (m_config.pads[i].sampleIdx >= m_config.numSamples)
+        {
+            m_config.pads[i].available = false;
+            continue;
+        }
+        m_config.pads[i].available = true;
+        tmpInfo.format = 0;
+        tmpSnd = sf_open(m_config.samples[m_config.pads[i].sampleIdx].fullPath.c_str(), SFM_READ, &tmpInfo);
+        m_samples[i].numChans = tmpInfo.channels;
+        m_samples[i].numFrames = tmpInfo.frames;
+        tmpBuf = new float[tmpInfo.channels * tmpInfo.frames];
+        numSrcFrames = sf_readf_float(tmpSnd, tmpBuf, tmpInfo.frames);
+        m_samples[i].numFrames = numSrcFrames;
+        if (tmpInfo.samplerate != m_sampleRate)
+        {
+            // Sample Rate Conversion
+            double convCoeff = (double)m_sampleRate / (double)tmpInfo.samplerate;
+            numSrcFrames = (unsigned)std::ceil((double)m_samples[i].numFrames * convCoeff);
+            tmpSrcBuf = new float[m_samples[i].numChans * numSrcFrames];
+            tmpSrc.data_in = tmpBuf;
+            tmpSrc.data_out = tmpSrcBuf;
+            tmpSrc.input_frames = m_samples[i].numFrames;
+            tmpSrc.output_frames = numSrcFrames;
+            numSrcFrames = tmpSrc.output_frames;
+            tmpSrc.src_ratio = convCoeff;
+
+            int err = src_simple(&tmpSrc, SRC_SINC_BEST_QUALITY, m_samples[i].numChans);
+            if (err != 0)
+            {
+                std::fprintf(stderr, "Failed to apply samplerate conversion to sample %s:\n%s\nExiting...", m_config.pads[i].sample.c_str(), src_strerror(err));
+                delete tmpBuf;
+                delete tmpSrcBuf;
+                return false;
+            }
+            m_samples[i].numFrames = tmpSrc.output_frames_gen;
+            /*
+            SNDFILE *outSnd;
+            SF_INFO outInf;
+            outInf.channels = m_samples[i].numChans;
+            outInf.format = SF_FORMAT_WAV | SF_FORMAT_FLOAT;
+            outInf.frames = m_samples[i].numFrames;
+            outInf.samplerate = sampleRate;
+            std::filesystem::path outPath(m_config.samples[m_config.pads[i].sampleIdx].fullPath);
+            std::filesystem::path outName = outPath.filename();
+            outName = std::filesystem::path(outName.stem().string() + "_" + std::to_string(outInf.samplerate) + outName.extension().string());
+            outPath = outPath.parent_path().append(outName.string());
+            outSnd = sf_open(outPath.c_str(), SFM_WRITE, &outInf);
+            sf_writef_float(outSnd, tmpSrcBuf, m_samples[i].numFrames);
+            sf_close(outSnd);
+            */
+            delete tmpBuf;
+            tmpBuf = tmpSrcBuf;
+        }
+        // Deinterleaving
+
+        m_samples[i].buffer = new float[m_samples[i].numChans * m_samples[i].numFrames];
+        /*
+        m_samples[i].pitchBuffer = new float *[m_samples[i].numChans];
+        m_samples[i].outBuffer = new float *[m_samples[i].numChans];
+        for (unsigned j = 0; j < m_samples[i].numChans; j++)
+        {
+            m_samples[i].pitchBuffer[j] = new float[bufferSize];
+            m_samples[i].outBuffer[j] = new float[bufferSize];
+        }*/
+        for (unsigned s = 0; s < std::min(m_samples[i].numFrames, numSrcFrames); s++)
+        {
+            for (unsigned c = 0; c < m_samples[i].numChans; c++)
+            {
+                m_samples[i].buffer[c * m_samples[i].numFrames + s] = tmpBuf[s * m_samples[i].numChans + c];
+            }
+        }
+        delete tmpBuf;
+
+        // init pitcher
+        //m_samples[i].pitcher = new RubberBand::RubberBandStretcher(sampleRate, m_samples[i].numChans, RubberBand::RubberBandStretcher::OptionProcessRealTime, 1.0, 1.0);
+        //m_samples[i].pitcher->setMaxProcessSize(bufferSize);
+    }
+
+
+
+    return true;
 }

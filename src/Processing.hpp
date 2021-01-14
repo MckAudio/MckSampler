@@ -1,5 +1,8 @@
 #pragma once
 
+#include <vector>
+#include <deque>
+#include <string>
 #include <thread>
 #include <atomic>
 #include <mutex>
@@ -9,6 +12,8 @@
 
 #include "helper/Transport.hpp"
 #include "Types.hpp"
+#include "Config.hpp"
+#include "ConfigFile.hpp"
 
 namespace mck
 {
@@ -25,13 +30,16 @@ namespace mck
 
     private:
         void TransportThread();
+        bool PrepareSamples();
 
         // INIT Members
         bool m_isInitialized;
         std::atomic<bool> m_done;
 
         // DATA Members
-        mck::sampler::Config m_config;
+        sampler::Config m_config;
+        ConfigFile m_configFile;
+        std::string m_configPath;
 
         // JACK Members
         jack_client_t *m_client;
@@ -47,5 +55,18 @@ namespace mck
         TransportState m_transportState;
         std::thread m_transportThread;
         std::mutex m_transportMutex;
+
+        // Wav Files
+        std::string m_samplePath;
+        std::vector<MCK::AudioSample> m_samples;
+        std::vector<MCK::AudioVoice> m_voices;
+        unsigned m_numVoices;
+        unsigned m_voiceIdx;
+
+        // Pad Trigger
+        std::deque<std::pair<unsigned, double>> m_trigger;
+        std::mutex m_triggerMutex;
+        std::atomic<bool> m_triggerActive;
+        std::condition_variable m_triggerCond;
     };
 } // namespace mck
