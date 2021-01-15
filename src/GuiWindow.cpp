@@ -1,4 +1,5 @@
 #include "GuiWindow.hpp"
+#include "Processing.hpp"
 #include "webview/webview.h"
 #include "cpp-httplib/httplib.h"
 #include "Types.hpp"
@@ -21,6 +22,9 @@ void MsgFromGui(std::string idx, std::string msg, void *arg)
 {
     GuiWindow *win = (GuiWindow *)arg;
     std::cout << "Msg from GUI: " << idx << " : " << msg << std::endl;
+
+    win->ReceiveMessage(msg);
+
     return;
 }
 
@@ -88,6 +92,19 @@ void GuiWindow::Close()
         m_serverThread.join();
     }
     m_isInitialized = false;
+}
+void GuiWindow::ReceiveMessage(std::string msg)
+{
+    if (m_proc != nullptr)
+    {
+        auto mckmsg = MCK::Message();
+        mckmsg.section = "trigger";
+        m_proc->ReceiveMessage(mckmsg);
+    }
+}
+void GuiWindow::SetProcessingPtr(mck::Processing *proc)
+{
+    m_proc = proc;
 }
 
 bool GuiWindow::Evaluate(std::string msg)

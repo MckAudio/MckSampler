@@ -1,4 +1,5 @@
 #include "Processing.hpp"
+#include "GuiWindow.hpp"
 #include "helper/JackHelper.hpp"
 
 // System
@@ -18,7 +19,8 @@ static int JackProcess(jack_nframes_t nframes, void *arg)
 }
 
 mck::Processing::Processing()
-    : m_isInitialized(false),
+    : m_gui(nullptr),
+      m_isInitialized(false),
       m_config(),
       m_configFile(),
       m_configPath(""),
@@ -38,7 +40,8 @@ mck::Processing::Processing()
 
 mck::Processing::~Processing()
 {
-    if (m_isInitialized) {
+    if (m_isInitialized)
+    {
         Close();
     }
 }
@@ -64,7 +67,7 @@ bool mck::Processing::Init()
     {
         m_config.pads.resize(16);
     }
-    
+
     // 1B - Scan Samples
     std::filesystem::path samplePath(homeDir);
     samplePath.append(".mck").append("sampler").append("audio");
@@ -80,7 +83,6 @@ bool mck::Processing::Init()
     mck::sampler::VerifyConfiguration(m_config);
     m_configFile.SetConfig(m_config);
     m_configFile.WriteFile(m_configPath);
-
 
     // 2 - Init JACK
     if ((m_client = jack_client_open("MckSampler", JackNullOption, NULL)) == 0)
@@ -103,7 +105,6 @@ bool mck::Processing::Init()
 
     m_bufferSize = jack_get_buffer_size(m_client);
     m_sampleRate = jack_get_sample_rate(m_client);
-
 
     // 3 - Prepare Samples & Voices
 
@@ -140,10 +141,10 @@ bool mck::Processing::Init()
         }
     }
 
-
     // 5 - Initialized Transport
-    
-    if (m_transport.Init(m_sampleRate, m_bufferSize, m_config.tempo) == false) {
+
+    if (m_transport.Init(m_sampleRate, m_bufferSize, m_config.tempo) == false)
+    {
         return false;
     }
     m_transportThread = std::thread(&mck::Processing::TransportThread, this);
@@ -187,6 +188,22 @@ void mck::Processing::Close()
     }
 
     m_isInitialized = false;
+}
+
+void mck::Processing::ReceiveMessage(MCK::Message &msg)
+{
+    if (msg.section == "trigger")
+    {
+        if (m_gui != nullptr)
+        {
+            m_gui->SendMessage("hoi", "hallo", "nagut");
+        }
+    }
+}
+
+void mck::Processing::SetGuiPtr(GuiWindow *gui)
+{
+    m_gui = gui;
 }
 
 int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
@@ -256,36 +273,36 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
             }
             else
             {*/
-                if ((midiEvent.buffer[0] & 0xf0) == 0x90)
+            if ((midiEvent.buffer[0] & 0xf0) == 0x90)
+            {
+                for (unsigned j = 0; j < m_config.numPads; j++)
                 {
-                    for (unsigned j = 0; j < m_config.numPads; j++)
+                    if ((midiEvent.buffer[1] & 0x7f) == m_config.pads[j].tone && m_config.pads[j].available)
                     {
-                        if ((midiEvent.buffer[1] & 0x7f) == m_config.pads[j].tone && m_config.pads[j].available)
-                        {
-                            m_voices[m_voiceIdx].playSample = true;
-                            m_voices[m_voiceIdx].startIdx = midiEvent.time;
-                            m_voices[m_voiceIdx].bufferIdx = 0;
-                            m_voices[m_voiceIdx].gain = ((float)(midiEvent.buffer[2] & 0x7f) / 127.0f) * m_config.pads[j].gainLin;
-                            m_voices[m_voiceIdx].sampleIdx = j;
-                            m_voices[m_voiceIdx].pitch = m_config.pads[j].pitch;
+                        m_voices[m_voiceIdx].playSample = true;
+                        m_voices[m_voiceIdx].startIdx = midiEvent.time;
+                        m_voices[m_voiceIdx].bufferIdx = 0;
+                        m_voices[m_voiceIdx].gain = ((float)(midiEvent.buffer[2] & 0x7f) / 127.0f) * m_config.pads[j].gainLin;
+                        m_voices[m_voiceIdx].sampleIdx = j;
+                        m_voices[m_voiceIdx].pitch = m_config.pads[j].pitch;
 
-                            m_voiceIdx = (m_voiceIdx + 1) % m_numVoices;
-                        }
+                        m_voiceIdx = (m_voiceIdx + 1) % m_numVoices;
                     }
                 }
-                else if ((midiEvent.buffer[0] & 0xf0) == 0xb0)
+            }
+            else if ((midiEvent.buffer[0] & 0xf0) == 0xb0)
+            {
+                for (unsigned j = 0; j < m_config.numPads; j++)
                 {
-                    for (unsigned j = 0; j < m_config.numPads; j++)
+                    if ((midiEvent.buffer[1] & 0x7f) == m_config.pads[j].ctrl)
                     {
-                        if ((midiEvent.buffer[1] & 0x7f) == m_config.pads[j].ctrl)
-                        {
-                            m_config.pads[j].gain = (float)(midiEvent.buffer[2] & 0x7f) / 127.0f;
-                            //m_config.pads[j].pitch = ((float)(midiEvent.buffer[2] & 0x7f) / 127.0f) * 1.5f + 0.5;
-                        }
+                        m_config.pads[j].gain = (float)(midiEvent.buffer[2] & 0x7f) / 127.0f;
+                        //m_config.pads[j].pitch = ((float)(midiEvent.buffer[2] & 0x7f) / 127.0f) * 1.5f + 0.5;
                     }
                 }
             }
         }
+    }
     //}
 
     m_triggerActive = true;
@@ -405,10 +422,12 @@ void mck::Processing::TransportThread()
 
         TransportState ts;
         m_transport.GetRTData(ts);
+        if (m_gui != nullptr)
+        {
+            //m_gui->SendMessage("transport", "realtime", ts);
+        }
 
-        //m_gui.SendMessage("transport", "realtime", ts);
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(30));
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
 }
 
@@ -418,7 +437,6 @@ bool mck::Processing::PrepareSamples()
     {
         return false;
     }
-
 
     // Prepare Sound Files and Voices
     m_numVoices = 4 * m_config.numPads;
@@ -513,8 +531,6 @@ bool mck::Processing::PrepareSamples()
         //m_samples[i].pitcher = new RubberBand::RubberBandStretcher(sampleRate, m_samples[i].numChans, RubberBand::RubberBandStretcher::OptionProcessRealTime, 1.0, 1.0);
         //m_samples[i].pitcher->setMaxProcessSize(bufferSize);
     }
-
-
 
     return true;
 }

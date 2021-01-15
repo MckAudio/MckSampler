@@ -104,6 +104,9 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
+    m_processing.SetGuiPtr(&m_gui);
+    m_gui.SetProcessingPtr(&m_processing);
+
     /*
     if (configMode == CONFIG_SAMPLES)
     {

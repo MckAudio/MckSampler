@@ -15,6 +15,8 @@
 #include "Config.hpp"
 #include "ConfigFile.hpp"
 
+class GuiWindow;
+
 namespace mck
 {
     class Processing
@@ -28,9 +30,16 @@ namespace mck
         bool Init();
         void Close();
 
+        void ReceiveMessage(MCK::Message &msg);
+
+        void SetGuiPtr(GuiWindow *gui);
+
     private:
         void TransportThread();
         bool PrepareSamples();
+
+        // GUI Pointer
+        GuiWindow *m_gui;
 
         // INIT Members
         bool m_isInitialized;

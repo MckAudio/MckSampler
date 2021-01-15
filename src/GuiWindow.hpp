@@ -16,6 +16,10 @@ namespace httplib
 {
     class Server;
 }
+namespace mck
+{
+    class Processing;
+}
 
 class GuiWindow
 {
@@ -56,9 +60,14 @@ public:
         }
         return true;
     }
+    void ReceiveMessage(std::string msg);
+    void SetProcessingPtr(mck::Processing *proc);
 
 private:
     bool Evaluate(std::string msg);
+
+    mck::Processing *m_proc;
+
     bool m_isInitialized;
     bool m_isOpen;
     std::atomic<bool> m_done;
