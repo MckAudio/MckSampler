@@ -1,12 +1,15 @@
 <script>
 	import { onMount, onDestroy } from "svelte";
 
+	import Settings from "./Settings.svelte";
 	import Controls from "./Controls.svelte";
 	import Sequencer from "./Sequencer.svelte";
 	import Pads from "./Pads.svelte";
 
 	let data = undefined;
 	let dataReady = true;
+	let transport = undefined;
+	let transportReady = false;
 	let pads = Array.from({ length: 16 }, (_v, _i) => {
 		idx: _i;
 	});
@@ -20,11 +23,19 @@
 	}
 
 	function ReceiveBackendMessage(_event) {
-		console.log("MSG", _event.detail);
-		if (_event.detail.section === "data" && _event.detail.msgType === "full")
-		{
+		console.log("MSG", JSON.stringify(_event.detail));
+		if (
+			_event.detail.section === "data" &&
+			_event.detail.msgType === "full"
+		) {
 			data = _event.detail.data;
 			dataReady = true;
+		} else if (
+			_event.detail.section === "transport" &&
+			_event.detail.msgType === "realtime"
+		) {
+			transport = _event.detail.data;
+			transportReady = true;
 		}
 	}
 
@@ -52,6 +63,25 @@
 	});
 </script>
 
+<main>
+	{#if dataReady}
+		<div class="settings">
+			<Settings {transport} />
+		</div>
+		<div
+			class="content"
+			bind:this={content}
+			bind:clientHeight={contentHeight}
+			bind:clientWidth={contentWidth}
+		>
+			<Controls {data} />
+			<Sequencer {data} />
+			<Pads {data} />
+		</div>
+		<div class="master" />
+	{/if}
+</main>
+
 <style>
 	main {
 		width: 100%;
@@ -76,19 +106,3 @@
 		grid-template-rows: 1fr auto auto;
 	}
 </style>
-
-<main>
-	{#if dataReady}
-		<div class="settings" />
-		<div
-			class="content"
-			bind:this={content}
-			bind:clientHeight={contentHeight}
-			bind:clientWidth={contentWidth}>
-			<Controls {data} />
-			<Sequencer {data} />
-			<Pads {data} />
-		</div>
-		<div class="master" />
-	{/if}
-</main>

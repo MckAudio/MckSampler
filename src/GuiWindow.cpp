@@ -33,6 +33,7 @@ GuiWindow::GuiWindow()
 {
     m_server = new httplib::Server();
     m_window = new webview::webview(true, nullptr);
+    m_sendQueue = moodycamel::ConcurrentQueue<std::string>(512);
 }
 
 GuiWindow::~GuiWindow()
@@ -64,6 +65,9 @@ bool GuiWindow::Show(std::string title, std::string path, unsigned port)
         m_server->listen("localhost", port);
     });
 
+    // Send Thread
+    m_sendThread = std::thread(&GuiWindow::SendThread, this);
+
     m_window->set_title(title);
     m_window->set_size(1280, 720, WEBVIEW_HINT_NONE);
     m_window->navigate("http://localhost:" + std::to_string(port));
@@ -71,9 +75,7 @@ bool GuiWindow::Show(std::string title, std::string path, unsigned port)
     m_window->bind("SendMessage", MsgFromGui, (void *)this);
 
     m_isInitialized = true;
-    //m_windowThread = std::thread([this]() {
     m_window->run();
-    //});
 
     return true;
 }
@@ -90,6 +92,10 @@ void GuiWindow::Close()
     {
         m_server->stop();
         m_serverThread.join();
+    }
+    if (m_sendThread.joinable())
+    {
+        m_sendThread.join();
     }
     m_isInitialized = false;
 }
@@ -117,13 +123,26 @@ bool GuiWindow::Evaluate(std::string msg)
     {
         return false;
     }
-    try
+
+    return m_sendQueue.try_enqueue(msg);
+}
+
+void GuiWindow::SendThread()
+{
+    while(true)
     {
-        m_window->eval(msg);
+        if (m_done.load()) {
+            break;
+        }
+        std::string msg = "";
+        while (m_sendQueue.try_dequeue(msg))
+        {
+            m_window->dispatch([&](){
+                m_window->eval(msg);
+            });
+            //m_window->eval(msg);
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
-    catch (std::exception &e)
-    {
-        std::cerr << "GUI window is not shown yet: " << e.what() << std::endl;
-    }
-    return true;
 }

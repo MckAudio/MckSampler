@@ -424,10 +424,10 @@ void mck::Processing::TransportThread()
         m_transport.GetRTData(ts);
         if (m_gui != nullptr)
         {
-            //m_gui->SendMessage("transport", "realtime", ts);
+            m_gui->SendMessage("transport", "realtime", ts);
         }
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        std::this_thread::sleep_for(std::chrono::milliseconds(25));
     }
 }
 

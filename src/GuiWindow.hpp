@@ -5,7 +5,9 @@
 #include <atomic>
 #include <iostream>
 #include <nlohmann/json.hpp>
-
+#include <concurrentqueue.h>
+#include <condition_variable>
+#include <mutex>
 #include "Types.hpp"
 
 namespace webview
@@ -65,6 +67,7 @@ public:
 
 private:
     bool Evaluate(std::string msg);
+    void SendThread();
 
     mck::Processing *m_proc;
 
@@ -75,4 +78,9 @@ private:
     webview::webview *m_window;
     std::thread m_serverThread;
     std::thread m_windowThread;
+    std::thread m_sendThread;
+
+    moodycamel::ConcurrentQueue<std::string> m_sendQueue;
+    std::mutex m_sendMutex;
+    std::condition_variable m_sendCond;
 };
