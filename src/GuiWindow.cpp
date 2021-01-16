@@ -66,7 +66,7 @@ bool GuiWindow::Show(std::string title, std::string path, unsigned port)
     });
 
     // Send Thread
-    m_sendThread = std::thread(&GuiWindow::SendThread, this);
+    //m_sendThread = std::thread(&GuiWindow::SendThread, this);
 
     m_window->set_title(title);
     m_window->set_size(1280, 720, WEBVIEW_HINT_NONE);
@@ -101,11 +101,21 @@ void GuiWindow::Close()
 }
 void GuiWindow::ReceiveMessage(std::string msg)
 {
+    std::vector<MCK::Message> mckMsgs;
+    try
+    {
+        nlohmann::json j = nlohmann::json::parse(msg);
+        mckMsgs = j.get<std::vector<MCK::Message>>();
+    }
+    catch (std::exception &e)
+    {
+        return;
+    }
     if (m_proc != nullptr)
     {
-        auto mckmsg = MCK::Message();
-        mckmsg.section = "trigger";
-        m_proc->ReceiveMessage(mckmsg);
+        for(auto &m : mckMsgs) {
+            m_proc->ReceiveMessage(m);
+        }
     }
 }
 void GuiWindow::SetProcessingPtr(mck::Processing *proc)
@@ -124,20 +134,27 @@ bool GuiWindow::Evaluate(std::string msg)
         return false;
     }
 
-    return m_sendQueue.try_enqueue(msg);
+    m_window->dispatch([&, msg]() {
+        m_window->eval(msg);
+    });
+
+    return true;
+
+    //return m_sendQueue.try_enqueue(msg);
 }
 
 void GuiWindow::SendThread()
 {
-    while(true)
+    while (true)
     {
-        if (m_done.load()) {
+        if (m_done.load())
+        {
             break;
         }
         std::string msg = "";
         while (m_sendQueue.try_dequeue(msg))
         {
-            m_window->dispatch([&](){
+            m_window->dispatch([&]() {
                 m_window->eval(msg);
             });
             //m_window->eval(msg);

@@ -5,6 +5,7 @@
 // System
 #include <cstdio>
 #include <filesystem>
+#include <nlohmann/json.hpp>
 
 // Audio
 #include <jack/jack.h>
@@ -192,11 +193,20 @@ void mck::Processing::Close()
 
 void mck::Processing::ReceiveMessage(MCK::Message &msg)
 {
-    if (msg.section == "trigger")
+    if (msg.section == "pads")
     {
-        if (m_gui != nullptr)
+        if (msg.msgType == "trigger")
         {
-            m_gui->SendMessage("hoi", "hallo", "nagut");
+            try
+            {
+                MCK::TriggerData data = nlohmann::json::parse(msg.data);
+                std::printf("Triggering PAD #%d\n", data.index + 1);
+                m_triggerQueue.try_enqueue(std::pair<unsigned, double>(data.index, data.strength));
+            }
+            catch (std::exception &e)
+            {
+                return;
+            }
         }
     }
 }
@@ -305,12 +315,11 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
     }
     //}
 
-    m_triggerActive = true;
-    while (m_trigger.size() > 0)
+    std::pair<unsigned, double> trigger;
+    while (m_triggerQueue.try_dequeue(trigger))
     {
-        unsigned idx = m_trigger[0].first;
-        double strength = m_trigger[0].second;
-        m_trigger.pop_front();
+        unsigned idx = trigger.first;
+        double strength = trigger.second;
 
         if (idx < m_config.numPads)
         {
@@ -327,8 +336,6 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
             }
         }
     }
-    m_triggerActive = false;
-    m_triggerCond.notify_all();
 
     /*
     if (resetSample)

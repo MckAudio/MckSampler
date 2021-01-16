@@ -9,6 +9,7 @@
 #include <condition_variable>
 
 #include <jack/types.h>
+#include <concurrentqueue.h>
 
 #include "helper/Transport.hpp"
 #include "Types.hpp"
@@ -77,5 +78,7 @@ namespace mck
         std::mutex m_triggerMutex;
         std::atomic<bool> m_triggerActive;
         std::condition_variable m_triggerCond;
+
+        moodycamel::ConcurrentQueue<std::pair<unsigned, double>> m_triggerQueue;
     };
 } // namespace mck

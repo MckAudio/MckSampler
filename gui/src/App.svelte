@@ -23,7 +23,6 @@
 	}
 
 	function ReceiveBackendMessage(_event) {
-		console.log("MSG", JSON.stringify(_event.detail));
 		if (
 			_event.detail.section === "data" &&
 			_event.detail.msgType === "full"
@@ -36,6 +35,8 @@
 		) {
 			transport = _event.detail.data;
 			transportReady = true;
+		} else {
+			console.log("MSG", JSON.stringify(_event.detail));
 		}
 	}
 
