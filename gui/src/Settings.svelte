@@ -6,11 +6,25 @@
 
     function SendTransCmd(_idx)
     {
-
+        SendMessage({
+            section: "transport",
+            msgType: "command",
+            data: JSON.stringify({
+                mode: _idx,
+                tempo: transport.tempo
+            })
+        });
     }
     function ChangeTempo(_bpm)
     {
-
+        SendMessage({
+            section: "transport",
+            msgType: "command",
+            data: JSON.stringify({
+                mode: 4,
+                tempo: _bpm
+            })
+        });
     }
 </script>
 

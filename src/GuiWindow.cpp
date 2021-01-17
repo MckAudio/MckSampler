@@ -4,20 +4,6 @@
 #include "cpp-httplib/httplib.h"
 #include "Types.hpp"
 
-void GetData(std::string idx, std::string msg, void *arg)
-{
-    GuiWindow *win = (GuiWindow *)arg;
-    std::cout << "GetData: " << idx << " : " << msg << std::endl;
-
-    win->SetIsOpen(true);
-
-    MCK::PadData pd;
-    pd.index = 42;
-
-    win->SendMessage(std::string("hallo"), std::string("hey"), pd);
-
-    return;
-}
 void MsgFromGui(std::string idx, std::string msg, void *arg)
 {
     GuiWindow *win = (GuiWindow *)arg;
@@ -29,7 +15,7 @@ void MsgFromGui(std::string idx, std::string msg, void *arg)
 }
 
 GuiWindow::GuiWindow()
-    : m_isInitialized(false), m_isOpen(false), m_done(false)
+    : m_isInitialized(false),m_done(false)
 {
     m_server = new httplib::Server();
     m_window = new webview::webview(true, nullptr);
@@ -71,7 +57,6 @@ bool GuiWindow::Show(std::string title, std::string path, unsigned port)
     m_window->set_title(title);
     m_window->set_size(1280, 720, WEBVIEW_HINT_NONE);
     m_window->navigate("http://localhost:" + std::to_string(port));
-    m_window->bind("GetData", GetData, (void *)this);
     m_window->bind("SendMessage", MsgFromGui, (void *)this);
 
     m_isInitialized = true;
@@ -126,10 +111,6 @@ void GuiWindow::SetProcessingPtr(mck::Processing *proc)
 bool GuiWindow::Evaluate(std::string msg)
 {
     if (m_isInitialized == false)
-    {
-        return false;
-    }
-    if (m_isOpen == false)
     {
         return false;
     }

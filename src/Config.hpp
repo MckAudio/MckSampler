@@ -27,6 +27,33 @@ namespace mck
         };
         void to_json(nlohmann::json &j, const Sample &s);
         void from_json(const nlohmann::json &j, Sample &s);
+
+        struct Step
+        {
+            bool active;
+            unsigned velocity;
+            Step() : active(false), velocity(100) {}
+        };
+        void to_json(nlohmann::json &j, const Step &s);
+        void from_json(const nlohmann::json &j, Step &s);
+
+        struct Pattern
+        {
+            unsigned nSteps;
+            std::vector<Step> steps;
+            Pattern() : nSteps(16)
+            {
+                steps.resize(nSteps);
+            }
+            Pattern(unsigned stepCount)
+                : nSteps(stepCount)
+            {
+                steps.resize(nSteps);
+            }
+        };
+        void to_json(nlohmann::json &j, const Pattern &p);
+        void from_json(const nlohmann::json &j, Pattern &p);
+
         struct Pad
         {
             bool available;
@@ -37,10 +64,25 @@ namespace mck
             double gain;
             double gainLin;
             double pitch;
-            Pad() : available(false), tone(255), ctrl(255), sample(""), sampleIdx(0), gain(1.0), pitch(1.0){};
+            unsigned nPatterns;
+            std::vector<Pattern> patterns;
+            Pad()
+                : available(false),
+                  tone(255),
+                  ctrl(255),
+                  sample(""),
+                  sampleIdx(0),
+                  gain(1.0),
+                  pitch(1.0),
+                  nPatterns(1),
+                  patterns()
+            {
+                patterns.resize(nPatterns);
+            };
         };
         void to_json(nlohmann::json &j, const Pad &p);
         void from_json(const nlohmann::json &j, Pad &p);
+
         struct Config
         {
             double tempo;

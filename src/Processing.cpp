@@ -208,6 +208,25 @@ void mck::Processing::ReceiveMessage(MCK::Message &msg)
                 return;
             }
         }
+    } else if (msg.section == "transport")
+    {
+        if (msg.msgType == "command")
+        {
+            try {
+                mck::TransportCommand cmd = nlohmann::json::parse(msg.data);
+                m_transport.ApplyCommand(cmd);
+            }
+            catch (std::exception &e)
+            {
+                return;
+            }
+        }
+    } else if (msg.section == "data")
+    {
+        if (msg.msgType == "get")
+        {
+            m_gui->SendMessage("data", "full", m_config);
+        }
     }
 }
 
@@ -427,11 +446,11 @@ void mck::Processing::TransportThread()
             return;
         }
 
-        TransportState ts;
-        m_transport.GetRTData(ts);
+        //TransportState ts;
+        //m_transport.GetRTData(ts);
         if (m_gui != nullptr)
         {
-            m_gui->SendMessage("transport", "realtime", ts);
+            m_gui->SendMessage("transport", "realtime", m_transportState);
         }
 
         std::this_thread::sleep_for(std::chrono::milliseconds(25));

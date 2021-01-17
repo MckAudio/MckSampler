@@ -23,6 +23,28 @@ void mck::sampler::from_json(const nlohmann::json &j, mck::sampler::Sample &s)
     s.sampleRate = j.at("sampleRate").get<unsigned>();
 }
 
+void mck::sampler::to_json(nlohmann::json &j, const Step &s)
+{
+    j["active"] = s.active;
+    j["velocity"] = s.velocity;
+}
+void mck::sampler::from_json(const nlohmann::json &j, Step &s)
+{
+    s.active = j.at("active").get<bool>();
+    s.velocity = std::min((unsigned)127, j.at("velocity").get<unsigned>());
+}
+
+void mck::sampler::to_json(nlohmann::json &j, const mck::sampler::Pattern &p)
+{
+    j["nSteps"] = p.nSteps;
+    j["steps"] = p.steps;
+}
+void mck::sampler::from_json(const nlohmann::json &j, mck::sampler::Pattern &p)
+{
+    p.nSteps = j.at("nSteps").get<unsigned>();
+    p.steps = j.at("steps").get<std::vector<Step>>();
+}
+
 void mck::sampler::to_json(nlohmann::json &j, const mck::sampler::Pad &p)
 {
     j["available"] = p.available;
@@ -32,6 +54,8 @@ void mck::sampler::to_json(nlohmann::json &j, const mck::sampler::Pad &p)
     j["sampleIdx"] = p.sampleIdx;
     j["gain"] = p.gain;
     j["pitch"] = p.pitch;
+    j["nPatterns"] = p.nPatterns;
+    j["patterns"] = p.patterns;
 }
 
 void mck::sampler::from_json(const nlohmann::json &j, mck::sampler::Pad &p)
@@ -43,6 +67,16 @@ void mck::sampler::from_json(const nlohmann::json &j, mck::sampler::Pad &p)
     p.sampleIdx = j.at("sampleIdx").get<unsigned>();
     p.gain = j.at("gain").get<double>();
     p.pitch = j.at("pitch").get<double>();
+    try
+    {
+        p.nPatterns = j.at("nPatterns").get<unsigned>();
+        p.patterns = j.at("patterns").get<std::vector<Pattern>>();
+    }
+    catch (std::exception &e)
+    {
+        p.nPatterns = 1;
+        p.patterns.resize(p.nPatterns);
+    }
 }
 
 void mck::sampler::to_json(nlohmann::json &j, const mck::sampler::Config &c)

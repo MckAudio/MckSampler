@@ -6,8 +6,10 @@
 	import Sequencer from "./Sequencer.svelte";
 	import Pads from "./Pads.svelte";
 
+	import { SelectedPad } from "./Stores.js";
+
 	let data = undefined;
-	let dataReady = true;
+	let dataReady = false;
 	let transport = undefined;
 	let transportReady = false;
 	let pads = Array.from({ length: 16 }, (_v, _i) => {
@@ -29,6 +31,7 @@
 		) {
 			data = _event.detail.data;
 			dataReady = true;
+			console.log("MSG", JSON.stringify(_event.detail));
 		} else if (
 			_event.detail.section === "transport" &&
 			_event.detail.msgType === "realtime"
@@ -42,11 +45,11 @@
 
 	onMount(() => {
 		document.addEventListener("backendMessage", ReceiveBackendMessage);
-		if (GetData) {
-			GetData().then((_data) => {
-				console.log(JSON.stringify(_data));
-				data = _data;
-				dataReady = true;
+		if (SendMessage) {
+			SendMessage({
+				section: "data",
+				msgType: "get",
+				data: ""
 			});
 		}
 
@@ -76,7 +79,7 @@
 			bind:clientWidth={contentWidth}
 		>
 			<Controls {data} />
-			<Sequencer {data} />
+			<Sequencer {data} {transport}/>
 			<Pads {data} />
 		</div>
 		<div class="master" />
