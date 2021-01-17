@@ -23,6 +23,9 @@ mck::Processing::Processing()
     : m_gui(nullptr),
       m_isInitialized(false),
       m_config(),
+      m_curConfig(0),
+      m_newConfig(1),
+      m_updateConfig(false),
       m_configFile(),
       m_configPath(""),
       m_client(nullptr),
@@ -31,6 +34,7 @@ mck::Processing::Processing()
       m_audioOutL(nullptr),
       m_audioOutR(nullptr),
       m_bufferSize(0),
+      m_transportStep(-1),
       m_samplePath(""),
       m_sampleRate(0),
       m_numVoices(0),
@@ -62,11 +66,11 @@ bool mck::Processing::Init()
     m_configPath = configPath.string();
     if (m_configFile.ReadFile(m_configPath))
     {
-        m_configFile.GetConfig(m_config);
+        m_configFile.GetConfig(m_config[m_curConfig]);
     }
-    if (m_config.numPads == 0)
+    if (m_config[m_curConfig].numPads == 0)
     {
-        m_config.pads.resize(16);
+        m_config[m_curConfig].pads.resize(16);
     }
 
     // 1B - Scan Samples
@@ -76,13 +80,13 @@ bool mck::Processing::Init()
     {
         std::filesystem::create_directories(samplePath);
     }
-    mck::sampler::ScanSampleFolder(samplePath.string(), m_config.samples);
-    m_config.numSamples = m_config.samples.size();
+    mck::sampler::ScanSampleFolder(samplePath.string(), m_config[m_curConfig].samples);
+    m_config[m_curConfig].numSamples = m_config[m_curConfig].samples.size();
     m_samplePath = samplePath.string();
 
     // 1C - Update File
-    mck::sampler::VerifyConfiguration(m_config);
-    m_configFile.SetConfig(m_config);
+    mck::sampler::VerifyConfiguration(m_config[m_curConfig]);
+    m_configFile.SetConfig(m_config[m_curConfig]);
     m_configFile.WriteFile(m_configPath);
 
     // 2 - Init JACK
@@ -122,21 +126,21 @@ bool mck::Processing::Init()
         return false;
     }
     // Connect inputs and outputs
-    if (m_config.reconnect)
+    if (m_config[m_curConfig].reconnect)
     {
-        if (mck::SetConnections(m_client, m_midiIn, m_config.midiInConnections, true) == false)
+        if (mck::SetConnections(m_client, m_midiIn, m_config[m_curConfig].midiInConnections, true) == false)
         {
             std::printf("Failed to connect port %s\n", jack_port_name(m_midiIn));
         }
-        if (mck::SetConnections(m_client, m_midiOut, m_config.midiOutConnections, true) == false)
+        if (mck::SetConnections(m_client, m_midiOut, m_config[m_curConfig].midiOutConnections, true) == false)
         {
             std::printf("Failed to connect port %s\n", jack_port_name(m_midiOut));
         }
-        if (mck::SetConnections(m_client, m_audioOutL, m_config.audioLeftConnections, false) == false)
+        if (mck::SetConnections(m_client, m_audioOutL, m_config[m_curConfig].audioLeftConnections, false) == false)
         {
             std::printf("Failed to connect port %s\n", jack_port_name(m_audioOutL));
         }
-        if (mck::SetConnections(m_client, m_audioOutR, m_config.audioRightConnections, false) == false)
+        if (mck::SetConnections(m_client, m_audioOutR, m_config[m_curConfig].audioRightConnections, false) == false)
         {
             std::printf("Failed to connect port %s\n", jack_port_name(m_audioOutR));
         }
@@ -144,7 +148,7 @@ bool mck::Processing::Init()
 
     // 5 - Initialized Transport
 
-    if (m_transport.Init(m_sampleRate, m_bufferSize, m_config.tempo) == false)
+    if (m_transport.Init(m_sampleRate, m_bufferSize, m_config[m_curConfig].tempo) == false)
     {
         return false;
     }
@@ -160,18 +164,18 @@ void mck::Processing::Close()
     if (m_client != nullptr)
     {
         // Save Connections
-        if (m_config.reconnect)
+        if (m_config[m_curConfig].reconnect)
         {
-            mck::GetConnections(m_client, m_midiIn, m_config.midiInConnections);
-            mck::GetConnections(m_client, m_midiOut, m_config.midiOutConnections);
-            mck::GetConnections(m_client, m_audioOutL, m_config.audioLeftConnections);
-            mck::GetConnections(m_client, m_audioOutR, m_config.audioRightConnections);
+            mck::GetConnections(m_client, m_midiIn, m_config[m_curConfig].midiInConnections);
+            mck::GetConnections(m_client, m_midiOut, m_config[m_curConfig].midiOutConnections);
+            mck::GetConnections(m_client, m_audioOutL, m_config[m_curConfig].audioLeftConnections);
+            mck::GetConnections(m_client, m_audioOutR, m_config[m_curConfig].audioRightConnections);
         }
         jack_client_close(m_client);
     }
 
     // Save File
-    m_configFile.SetConfig(m_config);
+    m_configFile.SetConfig(m_config[m_curConfig]);
     m_configFile.WriteFile(m_configPath);
 
     for (auto &s : m_samples)
@@ -208,11 +212,13 @@ void mck::Processing::ReceiveMessage(MCK::Message &msg)
                 return;
             }
         }
-    } else if (msg.section == "transport")
+    }
+    else if (msg.section == "transport")
     {
         if (msg.msgType == "command")
         {
-            try {
+            try
+            {
                 mck::TransportCommand cmd = nlohmann::json::parse(msg.data);
                 m_transport.ApplyCommand(cmd);
             }
@@ -221,11 +227,34 @@ void mck::Processing::ReceiveMessage(MCK::Message &msg)
                 return;
             }
         }
-    } else if (msg.section == "data")
+    }
+    else if (msg.section == "data")
     {
         if (msg.msgType == "get")
         {
-            m_gui->SendMessage("data", "full", m_config);
+            m_gui->SendMessage("data", "full", m_config[m_curConfig]);
+        }
+        else if (msg.msgType == "patch")
+        {
+            char newConfig = 1 - m_curConfig;
+            auto config = m_config[m_curConfig];
+            try
+            {
+                nlohmann::json j = config;
+                nlohmann::json jPatch = nlohmann::json::parse(msg.data);
+                config = j.patch(jPatch);
+            }
+            catch (std::exception &e)
+            {
+                std::fprintf(stderr, "Failed to apply data patch: %s", e.what());
+                m_gui->SendMessage("data", "full", m_config[m_curConfig]);
+                return;
+            }
+            mck::sampler::VerifyConfiguration(config);
+            m_config[1 - m_curConfig] = config;
+            m_newConfig = 1 - m_curConfig;
+            m_updateConfig = true;
+            m_gui->SendMessage("data", "full", config);
         }
     }
 }
@@ -242,7 +271,21 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
         return 0;
     }
 
+    if (m_updateConfig.load())
+    {
+        m_curConfig = m_newConfig;
+        m_updateConfig = false;
+    }
+
     m_transport.Process(m_midiOut, nframes, m_transportState);
+
+    int stepIdx = -1;
+    if (m_transportState.state == TS_RUNNING)
+    {
+        stepIdx = m_transportState.beat * 4;
+        stepIdx += (int)std::floor((double)m_transportState.pulse / (double)m_transportState.nPulses * 4.0);
+        stepIdx %= 16;
+    }
 
     void *midi_buf = jack_port_get_buffer(m_midiIn, nframes);
 
@@ -258,23 +301,23 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
         sysMsg = (midiEvent.buffer[0] & 0xf0) == 0xf0;
         chan = (midiEvent.buffer[0] & 0x0f);
 
-        if (sysMsg == false && chan == m_config.midiChan)
+        if (sysMsg == false && chan == m_config[m_curConfig].midiChan)
         {
             /*
             if (configMode == CONFIG_PADS)
             {
                 if ((midiEvent.buffer[0] & 0xf0) == 0x90)
                 {
-                    m_config.pads[configIdx].tone = (midiEvent.buffer[1] & 0x7f);
-                    printf("Saved note %X for pad #%d.\n\n", m_config.pads[configIdx].tone, configIdx + 1);
+                    m_config[m_curConfig].pads[configIdx].tone = (midiEvent.buffer[1] & 0x7f);
+                    printf("Saved note %X for pad #%d.\n\n", m_config[m_curConfig].pads[configIdx].tone, configIdx + 1);
                     configIdx += 1;
-                    if (configIdx >= m_config.numPads)
+                    if (configIdx >= m_config[m_curConfig].numPads)
                     {
                         printf("Finished configuration, entering play mode...\n");
                         configMode = false;
                         break;
                     }
-                    printf("Please play note for pad #%d on MIDI channel %d:\n", configIdx + 1, m_config.midiChan + 1);
+                    printf("Please play note for pad #%d on MIDI channel %d:\n", configIdx + 1, m_config[m_curConfig].midiChan + 1);
                     break;
                 }
             }
@@ -283,20 +326,20 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
                 if ((midiEvent.buffer[0] & 0xf0) == 0xb0)
                 {
 
-                    if (configIdx > 0 && (midiEvent.buffer[1] & 0x7f) == m_config.pads[configIdx - 1].ctrl)
+                    if (configIdx > 0 && (midiEvent.buffer[1] & 0x7f) == m_config[m_curConfig].pads[configIdx - 1].ctrl)
                     {
                         continue;
                     }
-                    m_config.pads[configIdx].ctrl = (midiEvent.buffer[1] & 0x7f);
-                    printf("Saved control %X for pad #%d.\n\n", m_config.pads[configIdx].ctrl, configIdx + 1);
+                    m_config[m_curConfig].pads[configIdx].ctrl = (midiEvent.buffer[1] & 0x7f);
+                    printf("Saved control %X for pad #%d.\n\n", m_config[m_curConfig].pads[configIdx].ctrl, configIdx + 1);
                     configIdx += 1;
-                    if (configIdx >= m_config.numPads)
+                    if (configIdx >= m_config[m_curConfig].numPads)
                     {
                         printf("Finished configuration, entering play mode...\n");
                         configMode = CONFIG_NONE;
                         break;
                     }
-                    printf("Please turn the controller for pad #%d on MIDI channel %d:\n", configIdx + 1, m_config.midiChan + 1);
+                    printf("Please turn the controller for pad #%d on MIDI channel %d:\n", configIdx + 1, m_config[m_curConfig].midiChan + 1);
                     break;
                 }
             }
@@ -304,16 +347,16 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
             {*/
             if ((midiEvent.buffer[0] & 0xf0) == 0x90)
             {
-                for (unsigned j = 0; j < m_config.numPads; j++)
+                for (unsigned j = 0; j < m_config[m_curConfig].numPads; j++)
                 {
-                    if ((midiEvent.buffer[1] & 0x7f) == m_config.pads[j].tone && m_config.pads[j].available)
+                    if ((midiEvent.buffer[1] & 0x7f) == m_config[m_curConfig].pads[j].tone && m_config[m_curConfig].pads[j].available)
                     {
                         m_voices[m_voiceIdx].playSample = true;
                         m_voices[m_voiceIdx].startIdx = midiEvent.time;
                         m_voices[m_voiceIdx].bufferIdx = 0;
-                        m_voices[m_voiceIdx].gain = ((float)(midiEvent.buffer[2] & 0x7f) / 127.0f) * m_config.pads[j].gainLin;
+                        m_voices[m_voiceIdx].gain = ((float)(midiEvent.buffer[2] & 0x7f) / 127.0f) * m_config[m_curConfig].pads[j].gainLin;
                         m_voices[m_voiceIdx].sampleIdx = j;
-                        m_voices[m_voiceIdx].pitch = m_config.pads[j].pitch;
+                        m_voices[m_voiceIdx].pitch = m_config[m_curConfig].pads[j].pitch;
 
                         m_voiceIdx = (m_voiceIdx + 1) % m_numVoices;
                     }
@@ -321,12 +364,12 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
             }
             else if ((midiEvent.buffer[0] & 0xf0) == 0xb0)
             {
-                for (unsigned j = 0; j < m_config.numPads; j++)
+                for (unsigned j = 0; j < m_config[m_curConfig].numPads; j++)
                 {
-                    if ((midiEvent.buffer[1] & 0x7f) == m_config.pads[j].ctrl)
+                    if ((midiEvent.buffer[1] & 0x7f) == m_config[m_curConfig].pads[j].ctrl)
                     {
-                        m_config.pads[j].gain = (float)(midiEvent.buffer[2] & 0x7f) / 127.0f;
-                        //m_config.pads[j].pitch = ((float)(midiEvent.buffer[2] & 0x7f) / 127.0f) * 1.5f + 0.5;
+                        m_config[m_curConfig].pads[j].gain = (float)(midiEvent.buffer[2] & 0x7f) / 127.0f;
+                        //m_config[m_curConfig].pads[j].pitch = ((float)(midiEvent.buffer[2] & 0x7f) / 127.0f) * 1.5f + 0.5;
                     }
                 }
             }
@@ -334,26 +377,65 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
     }
     //}
 
+    // GUI DRUM TRIGGER
     std::pair<unsigned, double> trigger;
     while (m_triggerQueue.try_dequeue(trigger))
     {
         unsigned idx = trigger.first;
         double strength = trigger.second;
 
-        if (idx < m_config.numPads)
+        if (idx < m_config[m_curConfig].numPads)
         {
-            if (m_config.pads[idx].available)
+            if (m_config[m_curConfig].pads[idx].available)
             {
                 m_voices[m_voiceIdx].playSample = true;
                 m_voices[m_voiceIdx].startIdx = 0;
                 m_voices[m_voiceIdx].bufferIdx = 0;
-                m_voices[m_voiceIdx].gain = m_config.pads[idx].gainLin * strength;
+                m_voices[m_voiceIdx].gain = m_config[m_curConfig].pads[idx].gainLin * strength;
                 m_voices[m_voiceIdx].sampleIdx = idx;
-                m_voices[m_voiceIdx].pitch = m_config.pads[idx].pitch;
+                m_voices[m_voiceIdx].pitch = m_config[m_curConfig].pads[idx].pitch;
 
                 m_voiceIdx = (m_voiceIdx + 1) % m_numVoices;
             }
         }
+    }
+
+    // Transport TRIGGER
+    if (stepIdx >= 0 && stepIdx != m_transportStep)
+    {
+        unsigned padIdx = 0;
+        unsigned patternIdx = (unsigned)std::floor((double)stepIdx / 16.0);
+        for (auto &pad : m_config[m_curConfig].pads)
+        {
+            if (pad.available == false)
+            {
+                padIdx += 1;
+                continue;
+            }
+            if (pad.nPatterns == 0)
+            {
+                padIdx += 1;
+                continue;
+            }
+
+            unsigned curPatIdx = patternIdx % pad.nPatterns;
+            unsigned curStepIdx = stepIdx % pad.patterns[curPatIdx].nSteps;
+
+            if (pad.patterns[curPatIdx].steps[curStepIdx].active)
+            {
+                double strength = (double)pad.patterns[curPatIdx].steps[curStepIdx].velocity / 127.0;
+                m_voices[m_voiceIdx].playSample = true;
+                m_voices[m_voiceIdx].startIdx = 0;
+                m_voices[m_voiceIdx].bufferIdx = 0;
+                m_voices[m_voiceIdx].gain = pad.gainLin * strength;
+                m_voices[m_voiceIdx].sampleIdx = padIdx;
+                m_voices[m_voiceIdx].pitch = pad.pitch;
+
+                m_voiceIdx = (m_voiceIdx + 1) % m_numVoices;
+            }
+            padIdx += 1;
+        }
+        m_transportStep = stepIdx;
     }
 
     /*
@@ -465,10 +547,10 @@ bool mck::Processing::PrepareSamples()
     }
 
     // Prepare Sound Files and Voices
-    m_numVoices = 4 * m_config.numPads;
+    m_numVoices = 4 * m_config[m_curConfig].numPads;
     m_voiceIdx = 0;
 
-    m_samples.resize(m_config.numPads);
+    m_samples.resize(m_config[m_curConfig].numPads);
     m_voices.resize(m_numVoices);
 
     SNDFILE *tmpSnd;
@@ -478,16 +560,16 @@ bool mck::Processing::PrepareSamples()
     float *tmpSrcBuf;
     unsigned numSrcFrames;
 
-    for (unsigned i = 0; i < m_config.numPads; i++)
+    for (unsigned i = 0; i < m_config[m_curConfig].numPads; i++)
     {
-        if (m_config.pads[i].sampleIdx >= m_config.numSamples)
+        if (m_config[m_curConfig].pads[i].sampleIdx >= m_config[m_curConfig].numSamples)
         {
-            m_config.pads[i].available = false;
+            m_config[m_curConfig].pads[i].available = false;
             continue;
         }
-        m_config.pads[i].available = true;
+        m_config[m_curConfig].pads[i].available = true;
         tmpInfo.format = 0;
-        tmpSnd = sf_open(m_config.samples[m_config.pads[i].sampleIdx].fullPath.c_str(), SFM_READ, &tmpInfo);
+        tmpSnd = sf_open(m_config[m_curConfig].samples[m_config[m_curConfig].pads[i].sampleIdx].fullPath.c_str(), SFM_READ, &tmpInfo);
         m_samples[i].numChans = tmpInfo.channels;
         m_samples[i].numFrames = tmpInfo.frames;
         tmpBuf = new float[tmpInfo.channels * tmpInfo.frames];
@@ -509,7 +591,7 @@ bool mck::Processing::PrepareSamples()
             int err = src_simple(&tmpSrc, SRC_SINC_BEST_QUALITY, m_samples[i].numChans);
             if (err != 0)
             {
-                std::fprintf(stderr, "Failed to apply samplerate conversion to sample %s:\n%s\nExiting...", m_config.pads[i].sample.c_str(), src_strerror(err));
+                std::fprintf(stderr, "Failed to apply samplerate conversion to sample %s:\n%s\nExiting...", m_config[m_curConfig].pads[i].sample.c_str(), src_strerror(err));
                 delete tmpBuf;
                 delete tmpSrcBuf;
                 return false;
@@ -522,7 +604,7 @@ bool mck::Processing::PrepareSamples()
             outInf.format = SF_FORMAT_WAV | SF_FORMAT_FLOAT;
             outInf.frames = m_samples[i].numFrames;
             outInf.samplerate = sampleRate;
-            std::filesystem::path outPath(m_config.samples[m_config.pads[i].sampleIdx].fullPath);
+            std::filesystem::path outPath(m_config[m_curConfig].samples[m_config[m_curConfig].pads[i].sampleIdx].fullPath);
             std::filesystem::path outName = outPath.filename();
             outName = std::filesystem::path(outName.stem().string() + "_" + std::to_string(outInf.samplerate) + outName.extension().string());
             outPath = outPath.parent_path().append(outName.string());

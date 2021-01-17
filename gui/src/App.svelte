@@ -8,6 +8,9 @@
 
 	import { SelectedPad } from "./Stores.js";
 
+	import * as jsonpatch from "fast-json-patch/index.mjs";
+	import { applyOperation } from 'fast-json-patch/index.mjs';
+
 	let data = undefined;
 	let dataReady = false;
 	let transport = undefined;

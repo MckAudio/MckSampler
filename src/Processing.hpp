@@ -47,7 +47,10 @@ namespace mck
         std::atomic<bool> m_done;
 
         // DATA Members
-        sampler::Config m_config;
+        sampler::Config m_config[2];
+        char m_curConfig;
+        char m_newConfig;
+        std::atomic<bool> m_updateConfig;
         ConfigFile m_configFile;
         std::string m_configPath;
 
@@ -65,6 +68,7 @@ namespace mck
         TransportState m_transportState;
         std::thread m_transportThread;
         std::mutex m_transportMutex;
+        int m_transportStep;
 
         // Wav Files
         std::string m_samplePath;
