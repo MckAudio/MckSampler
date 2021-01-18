@@ -35,6 +35,7 @@ mck::Processing::Processing()
       m_audioOutR(nullptr),
       m_bufferSize(0),
       m_transportStep(-1),
+      m_transportRate(0),
       m_samplePath(""),
       m_sampleRate(0),
       m_numVoices(0),
@@ -110,6 +111,7 @@ bool mck::Processing::Init()
 
     m_bufferSize = jack_get_buffer_size(m_client);
     m_sampleRate = jack_get_sample_rate(m_client);
+    m_transportRate = m_sampleRate;
 
     // 3 - Prepare Samples & Voices
 
@@ -187,6 +189,7 @@ void mck::Processing::Close()
         }
     }
 
+    m_transportCond.notify_all();
     if (m_transportThread.joinable())
     {
         m_transportThread.join();
@@ -276,14 +279,14 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
         m_curConfig = m_newConfig;
         m_updateConfig = false;
     }
-
-    m_transport.Process(m_midiOut, nframes, m_transportState);
+    TransportState ts;
+    m_transport.Process(m_midiOut, nframes, ts);
 
     int stepIdx = -1;
-    if (m_transportState.state == TS_RUNNING)
+    if (ts.state == TS_RUNNING)
     {
-        stepIdx = m_transportState.beat * 4;
-        stepIdx += (int)std::floor((double)m_transportState.pulse / (double)m_transportState.nPulses * 4.0);
+        stepIdx = ts.beat * 4;
+        stepIdx += (int)std::floor((double)ts.pulse / (double)ts.nPulses * 4.0);
         stepIdx %= 16;
     }
 
@@ -425,7 +428,7 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
             {
                 double strength = (double)pad.patterns[curPatIdx].steps[curStepIdx].velocity / 127.0;
                 m_voices[m_voiceIdx].playSample = true;
-                m_voices[m_voiceIdx].startIdx = 0;
+                m_voices[m_voiceIdx].startIdx = ts.pulseIdx % m_bufferSize;
                 m_voices[m_voiceIdx].bufferIdx = 0;
                 m_voices[m_voiceIdx].gain = pad.gainLin * strength;
                 m_voices[m_voiceIdx].sampleIdx = padIdx;
@@ -436,6 +439,15 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
             padIdx += 1;
         }
         m_transportStep = stepIdx;
+        m_transportState = ts;
+        m_transportCond.notify_one();
+        m_transportRate += m_bufferSize;
+    } else if (m_transportRate >= m_sampleRate || ts.state != m_transportState.state) {
+        m_transportState = ts;
+        m_transportCond.notify_one();
+        m_transportRate = 0;
+    } else {
+        m_transportRate += m_bufferSize;
     }
 
     /*
@@ -521,21 +533,20 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
 
 void mck::Processing::TransportThread()
 {
+    std::unique_lock lock(m_transportMutex);
     while (true)
     {
+        m_transportCond.wait(lock);
+
         if (m_done.load())
         {
             return;
         }
 
-        //TransportState ts;
-        //m_transport.GetRTData(ts);
         if (m_gui != nullptr)
         {
             m_gui->SendMessage("transport", "realtime", m_transportState);
         }
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(25));
     }
 }
 

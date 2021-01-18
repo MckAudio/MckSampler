@@ -68,7 +68,9 @@ namespace mck
         TransportState m_transportState;
         std::thread m_transportThread;
         std::mutex m_transportMutex;
+        std::condition_variable m_transportCond;
         int m_transportStep;
+        unsigned m_transportRate;
 
         // Wav Files
         std::string m_samplePath;

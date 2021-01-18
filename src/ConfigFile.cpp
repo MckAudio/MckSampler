@@ -55,11 +55,11 @@ bool mck::ConfigFile::WriteFile(std::string path)
     }
     VerifyPath(path);
 
-    std::ofstream confFile(m_filePath);
+    std::ofstream confFile(path);
     try
     {
         nlohmann::json j = m_config;
-        confFile << std::setw(4) << j << std::endl;
+        confFile << j.dump(4) << std::endl;
         confFile.close();
     }
     catch (std::exception &e)
