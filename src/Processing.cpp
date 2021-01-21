@@ -281,7 +281,7 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
     }
 
     TransportState ts;
-    m_transport.Process(m_midiOut, nframes, ts, m_client);
+    m_transport.Process(m_midiOut, nframes, ts);
 
     int stepIdx = -1;
     if (ts.state == TS_RUNNING)

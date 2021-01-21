@@ -54,6 +54,22 @@
                 </div>
             </div>
             <div class="control">
+                <i>Jack Transport:</i>
+                <div class="gritter">
+                    <Button
+                        value={transport.jackTransport > 0}
+                        Handler={_v => SendTransCmd(_v ? 6 : 5)}
+                    >Enable</Button
+                    >
+                    <Button
+                        value={transport.jackTransport == 2}
+                        disabled={transport.jackTransport == 0}
+                        Handler={_v => SendTransCmd(_v ? 7 : 6)}
+                    >Lead</Button
+                    >
+                </div>
+            </div>
+            <div class="control">
                 <i>Tempo:</i>
                 <SliderLabel
                     label={transport.tempo.toFixed(2) + " bpm"}
