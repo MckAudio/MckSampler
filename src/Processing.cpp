@@ -150,7 +150,7 @@ bool mck::Processing::Init()
 
     // 5 - Initialized Transport
 
-    if (m_transport.Init(m_sampleRate, m_bufferSize, m_config[m_curConfig].tempo) == false)
+    if (m_transport.Init(m_client, m_config[m_curConfig].tempo) == false)
     {
         return false;
     }
@@ -279,8 +279,9 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
         m_curConfig = m_newConfig;
         m_updateConfig = false;
     }
+
     TransportState ts;
-    m_transport.Process(m_midiOut, nframes, ts);
+    m_transport.Process(m_midiOut, nframes, ts, m_client);
 
     int stepIdx = -1;
     if (ts.state == TS_RUNNING)
