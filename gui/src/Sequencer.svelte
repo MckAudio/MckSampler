@@ -3,12 +3,16 @@
     import { SelectedPad, SelectedPattern } from "./Stores.js";
 
     import * as jsonpatch from 'fast-json-patch/index.mjs';
+import TwoChoicePad from "./mck/controls/TwoChoicePad.svelte";
 
     export let data = undefined;
     export let transport = undefined;
 
     let nStep = -1;
     let steps = [];
+    let blanks = Array.from({length: 15}, (_v, _i) => _i);
+
+    let useTriplet = false;
 
     $: if (transport !== undefined) {
         let pulsesPer16th = transport.nPulses / 4.0;
@@ -70,6 +74,10 @@
 <div class="main">
     {#if steps.length > 0}
     <div class="label">Step Sequencer:</div>
+        <TwoChoicePad icons={["./content/music-note.svg", "./content/music-notes.svg"]} labels={["1/4", "1/8"]}/>
+        {#each blanks as blank}
+            <div/>
+        {/each}
     {/if}
     {#each steps as step, i}
         <TogglePad
@@ -92,7 +100,7 @@
         grid-row-gap: 8px;
         grid-column-gap: 16px;
         grid-template-columns: repeat(16, 1fr);
-        grid-template-rows: auto 1fr;
+        grid-template-rows: auto 1fr 1fr;
     }
     .label {
         grid-column: 1/-1;
