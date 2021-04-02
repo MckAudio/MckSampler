@@ -3,6 +3,8 @@
 #include <nlohmann/json.hpp>
 #include <cstdio>
 #include <fstream>
+#include <sndfile.h>
+#include <samplerate.h>
 
 namespace fs = std::filesystem;
 
@@ -31,7 +33,8 @@ bool mck::SampleExplorer::Init(unsigned bufferSize, unsigned sampleRate, std::st
   m_sampleRate = sampleRate;
 
   fs::path sp(samplePath);
-  if (sp.is_absolute() == false) {
+  if (sp.is_absolute() == false)
+  {
     sp = fs::absolute(sp);
   }
 
@@ -87,9 +90,12 @@ void mck::SampleExplorer::RefreshSamples(std::vector<SamplePack> &packs)
               std::printf("File %s is malformed: %s\n", cfp.path().c_str(), e.what());
               continue;
             }
-            if (dp.path().is_absolute()) {
+            if (dp.path().is_absolute())
+            {
               m_packPaths.push_back(dp.path());
-            } else {
+            }
+            else
+            {
               m_packPaths.push_back(fs::absolute(dp.path()));
             }
           }
@@ -101,6 +107,98 @@ void mck::SampleExplorer::RefreshSamples(std::vector<SamplePack> &packs)
   packs = m_packs;
   return;
 }
+
+mck::SampleInfo mck::SampleExplorer::LoadSample(unsigned packIdx, unsigned sampleIdx)
+{
+  SampleInfo info;
+  info.valid = false;
+  info.packIdx = packIdx;
+  info.sampleIdx = sampleIdx;
+
+  if (m_isInitialized == false)
+  {
+    return info;
+  }
+  if (packIdx >= m_packs.size())
+  {
+    return info;
+  }
+  if (sampleIdx >= m_packs[packIdx].samples.size())
+  {
+    return info;
+  }
+
+  fs::path sndPath(m_packPaths[packIdx]);
+  sndPath.append(m_packs[packIdx].samples[sampleIdx].path);
+  info.path = sndPath.string();
+  if (fs::exists(sndPath) == false)
+  {
+    return info;
+  }
+
+  SNDFILE *snd;
+  SF_INFO sndInfo;
+
+  snd = sf_open(sndPath.c_str(), SFM_READ, &sndInfo);
+  if (snd == nullptr)
+  {
+    return info;
+  }
+
+  info.numChans = sndInfo.channels;
+  info.lengthSamps = sndInfo.frames;
+  info.sampleRate = sndInfo.samplerate;
+  info.lengthMs = (unsigned)std::floor(1000.0 * (double)info.lengthSamps / (double)info.sampleRate);
+
+  m_curSampleBuffer = (float *)malloc(info.lengthSamps * info.numChans * sizeof(float));
+  memset(m_curSampleBuffer, 0, info.lengthSamps * info.numChans * sizeof(float));
+
+  // Read Samples from File
+  unsigned numSrcFrames = sf_readf_float(snd, m_curSampleBuffer, sndInfo.frames);
+
+  // Samplerate conversion
+  if (info.sampleRate != m_sampleRate)
+  {
+  }
+
+  // Read Waveform
+  info.waveForm.resize(info.numChans);
+  for (unsigned c = 0; c < info.numChans; c++)
+  {
+    info.waveForm[c].resize(info.lengthMs, 0.0);
+  }
+  unsigned sampsPerMs = (unsigned)std::ceil(1000.0 / (double)info.sampleRate);
+  for (unsigned i = 0; i < info.lengthMs; i++)
+  {
+    for (unsigned c = 0; c < info.numChans; c++)
+    {
+      float wMax = 0.0f;
+      float wMin = 0.0f;
+      for (unsigned s = i * sampsPerMs; s < std::min((i + 1) * sampsPerMs, info.lengthSamps - i * sampsPerMs); s++)
+      {
+        float sample = m_curSampleBuffer[s * info.numChans + c];
+        if (sample > wMax)
+        {
+          wMax = sample;
+        }
+        else if (sample < wMin)
+        {
+          wMin = sample;
+        }
+      }
+      info.waveForm[c][i] = std::abs(wMin) > wMax ? wMin : wMax;
+    }
+  }
+
+  sf_close(snd);
+
+  free(m_curSampleBuffer);
+
+  info.valid = true;
+  m_curInfo = info;
+  return info;
+}
+
 bool mck::SampleExplorer::PlaySample(unsigned packIdx, unsigned sampleIdx)
 {
   if (m_isInitialized == false)
@@ -109,6 +207,9 @@ bool mck::SampleExplorer::PlaySample(unsigned packIdx, unsigned sampleIdx)
   }
 
   return true;
+}
+void mck::SampleExplorer::StopSample()
+{
 }
 void mck::SampleExplorer::ProcessAudio(float **output, unsigned numChannels)
 {

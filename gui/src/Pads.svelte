@@ -35,7 +35,8 @@
         grid-column-gap: 16px;
         grid-row-gap: 8px;
         grid-template-columns: repeat(8, 1fr);
-        grid-template-rows: auto 0px repeat(2, 1fr);
+        /*grid-template-rows: auto 0px repeat(2, 1fr);*/
+        grid-template-rows: 1fr 0px 1fr;
     }
     .label {
         grid-column: 1/-1;
@@ -49,7 +50,7 @@
 </style>
 
 <div class="main">
-    <div class="label">Drum Trigger:</div>
+    <!--<div class="label">Drum Trigger:</div>-->
     {#each upperPads as pad}
         <Pad selected={$SelectedPad === pad.index} label={pad.name} Handler={(_val) => PadHandler(pad.index, _val)} />
     {/each}

@@ -96,3 +96,37 @@ void mck::from_json(const nlohmann::json &j, SamplePack &s)
     s.categories = j.at("categories").get<std::vector<std::string>>();
     s.samples = j.at("samples").get<std::vector<SamplePackSample>>();
 }
+void mck::to_json(nlohmann::json &j, const SampleCommand &s)
+{
+    j["type"] = s.type;
+    j["packIdx"] = s.packIdx;
+    j["sampleIdx"] = s.sampleIdx;
+}
+void mck::from_json(const nlohmann::json &j, SampleCommand &s)
+{
+    s.type = j.at("type").get<std::string>();
+    s.packIdx = j.at("packIdx").get<unsigned>();
+    s.sampleIdx = j.at("sampleIdx").get<unsigned>();
+}
+void mck::to_json(nlohmann::json &j, const SampleInfo &s) {
+    j["valid"] = s.valid;
+    j["packIdx"] = s.packIdx;
+    j["sampleIdx"] = s.sampleRate;
+    j["sampleRate"] = s.sampleRate;
+    j["numChans"] = s.numChans;
+    j["lengthMs"] = s.lengthMs;
+    j["lengthSamps"] = s.lengthSamps;
+    j["path"] = s.path;
+    j["waveForm"] = s.waveForm;
+}
+void mck::from_json(const nlohmann::json &j, SampleInfo &s) {
+    s.valid = j.at("valid").get<bool>();
+    s.packIdx = j.at("packIdx").get<unsigned>();
+    s.sampleRate = j.at("sampleIdx").get<unsigned>();
+    s.sampleRate = j.at("sampleRate").get<unsigned>();
+    s.numChans = j.at("numChans").get<unsigned>();
+    s.lengthMs = j.at("lengthMs").get<unsigned>();
+    s.lengthSamps = j.at("lengthSamps").get<unsigned>();
+    s.path = j.at("path").get<std::string>();
+    s.waveForm = j.at("waveForm").get<std::vector<std::vector<double>>>();
+}

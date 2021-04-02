@@ -47,7 +47,7 @@
         grid-column-gap: 16px;
     }
     .header {
-        grid-column: 1/-2;
+        grid-column: 1/-1;
         font-family: mck-lato;
         font-size: 14px;
         font-weight: bold;
@@ -72,7 +72,7 @@
     <div class="header">
         Drum Controls:
     </div>
-    <Select items={pads} value={$SelectedPad} Handler={_idx => {SelectedPad.set(_idx);}}/>
+    <!--<Select items={pads} value={$SelectedPad} Handler={_idx => {SelectedPad.set(_idx);}}/>-->
     {#if pad !== undefined}
     <div class="settings">
         <div class="label">Gain:</div>

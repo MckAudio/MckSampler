@@ -111,4 +111,42 @@ namespace mck
     };
     void to_json(nlohmann::json &j, const SamplePack &s);
     void from_json(const nlohmann::json &j, SamplePack &s);
+
+    struct SampleCommand
+    {
+        std::string type;
+        unsigned packIdx;
+        unsigned sampleIdx;
+        SampleCommand()
+            : type("show"),
+              packIdx(0),
+              sampleIdx(0) {}
+    };
+    void to_json(nlohmann::json &j, const SampleCommand &s);
+    void from_json(const nlohmann::json &j, SampleCommand &s);
+
+    struct SampleInfo
+    {
+        bool valid;
+        unsigned packIdx;
+        unsigned sampleIdx;
+        unsigned sampleRate;
+        unsigned numChans;
+        unsigned lengthMs;
+        unsigned lengthSamps;
+        std::string path;
+        std::vector<std::vector<double>> waveForm;
+        SampleInfo()
+            : valid(false),
+              packIdx(0),
+              sampleIdx(0),
+              sampleRate(0),
+              numChans(1),
+              lengthMs(0),
+              lengthSamps(0),
+              path(""),
+              waveForm() {}
+    };
+    void to_json(nlohmann::json &j, const SampleInfo &s);
+    void from_json(const nlohmann::json &j, SampleInfo &s);
 }

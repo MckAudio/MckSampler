@@ -124,13 +124,13 @@ bool mck::Processing::Init()
         return false;
     }
 
-
     // 3B - Scan Sample Packs
     std::filesystem::path samplePackPath(homeDir);
     samplePackPath.append(".local").append("share").append("mck").append("sampler");
     m_samplePackPath = samplePackPath.string();
     m_sampleExplorer = new SampleExplorer();
-    if (m_sampleExplorer->Init(m_bufferSize, m_sampleRate, m_samplePackPath) == false) {
+    if (m_sampleExplorer->Init(m_bufferSize, m_sampleRate, m_samplePackPath) == false)
+    {
         std::fprintf(stderr, "Failed to init SampleExplorer!\n");
         return false;
     }
@@ -265,7 +265,7 @@ void mck::Processing::ReceiveMessage(mck::Message &msg)
             }
             catch (std::exception &e)
             {
-                std::fprintf(stderr, "Failed to apply data patch: %s", e.what());
+                std::fprintf(stderr, "Failed to apply data patch: %s\n", e.what());
                 m_gui->SendMessage("data", "full", m_config[m_curConfig]);
                 return;
             }
@@ -282,6 +282,23 @@ void mck::Processing::ReceiveMessage(mck::Message &msg)
         {
             m_sampleExplorer->RefreshSamples(m_samplePacks);
             m_gui->SendMessage("samples", "packs", m_samplePacks);
+        } else if (msg.msgType == "command") {
+            SampleCommand cmd;
+            try {
+                cmd = nlohmann::json::parse(msg.data);
+            } catch(std::exception &e)
+            {
+                std::fprintf(stderr, "Failed to parse sample command: %s\n", e.what());
+                return;
+            }
+            if (cmd.type == "load") {
+                SampleInfo info = m_sampleExplorer->LoadSample(cmd.packIdx, cmd.sampleIdx);
+                m_gui->SendMessage("samples", "info", info);
+            } else if (cmd.type == "play") {
+                m_sampleExplorer->PlaySample(cmd.packIdx, cmd.sampleIdx);
+            } else if (cmd.type == "stop") {
+                m_sampleExplorer->StopSample();
+            }
         }
     }
 }
@@ -467,11 +484,15 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
         m_transportState = ts;
         m_transportCond.notify_one();
         m_transportRate += m_bufferSize;
-    } else if (m_transportRate >= m_sampleRate || ts.state != m_transportState.state) {
+    }
+    else if (m_transportRate >= m_sampleRate || ts.state != m_transportState.state)
+    {
         m_transportState = ts;
         m_transportCond.notify_one();
         m_transportRate = 0;
-    } else {
+    }
+    else
+    {
         m_transportRate += m_bufferSize;
     }
 

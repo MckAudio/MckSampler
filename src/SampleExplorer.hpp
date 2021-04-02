@@ -13,7 +13,9 @@ namespace mck
         bool Init(unsigned bufferSize, unsigned sampleRate, std::string samplePath);
         
         void RefreshSamples(std::vector<SamplePack> &packs);
+        SampleInfo LoadSample(unsigned packIdx, unsigned sampleIdx);
         bool PlaySample(unsigned packIdx, unsigned sampleIdx);
+        void StopSample();
         void ProcessAudio(float **output, unsigned numChannels);
 
     private:
@@ -23,5 +25,7 @@ namespace mck
         std::string m_samplePath;
         std::vector<SamplePack> m_packs;
         std::vector<std::string> m_packPaths;
+        SampleInfo m_curInfo;
+        float *m_curSampleBuffer;
     };
 };
