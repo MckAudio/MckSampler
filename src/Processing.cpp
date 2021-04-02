@@ -1,6 +1,7 @@
 #include "Processing.hpp"
 #include "GuiWindow.hpp"
 #include "helper/JackHelper.hpp"
+#include "SampleExplorer.hpp"
 
 // System
 #include <cstdio>
@@ -40,7 +41,10 @@ mck::Processing::Processing()
       m_sampleRate(0),
       m_numVoices(0),
       m_voiceIdx(0),
-      m_triggerActive(false)
+      m_triggerActive(false),
+      m_samplePackPath(""),
+      m_sampleExplorer(nullptr),
+      m_samplePacks()
 {
 }
 
@@ -113,12 +117,24 @@ bool mck::Processing::Init()
     m_sampleRate = jack_get_sample_rate(m_client);
     m_transportRate = m_sampleRate;
 
-    // 3 - Prepare Samples & Voices
+    // 3A - Prepare Samples & Voices
 
     if (PrepareSamples() == false)
     {
         return false;
     }
+
+
+    // 3B - Scan Sample Packs
+    std::filesystem::path samplePackPath(homeDir);
+    samplePackPath.append(".local").append("share").append("mck").append("sampler");
+    m_samplePackPath = samplePackPath.string();
+    m_sampleExplorer = new SampleExplorer();
+    if (m_sampleExplorer->Init(m_bufferSize, m_sampleRate, m_samplePackPath) == false) {
+        std::fprintf(stderr, "Failed to init SampleExplorer!\n");
+        return false;
+    }
+    m_sampleExplorer->RefreshSamples(m_samplePacks);
 
     // 4 - Start JACK Processing
     err = jack_activate(m_client);
@@ -130,19 +146,19 @@ bool mck::Processing::Init()
     // Connect inputs and outputs
     if (m_config[m_curConfig].reconnect)
     {
-        if (mck::SetConnections(m_client, m_midiIn, m_config[m_curConfig].midiInConnections, true) == false)
+        if (jack::SetConnections(m_client, m_midiIn, m_config[m_curConfig].midiInConnections, true) == false)
         {
             std::printf("Failed to connect port %s\n", jack_port_name(m_midiIn));
         }
-        if (mck::SetConnections(m_client, m_midiOut, m_config[m_curConfig].midiOutConnections, true) == false)
+        if (jack::SetConnections(m_client, m_midiOut, m_config[m_curConfig].midiOutConnections, true) == false)
         {
             std::printf("Failed to connect port %s\n", jack_port_name(m_midiOut));
         }
-        if (mck::SetConnections(m_client, m_audioOutL, m_config[m_curConfig].audioLeftConnections, false) == false)
+        if (jack::SetConnections(m_client, m_audioOutL, m_config[m_curConfig].audioLeftConnections, false) == false)
         {
             std::printf("Failed to connect port %s\n", jack_port_name(m_audioOutL));
         }
-        if (mck::SetConnections(m_client, m_audioOutR, m_config[m_curConfig].audioRightConnections, false) == false)
+        if (jack::SetConnections(m_client, m_audioOutR, m_config[m_curConfig].audioRightConnections, false) == false)
         {
             std::printf("Failed to connect port %s\n", jack_port_name(m_audioOutR));
         }
@@ -168,10 +184,10 @@ void mck::Processing::Close()
         // Save Connections
         if (m_config[m_curConfig].reconnect)
         {
-            mck::GetConnections(m_client, m_midiIn, m_config[m_curConfig].midiInConnections);
-            mck::GetConnections(m_client, m_midiOut, m_config[m_curConfig].midiOutConnections);
-            mck::GetConnections(m_client, m_audioOutL, m_config[m_curConfig].audioLeftConnections);
-            mck::GetConnections(m_client, m_audioOutR, m_config[m_curConfig].audioRightConnections);
+            jack::GetConnections(m_client, m_midiIn, m_config[m_curConfig].midiInConnections);
+            jack::GetConnections(m_client, m_midiOut, m_config[m_curConfig].midiOutConnections);
+            jack::GetConnections(m_client, m_audioOutL, m_config[m_curConfig].audioLeftConnections);
+            jack::GetConnections(m_client, m_audioOutR, m_config[m_curConfig].audioRightConnections);
         }
         jack_client_close(m_client);
     }
@@ -198,7 +214,7 @@ void mck::Processing::Close()
     m_isInitialized = false;
 }
 
-void mck::Processing::ReceiveMessage(MCK::Message &msg)
+void mck::Processing::ReceiveMessage(mck::Message &msg)
 {
     if (msg.section == "pads")
     {
@@ -206,7 +222,7 @@ void mck::Processing::ReceiveMessage(MCK::Message &msg)
         {
             try
             {
-                MCK::TriggerData data = nlohmann::json::parse(msg.data);
+                mck::TriggerData data = nlohmann::json::parse(msg.data);
                 std::printf("Triggering PAD #%d\n", data.index + 1);
                 m_triggerQueue.try_enqueue(std::pair<unsigned, double>(data.index, data.strength));
             }
@@ -258,6 +274,14 @@ void mck::Processing::ReceiveMessage(MCK::Message &msg)
             m_newConfig = 1 - m_curConfig;
             m_updateConfig = true;
             m_gui->SendMessage("data", "full", config);
+        }
+    }
+    else if (msg.section == "samples")
+    {
+        if (msg.msgType == "get")
+        {
+            m_sampleExplorer->RefreshSamples(m_samplePacks);
+            m_gui->SendMessage("samples", "packs", m_samplePacks);
         }
     }
 }
@@ -472,7 +496,7 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
             continue;
         }
 
-        MCK::AudioSample *s = &m_samples[v.sampleIdx];
+        mck::AudioSample *s = &m_samples[v.sampleIdx];
         /*
         for (unsigned i = 0; i < s->numChans; i++)
         {

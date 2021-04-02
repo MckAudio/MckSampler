@@ -86,11 +86,11 @@ void GuiWindow::Close()
 }
 void GuiWindow::ReceiveMessage(std::string msg)
 {
-    std::vector<MCK::Message> mckMsgs;
+    std::vector<mck::Message> mckMsgs;
     try
     {
         nlohmann::json j = nlohmann::json::parse(msg);
-        mckMsgs = j.get<std::vector<MCK::Message>>();
+        mckMsgs = j.get<std::vector<mck::Message>>();
     }
     catch (std::exception &e)
     {

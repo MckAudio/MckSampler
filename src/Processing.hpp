@@ -20,6 +20,8 @@ class GuiWindow;
 
 namespace mck
 {
+    class SampleExplorer;
+
     class Processing
     {
     public:
@@ -31,7 +33,7 @@ namespace mck
         bool Init();
         void Close();
 
-        void ReceiveMessage(MCK::Message &msg);
+        void ReceiveMessage(mck::Message &msg);
 
         void SetGuiPtr(GuiWindow *gui);
 
@@ -74,8 +76,8 @@ namespace mck
 
         // Wav Files
         std::string m_samplePath;
-        std::vector<MCK::AudioSample> m_samples;
-        std::vector<MCK::AudioVoice> m_voices;
+        std::vector<mck::AudioSample> m_samples;
+        std::vector<mck::AudioVoice> m_voices;
         unsigned m_numVoices;
         unsigned m_voiceIdx;
 
@@ -86,5 +88,10 @@ namespace mck
         std::condition_variable m_triggerCond;
 
         moodycamel::ConcurrentQueue<std::pair<unsigned, double>> m_triggerQueue;
+
+        // Sample Explorer
+        std::string m_samplePackPath;
+        SampleExplorer *m_sampleExplorer;
+        std::vector<SamplePack> m_samplePacks;
     };
 } // namespace mck

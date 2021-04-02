@@ -39,7 +39,7 @@ public:
             return false;
         }
 
-        auto outMsg = MCK::Message();
+        auto outMsg = mck::Message();
         outMsg.section = section;
         outMsg.msgType = msgType;
         try

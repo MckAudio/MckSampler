@@ -1,5 +1,5 @@
 
-void MsgToFrontEnd(MCK::Message &msg)
+void MsgToFrontEnd(mck::Message &msg)
 {
     nlohmann::json j = msg;
     std::string out = "ReceiveMessage(\"" + j.dump() + "\");";
@@ -12,7 +12,7 @@ void MsgToFrontEnd(MCK::Message &msg)
 template <typename T>
 void MsgToGui(std::string section, std::string msgType, T &data)
 {
-    auto outMsg = MCK::Message();
+    auto outMsg = mck::Message();
     outMsg.section = "data";
     outMsg.msgType = "full";
     nlohmann::json j = outMsg;
@@ -33,10 +33,10 @@ std::string GetData(std::string msg)
 std::string ChangePadValue(std::string msg)
 {
     using json = nlohmann::json;
-    std::vector<MCK::PadData> messages;
+    std::vector<mck::PadData> messages;
     try {
         json j = json::parse(msg);
-        messages = j.get<std::vector<MCK::PadData>>();
+        messages = j.get<std::vector<mck::PadData>>();
     }
     catch (std::)
 }*/
@@ -45,12 +45,12 @@ std::string SendMessage(std::string msg)
 {
     m_guiReady = true;
     using json = nlohmann::json;
-    std::vector<MCK::Message> messages;
+    std::vector<mck::Message> messages;
     bool update = false;
     try
     {
         json j = json::parse(msg);
-        messages = j.get<std::vector<MCK::Message>>();
+        messages = j.get<std::vector<mck::Message>>();
     }
     catch (std::exception &e)
     {
@@ -70,7 +70,7 @@ std::string SendMessage(std::string msg)
                 {
                     m_triggerCond.wait(lock);
                 }
-                MCK::TriggerData data = json::parse(messages[i].data);
+                mck::TriggerData data = json::parse(messages[i].data);
                 int triggerIdx = data.index;
                 if (triggerIdx >= 0)
                 {
@@ -80,7 +80,7 @@ std::string SendMessage(std::string msg)
             }
             else if (messages[i].msgType == "change")
             {
-                MCK::PadData data = json::parse(messages[i].data);
+                mck::PadData data = json::parse(messages[i].data);
                 if (data.index >= 0 && data.index < m_config.numPads)
                 {
                     if (data.type == "gain")
