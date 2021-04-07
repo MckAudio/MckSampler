@@ -2,6 +2,7 @@
     import { onMount, onDestroy } from "svelte";
     import Select from "./mck/controls/Select.svelte";
     import Button from "./mck/controls/Button.svelte";
+    import WaveForm from "./mck/dsp/WaveForm.svelte";
 
     export let data = undefined;
     export let samples = undefined;
@@ -21,7 +22,6 @@
     let activeSample = undefined;
 
     $: if (samplesReady) {
-        console.log("SAMPLES", JSON.stringify(samples));
         packs = Array.from(samples, (_pack) => _pack.name);
         if (activePack >= packs.length) {
             activePack = undefined;
@@ -94,7 +94,7 @@
             <div class="table">
                 {#each samples[activePack].samples as sample, i}
                     {#if sample.type === activeCategory}
-                        <i>{i + 1}</i>
+                        <i>{sample.index}</i>
                         <span>{sample.name}</span>
                         <Button value={i === activeSample} Handler={() => SelectSample(i)}>Select</Button>
                     {/if}
@@ -115,6 +115,9 @@
             <div class="text">{sampleInfo.lengthMs} ms</div>
             <div class="label">SampleRate:</div>
             <div class="text">{sampleInfo.sampleRate}</div>
+            <div class="wave">
+                <WaveForm data={sampleInfo.waveForm}/>
+            </div>
         </div>
     {/if}
 </div>
@@ -147,7 +150,11 @@
         display: grid;
         grid-gap: 8px;
         grid-template-columns: auto 1fr;
-        grid-template-rows: repeat(4, auto) 1fr;
+        grid-template-rows: repeat(4, auto) 1fr 1fr;
+    }
+    .wave {
+        overflow: hidden;
+        grid-column: 1/-1;
     }
     span,
     i, .text, .label {

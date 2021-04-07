@@ -161,14 +161,17 @@ mck::SampleInfo mck::SampleExplorer::LoadSample(unsigned packIdx, unsigned sampl
   {
   }
 
+  // 1/5 ms
+  unsigned sampsPerMs = (unsigned)std::ceil((double)info.sampleRate / 5000.0);
+  unsigned lengthMs = (unsigned)std::floor(5000.0 * (double)info.lengthSamps / (double)info.sampleRate);
+
   // Read Waveform
   info.waveForm.resize(info.numChans);
   for (unsigned c = 0; c < info.numChans; c++)
   {
-    info.waveForm[c].resize(info.lengthMs, 0.0);
+    info.waveForm[c].resize(lengthMs, 0.0);
   }
-  unsigned sampsPerMs = (unsigned)std::ceil(1000.0 / (double)info.sampleRate);
-  for (unsigned i = 0; i < info.lengthMs; i++)
+  for (unsigned i = 0; i < lengthMs; i++)
   {
     for (unsigned c = 0; c < info.numChans; c++)
     {
