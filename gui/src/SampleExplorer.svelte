@@ -21,6 +21,15 @@
     let categoryName = "";
     let activeSample = undefined;
 
+    /*
+    $: if (sampleInfo !== undefined && sampleInfo.valid)
+    {
+        infoReady = true;
+        activePack = sampleInfo.packIdx;
+        activeSample = sampleInfo.sampleIdx;
+        activeCategory = samples[activePack].samples[activeSample].type;
+    }*/
+
     $: if (samplesReady) {
         packs = Array.from(samples, (_pack) => _pack.name);
         if (activePack >= packs.length) {
@@ -56,6 +65,34 @@
         });
         activeSample = _idx;
     }
+
+    function PlaySample(_idx) {
+        _idx = _idx !== undefined ? _idx : activeSample;
+        SendMessage({
+            section: "samples",
+            msgType: "command",
+            data: JSON.stringify({
+                type: "play",
+                packIdx: activePack,
+                sampleIdx: _idx
+            })
+        });
+        activeSample = _idx;
+    }
+    
+    function StopSample(_idx) {
+        _idx = _idx !== undefined ? _idx : activeSample;
+        SendMessage({
+            section: "samples",
+            msgType: "command",
+            data: JSON.stringify({
+                type: "stop",
+                packIdx: activePack,
+                sampleIdx: _idx
+            })
+        });
+    }
+
 
     onMount(() => {
         if (SendMessage) {
@@ -96,7 +133,8 @@
                     {#if sample.type === activeCategory}
                         <i>{sample.index}</i>
                         <span>{sample.name}</span>
-                        <Button value={i === activeSample} Handler={() => SelectSample(i)}>Select</Button>
+                        <Button Handler={() => PlaySample(i)} title="Preview"></Button>
+                        <Button value={i === activeSample} Handler={() => SelectSample(i)} title="Select"></Button>
                     {/if}
                 {/each}
             </div>
@@ -118,6 +156,11 @@
             <div class="wave">
                 <WaveForm data={sampleInfo.waveForm}/>
             </div>
+            <div class="buttons">
+                <Button Handler={() => StopSample()}>Stop</Button>
+                <Button Handler={() => PlaySample()}>Play</Button>
+                <Button>Assign</Button>
+            </div>
         </div>
     {/if}
 </div>
@@ -128,7 +171,7 @@
         width: 100%;
         height: 100%;
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr 2fr;
         grid-column-gap: 16px;
     }
     .overview {
@@ -141,16 +184,26 @@
     .table {
         overflow-y: scroll;
         display: grid;
-        grid-template-columns: auto 1fr auto;
+        grid-template-columns: auto 1fr auto auto;
         grid-auto-rows: auto;
         grid-gap: 8px;
     }
     .detail {
-        overflow: hidden;
+        overflow-x: hidden;
+        overflow-y: auto;
         display: grid;
         grid-gap: 8px;
         grid-template-columns: auto 1fr;
-        grid-template-rows: repeat(4, auto) 1fr 1fr;
+        grid-template-rows: repeat(4, auto) minmax(50px, 200px) auto 1fr;
+    }
+    .buttons {
+        grid-column: 1/-1;
+        width: 100%;
+        height: 100%;
+        display: grid;
+        grid-gap: 8px;
+        grid-auto-flow: column;
+        grid-auto-columns: min-content;
     }
     .wave {
         overflow: hidden;

@@ -150,6 +150,12 @@ mck::SampleInfo mck::SampleExplorer::LoadSample(unsigned packIdx, unsigned sampl
   info.sampleRate = sndInfo.samplerate;
   info.lengthMs = (unsigned)std::floor(1000.0 * (double)info.lengthSamps / (double)info.sampleRate);
 
+  if (m_curSampleBuffer != nullptr)
+  {
+    free(m_curSampleBuffer);
+    m_curSampleBuffer = nullptr;
+  }
+
   m_curSampleBuffer = (float *)malloc(info.lengthSamps * info.numChans * sizeof(float));
   memset(m_curSampleBuffer, 0, info.lengthSamps * info.numChans * sizeof(float));
 
@@ -161,9 +167,9 @@ mck::SampleInfo mck::SampleExplorer::LoadSample(unsigned packIdx, unsigned sampl
   {
   }
 
-  // 1/5 ms
-  unsigned sampsPerMs = (unsigned)std::ceil((double)info.sampleRate / 5000.0);
-  unsigned lengthMs = (unsigned)std::floor(5000.0 * (double)info.lengthSamps / (double)info.sampleRate);
+  // 500us
+  unsigned sampsPerMs = (unsigned)std::ceil((double)info.sampleRate / 2000.0);
+  unsigned lengthMs = (unsigned)std::floor(2000.0 * (double)info.lengthSamps / (double)info.sampleRate);
 
   // Read Waveform
   info.waveForm.resize(info.numChans);
@@ -177,7 +183,7 @@ mck::SampleInfo mck::SampleExplorer::LoadSample(unsigned packIdx, unsigned sampl
     {
       float wMax = 0.0f;
       float wMin = 0.0f;
-      for (unsigned s = i * sampsPerMs; s < std::min((i + 1) * sampsPerMs, info.lengthSamps - i * sampsPerMs); s++)
+      for (unsigned s = i * sampsPerMs; s < std::min((i + 1) * sampsPerMs, info.lengthSamps); s++)
       {
         float sample = m_curSampleBuffer[s * info.numChans + c];
         if (sample > wMax)
@@ -195,25 +201,124 @@ mck::SampleInfo mck::SampleExplorer::LoadSample(unsigned packIdx, unsigned sampl
 
   sf_close(snd);
 
-  free(m_curSampleBuffer);
-
   info.valid = true;
   m_curInfo = info;
   return info;
 }
 
-bool mck::SampleExplorer::PlaySample(unsigned packIdx, unsigned sampleIdx)
+mck::SampleInfo mck::SampleExplorer::PlaySample(unsigned packIdx, unsigned sampleIdx)
 {
+  SampleInfo ret;
   if (m_isInitialized == false)
   {
-    return false;
+    return ret;
   }
 
-  return true;
+  StopSample();
+
+  if (packIdx != m_curInfo.packIdx || sampleIdx != m_curInfo.sampleIdx || m_curInfo.valid == false)
+  {
+    ret = LoadSample(packIdx, sampleIdx);
+  } else {
+    ret = m_curInfo;
+  }
+
+  if (m_curInfo.valid == false)
+  {
+    return ret;
+  }
+
+  m_waveBuffer.resize(m_curInfo.numChans);
+  for (unsigned c = 0; c < m_curInfo.numChans; c++)
+  {
+    m_waveBuffer[c].resize(m_curInfo.lengthSamps, 0.0);
+  }
+
+  for (unsigned s = 0; s < m_curInfo.lengthSamps; s++)
+  {
+    for (unsigned c = 0; c < m_curInfo.numChans; c++)
+    {
+      m_waveBuffer[c][s] = m_curSampleBuffer[s * m_curInfo.numChans + c];
+    }
+  }
+
+  PlayState state;
+  state.active = true;
+  state.stop = false;
+  state.idx = 0;
+  state.len = m_curInfo.lengthSamps;
+
+  if (m_isProcessing.load())
+  {
+    std::mutex tmpMutex;
+    std::unique_lock lock(tmpMutex);
+    m_processCond.wait(lock);
+  }
+
+  m_state = state;
+
+  return ret;
 }
 void mck::SampleExplorer::StopSample()
 {
+  if (m_isInitialized == false)
+  {
+    return;
+  }
+  if (m_isProcessing.load())
+  {
+    std::mutex tmpMutex;
+    std::unique_lock lock(tmpMutex);
+    m_processCond.wait(lock);
+  }
+  m_state.stop = true;
 }
-void mck::SampleExplorer::ProcessAudio(float **output, unsigned numChannels)
+void mck::SampleExplorer::ProcessAudio(float *outLeft, float *outRight, unsigned nframes)
 {
+  if (m_isInitialized == false)
+  {
+    m_isProcessing = false;
+    m_processCond.notify_all();
+    return;
+  }
+  m_isProcessing = true;
+
+  if (m_state.stop)
+  {
+    m_state.active = false;
+    m_state.stop = false;
+    return;
+  }
+
+  if (m_state.active)
+  {
+    unsigned samplesLeft = m_state.len - m_state.idx;
+    if (samplesLeft <= nframes)
+    {
+      m_state.active = false;
+    }
+    if (m_waveBuffer.size() == 1)
+    {
+      for (unsigned s = 0; s < std::min(samplesLeft, nframes); s++)
+      {
+        outLeft[s] += m_waveBuffer[0][s + m_state.idx] * 0.707;
+        outRight[s] += m_waveBuffer[0][s + m_state.idx] * 0.707;
+      }
+    }
+    else
+    {
+      for (unsigned s = 0; s < std::min(samplesLeft, nframes); s++)
+      {
+        outLeft[s] += m_waveBuffer[0][s + m_state.idx];
+      }
+      for (unsigned s = 0; s < std::min(samplesLeft, nframes); s++)
+      {
+        outRight[s] += m_waveBuffer[1][s + m_state.idx];
+      }
+    }
+    m_state.idx += nframes;
+  }
+
+  m_isProcessing = false;
+  m_processCond.notify_all();
 }

@@ -295,7 +295,8 @@ void mck::Processing::ReceiveMessage(mck::Message &msg)
                 SampleInfo info = m_sampleExplorer->LoadSample(cmd.packIdx, cmd.sampleIdx);
                 m_gui->SendMessage("samples", "info", info);
             } else if (cmd.type == "play") {
-                m_sampleExplorer->PlaySample(cmd.packIdx, cmd.sampleIdx);
+                SampleInfo info = m_sampleExplorer->PlaySample(cmd.packIdx, cmd.sampleIdx);
+                m_gui->SendMessage("samples", "info", info);
             } else if (cmd.type == "stop") {
                 m_sampleExplorer->StopSample();
             }
@@ -573,6 +574,8 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
             v.playSample = false;
         }
     }
+
+    m_sampleExplorer->ProcessAudio(out_l, out_r, nframes);
 
     return 0;
 }
