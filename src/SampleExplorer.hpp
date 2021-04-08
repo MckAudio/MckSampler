@@ -11,7 +11,8 @@ namespace mck
 {
     class SampleExplorer
     {
-        struct PlayState {
+        struct PlayState
+        {
             bool active;
             bool stop;
             unsigned idx;
@@ -23,10 +24,11 @@ namespace mck
         SampleExplorer();
         ~SampleExplorer();
         bool Init(unsigned bufferSize, unsigned sampleRate, std::string samplePath);
-        
+
         void RefreshSamples(std::vector<SamplePack> &packs);
         WaveInfoDetail LoadSample(unsigned packIdx, unsigned sampleIdx);
         WaveInfoDetail PlaySample(unsigned packIdx, unsigned sampleIdx);
+        WaveInfoDetail GetSample(unsigned packIdx, unsigned sampleIdx, std::vector<std::vector<float>> &buffer);
         void StopSample();
         void ProcessAudio(float *outLeft, float *outRight, unsigned nframes);
 

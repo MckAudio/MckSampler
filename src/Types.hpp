@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <atomic>
 #include "nlohmann/json.hpp"
 #include "helper/WaveHelper.hpp"
 //#include <rubberband/RubberBandStretcher.h>
@@ -23,12 +24,14 @@ namespace mck
     struct AudioVoice
     {
         bool playSample;
+        bool reverseSample;
         unsigned sampleIdx;
         unsigned startIdx;
         unsigned bufferIdx;
-        float gain;
+        float gainL;
+        float gainR;
         float pitch;
-        AudioVoice() : playSample(false), sampleIdx(0), startIdx(0), bufferIdx(0), gain(0.0), pitch(1.0) {}
+        AudioVoice() : playSample(false), reverseSample(false), sampleIdx(0), startIdx(0), bufferIdx(0), gainL(0.0), gainR(0.0), pitch(1.0) {}
     };
     struct Connection
     {
@@ -119,10 +122,12 @@ namespace mck
         std::string type;
         unsigned packIdx;
         unsigned sampleIdx;
+        unsigned padIdx;
         SampleCommand()
             : type("show"),
               packIdx(0),
-              sampleIdx(0) {}
+              sampleIdx(0),
+              padIdx(0) {}
     };
     void to_json(nlohmann::json &j, const SampleCommand &s);
     void from_json(const nlohmann::json &j, SampleCommand &s);

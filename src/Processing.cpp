@@ -15,6 +15,8 @@
 #include <sndfile.h>
 #include <samplerate.h>
 
+namespace fs = std::filesystem;
+
 static int JackProcess(jack_nframes_t nframes, void *arg)
 {
     auto proc = (mck::Processing *)arg;
@@ -24,6 +26,8 @@ static int JackProcess(jack_nframes_t nframes, void *arg)
 mck::Processing::Processing()
     : m_gui(nullptr),
       m_isInitialized(false),
+      m_done(false),
+      m_isProcessing(false),
       m_config(),
       m_curConfig(0),
       m_newConfig(1),
@@ -38,7 +42,6 @@ mck::Processing::Processing()
       m_bufferSize(0),
       m_transportStep(-1),
       m_transportRate(0),
-      m_samplePath(""),
       m_sampleRate(0),
       m_numVoices(0),
       m_voiceIdx(0),
@@ -80,6 +83,7 @@ bool mck::Processing::Init()
     }
 
     // 1B - Scan Samples
+    /*
     std::filesystem::path samplePath(homeDir);
     samplePath.append(".mck").append("sampler").append("audio");
     if (std::filesystem::exists(samplePath) == false)
@@ -88,10 +92,10 @@ bool mck::Processing::Init()
     }
     mck::sampler::ScanSampleFolder(samplePath.string(), m_config[m_curConfig].samples);
     m_config[m_curConfig].numSamples = m_config[m_curConfig].samples.size();
-    m_samplePath = samplePath.string();
+    m_samplePath = samplePath.string();*/
 
     // 1C - Update File
-    mck::sampler::VerifyConfiguration(m_config[m_curConfig]);
+    mck::sampler::VerifyConfiguration(m_config[m_curConfig], m_samplePackPath);
     m_configFile.SetConfig(m_config[m_curConfig]);
     m_configFile.WriteFile(m_configPath);
 
@@ -118,14 +122,7 @@ bool mck::Processing::Init()
     m_sampleRate = jack_get_sample_rate(m_client);
     m_transportRate = m_sampleRate;
 
-    // 3A - Prepare Samples & Voices
-
-    if (PrepareSamples() == false)
-    {
-        return false;
-    }
-
-    // 3B - Scan Sample Packs
+    // 3A - Scan Sample Packs
     std::filesystem::path samplePackPath(homeDir);
     samplePackPath.append(".local").append("share").append("mck").append("sampler");
     m_samplePackPath = samplePackPath.string();
@@ -136,6 +133,13 @@ bool mck::Processing::Init()
         return false;
     }
     m_sampleExplorer->RefreshSamples(m_samplePacks);
+
+
+    // 3A - Prepare Samples & Voices
+    if (PrepareSamples() == false)
+    {
+        return false;
+    }
 
     // 4 - Start JACK Processing
     err = jack_activate(m_client);
@@ -261,7 +265,7 @@ void mck::Processing::ReceiveMessage(mck::Message &msg)
                 m_gui->SendMessage("data", "full", m_config[m_curConfig]);
                 return;
             }
-            mck::sampler::VerifyConfiguration(config);
+            mck::sampler::VerifyConfiguration(config, m_samplePackPath);
             m_config[1 - m_curConfig] = config;
             m_newConfig = 1 - m_curConfig;
             m_updateConfig = true;
@@ -274,23 +278,36 @@ void mck::Processing::ReceiveMessage(mck::Message &msg)
         {
             m_sampleExplorer->RefreshSamples(m_samplePacks);
             m_gui->SendMessage("samples", "packs", m_samplePacks);
-        } else if (msg.msgType == "command") {
+        }
+        else if (msg.msgType == "command")
+        {
             SampleCommand cmd;
-            try {
+            try
+            {
                 cmd = nlohmann::json::parse(msg.data);
-            } catch(std::exception &e)
+            }
+            catch (std::exception &e)
             {
                 std::fprintf(stderr, "Failed to parse sample command: %s\n", e.what());
                 return;
             }
-            if (cmd.type == "load") {
+            if (cmd.type == "load")
+            {
                 WaveInfoDetail info = m_sampleExplorer->LoadSample(cmd.packIdx, cmd.sampleIdx);
                 m_gui->SendMessage("samples", "info", info);
-            } else if (cmd.type == "play") {
+            }
+            else if (cmd.type == "play")
+            {
                 WaveInfoDetail info = m_sampleExplorer->PlaySample(cmd.packIdx, cmd.sampleIdx);
                 m_gui->SendMessage("samples", "info", info);
-            } else if (cmd.type == "stop") {
+            }
+            else if (cmd.type == "stop")
+            {
                 m_sampleExplorer->StopSample();
+            }
+            else if (cmd.type == "assign")
+            {
+                AssignSample(cmd);
             }
         }
     }
@@ -307,6 +324,8 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
     {
         return 0;
     }
+
+    m_isProcessing = true;
 
     if (m_updateConfig.load())
     {
@@ -392,7 +411,8 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
                         m_voices[m_voiceIdx].playSample = true;
                         m_voices[m_voiceIdx].startIdx = midiEvent.time;
                         m_voices[m_voiceIdx].bufferIdx = 0;
-                        m_voices[m_voiceIdx].gain = ((float)(midiEvent.buffer[2] & 0x7f) / 127.0f) * m_config[m_curConfig].pads[j].gainLin;
+                        m_voices[m_voiceIdx].gainL = ((float)(midiEvent.buffer[2] & 0x7f) / 127.0f) * m_config[m_curConfig].pads[j].gainLeftLin;
+                        m_voices[m_voiceIdx].gainR = ((float)(midiEvent.buffer[2] & 0x7f) / 127.0f) * m_config[m_curConfig].pads[j].gainRightLin;
                         m_voices[m_voiceIdx].sampleIdx = j;
                         m_voices[m_voiceIdx].pitch = m_config[m_curConfig].pads[j].pitch;
 
@@ -429,7 +449,8 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
                 m_voices[m_voiceIdx].playSample = true;
                 m_voices[m_voiceIdx].startIdx = 0;
                 m_voices[m_voiceIdx].bufferIdx = 0;
-                m_voices[m_voiceIdx].gain = m_config[m_curConfig].pads[idx].gainLin * strength;
+                m_voices[m_voiceIdx].gainL = m_config[m_curConfig].pads[idx].gainLeftLin * strength;
+                m_voices[m_voiceIdx].gainR = m_config[m_curConfig].pads[idx].gainRightLin * strength;
                 m_voices[m_voiceIdx].sampleIdx = idx;
                 m_voices[m_voiceIdx].pitch = m_config[m_curConfig].pads[idx].pitch;
 
@@ -465,7 +486,8 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
                 m_voices[m_voiceIdx].playSample = true;
                 m_voices[m_voiceIdx].startIdx = ts.pulseIdx % m_bufferSize;
                 m_voices[m_voiceIdx].bufferIdx = 0;
-                m_voices[m_voiceIdx].gain = pad.gainLin * strength;
+                m_voices[m_voiceIdx].gainL = pad.gainLeftLin * strength;
+                m_voices[m_voiceIdx].gainR = pad.gainRightLin * strength;
                 m_voices[m_voiceIdx].sampleIdx = padIdx;
                 m_voices[m_voiceIdx].pitch = pad.pitch;
 
@@ -499,7 +521,8 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
     // Update Samples
     for (auto &s : m_samples)
     {
-        if (s.update) {
+        if (s.update)
+        {
             s.update = false;
             s.curSample = 1 - s.curSample;
         }
@@ -520,6 +543,12 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
         }
 
         mck::WaveInfo &info = m_samples[v.sampleIdx].info[m_samples[v.sampleIdx].curSample];
+
+        if (info.valid == false)
+        {
+            continue;
+        }
+
         std::vector<std::vector<float>> &buffer = m_samples[v.sampleIdx].buffer[m_samples[v.sampleIdx].curSample];
         /*
         for (unsigned i = 0; i < s->numChans; i++)
@@ -530,18 +559,21 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
 
         if (info.numChans > 1)
         {
+            // Compensate Mono Panning Law
+            float gainL = std::min(1.0f, v.gainL * std::sqrt(2.0f));
+            float gainR = std::min(1.0f, v.gainR * std::sqrt(2.0f));
             for (unsigned i = 0; i < len; i++)
             {
-                out_l[v.startIdx + i] += buffer[0][v.bufferIdx + i] * v.gain;
-                out_r[v.startIdx + i] += buffer[1][v.bufferIdx + i] * v.gain;
+                out_l[v.startIdx + i] += buffer[0][v.bufferIdx + i] * gainL;
+                out_r[v.startIdx + i] += buffer[1][v.bufferIdx + i] * gainR;
             }
         }
         else
         {
             for (unsigned i = 0; i < len; i++)
             {
-                out_l[v.startIdx + i] += buffer[0][v.bufferIdx + i] * v.gain * 0.707f;
-                out_r[v.startIdx + i] += buffer[0][v.bufferIdx + i] * v.gain * 0.707f;
+                out_l[v.startIdx + i] += buffer[0][v.bufferIdx + i] * v.gainL;
+                out_r[v.startIdx + i] += buffer[0][v.bufferIdx + i] * v.gainR;
             }
 
             /*
@@ -579,6 +611,8 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
 
     m_sampleExplorer->ProcessAudio(out_l, out_r, nframes);
 
+    m_isProcessing = false;
+    m_processCond.notify_all();
     return 0;
 }
 
@@ -619,19 +653,67 @@ bool mck::Processing::PrepareSamples()
 
     for (unsigned i = 0; i < m_config[m_curConfig].numPads; i++)
     {
-        if (m_config[m_curConfig].pads[i].sampleIdx >= m_config[m_curConfig].numSamples)
+        fs::path samplePath(m_samplePackPath);
+        samplePath.append(m_config[m_curConfig].pads[i].samplePath);
+        if (fs::exists(samplePath) == false)
         {
             m_config[m_curConfig].pads[i].available = false;
             continue;
         }
+        if (fs::is_regular_file(samplePath) == false)
+        {
+            m_config[m_curConfig].pads[i].available = false;
+            continue;
+        }
+        char newSample = 1 - m_samples[i].curSample;
+        m_samples[i].info[newSample] = helper::ImportWaveFile(samplePath.string(), m_sampleRate, m_samples[i].buffer[newSample]);
+        if (m_samples[i].info[newSample].valid == false) {
+            m_config[m_curConfig].pads[i].available = false;
+            continue;
+        }
         m_config[m_curConfig].pads[i].available = true;
-        char newSample = 1 - m_samples[i].curSample; 
-        m_samples[i].info[newSample] = helper::ImportWaveFile(m_config[m_curConfig].samples[m_config[m_curConfig].pads[i].sampleIdx].fullPath, m_sampleRate, m_samples[i].buffer[newSample]);
         m_samples[i].update = true;
         // init pitcher
         //m_samples[i].pitcher = new RubberBand::RubberBandStretcher(sampleRate, m_samples[i].numChans, RubberBand::RubberBandStretcher::OptionProcessRealTime, 1.0, 1.0);
         //m_samples[i].pitcher->setMaxProcessSize(bufferSize);
     }
+    return true;
+}
+
+bool mck::Processing::AssignSample(SampleCommand cmd)
+{
+    if (cmd.padIdx >= m_samples.size())
+    {
+        return false;
+    }
+    char newWave = 1 - m_samples[cmd.padIdx].curSample;
+
+    mck::WaveInfoDetail info = m_sampleExplorer->GetSample(cmd.packIdx, cmd.sampleIdx, m_samples[cmd.padIdx].buffer[newWave]); 
+
+    if (info.valid == false)
+    {
+        return false;
+    }
+
+    m_samples[cmd.padIdx].info[newWave] = ConvertWaveInfo(info);
+
+    if (m_isProcessing.load())
+    {
+        // Wait
+        std::mutex mutex;
+        std::unique_lock<std::mutex> lock(mutex);
+        m_processCond.wait(lock);
+    }
+
+    m_samples[cmd.padIdx].update = true;
+
+    // Update Config
+    m_config[m_curConfig].pads[cmd.padIdx].available = true;
+    m_config[m_curConfig].pads[cmd.padIdx].samplePath = info.relPath;
+    m_config[m_curConfig].pads[cmd.padIdx].sampleName = info.name;
+    m_gui->SendMessage("data", "full", m_config[m_curConfig]);
+    m_configFile.SetConfig(m_config[m_curConfig]);
+    m_configFile.WriteFile(m_configPath);
 
     return true;
 }

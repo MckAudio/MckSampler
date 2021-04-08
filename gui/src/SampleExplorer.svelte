@@ -3,6 +3,7 @@
     import Select from "./mck/controls/Select.svelte";
     import Button from "./mck/controls/Button.svelte";
     import WaveForm from "./mck/dsp/WaveForm.svelte";
+    import { SelectedPad } from "./Stores.js";
 
     export let data = undefined;
     export let samples = undefined;
@@ -60,7 +61,8 @@
             data: JSON.stringify({
                 type: "load",
                 packIdx: activePack,
-                sampleIdx: _idx
+                sampleIdx: _idx,
+                padIdx: $SelectedPad
             })
         });
         activeSample = _idx;
@@ -74,7 +76,8 @@
             data: JSON.stringify({
                 type: "play",
                 packIdx: activePack,
-                sampleIdx: _idx
+                sampleIdx: _idx,
+                padIdx: $SelectedPad
             })
         });
         activeSample = _idx;
@@ -88,7 +91,22 @@
             data: JSON.stringify({
                 type: "stop",
                 packIdx: activePack,
-                sampleIdx: _idx
+                sampleIdx: _idx,
+                padIdx: $SelectedPad
+            })
+        });
+    }
+
+    function AssignSample(_idx) {
+        _idx = _idx !== undefined ? _idx : activeSample;
+        SendMessage({
+            section: "samples",
+            msgType: "command",
+            data: JSON.stringify({
+                type: "assign",
+                packIdx: activePack,
+                sampleIdx: _idx,
+                padIdx: $SelectedPad
             })
         });
     }
@@ -133,7 +151,8 @@
                     {#if sample.type === activeCategory}
                         <i>{sample.index}</i>
                         <span>{sample.name}</span>
-                        <Button Handler={() => PlaySample(i)} title="Preview"></Button>
+                        <Button Handler={() => AssignSample(i)} title="Assign"></Button>
+                        <Button Handler={() => PlaySample(i)} title="Play"></Button>
                         <Button value={i === activeSample} Handler={() => SelectSample(i)} title="Select"></Button>
                     {/if}
                 {/each}
@@ -159,7 +178,7 @@
             <div class="buttons">
                 <Button Handler={() => StopSample()}>Stop</Button>
                 <Button Handler={() => PlaySample()}>Play</Button>
-                <Button>Assign</Button>
+                <Button Handler={() => AssignSample()}>Assign</Button>
             </div>
         </div>
     {/if}
@@ -171,7 +190,7 @@
         width: 100%;
         height: 100%;
         display: grid;
-        grid-template-columns: 1fr 2fr;
+        grid-template-columns: 3fr 5fr;
         grid-column-gap: 16px;
     }
     .overview {
@@ -184,7 +203,7 @@
     .table {
         overflow-y: scroll;
         display: grid;
-        grid-template-columns: auto 1fr auto auto;
+        grid-template-columns: auto 1fr repeat(3, auto);
         grid-auto-rows: auto;
         grid-gap: 8px;
     }

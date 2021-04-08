@@ -57,22 +57,27 @@ namespace mck
         struct Pad
         {
             bool available;
+            bool reverse;
             unsigned tone;
             unsigned ctrl;
-            std::string sample;
-            unsigned sampleIdx;
+            std::string samplePath;
+            std::string sampleName;
             double gain;
-            double gainLin;
+            double pan; // -100 (L) - 0 (C) - 100 (R)
+            double gainLeftLin;
+            double gainRightLin;
             double pitch;
             unsigned nPatterns;
             std::vector<Pattern> patterns;
             Pad()
                 : available(false),
+                  reverse(false),
                   tone(255),
                   ctrl(255),
-                  sample(""),
-                  sampleIdx(0),
-                  gain(1.0),
+                  samplePath(""),
+                  sampleName(""),
+                  gain(0.0),
+                  pan(0.0),
                   pitch(1.0),
                   nPatterns(1),
                   patterns()
@@ -89,7 +94,6 @@ namespace mck
             unsigned numPads;
             unsigned numSamples;
             std::vector<Pad> pads;
-            std::vector<Sample> samples;
             unsigned midiChan;
             bool reconnect;
             std::vector<std::string> midiInConnections;
@@ -105,6 +109,6 @@ namespace mck
         void from_json(const nlohmann::json &j, Config &c);
 
         bool ScanSampleFolder(std::string path, std::vector<Sample> &sampleList);
-        bool VerifyConfiguration(Config &config);
+        bool VerifyConfiguration(Config &config, std::string samplePackPath);
     } // namespace sampler
 } // namespace mck

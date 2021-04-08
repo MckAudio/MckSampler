@@ -48,11 +48,13 @@ void mck::sampler::from_json(const nlohmann::json &j, mck::sampler::Pattern &p)
 void mck::sampler::to_json(nlohmann::json &j, const mck::sampler::Pad &p)
 {
     j["available"] = p.available;
+    j["reverse"] = p.reverse;
     j["tone"] = p.tone;
     j["ctrl"] = p.ctrl;
-    j["sample"] = p.sample;
-    j["sampleIdx"] = p.sampleIdx;
+    j["samplePath"] = p.samplePath;
+    j["sampleName"] = p.sampleName;
     j["gain"] = p.gain;
+    j["pan"] = p.pan;
     j["pitch"] = p.pitch;
     j["nPatterns"] = p.nPatterns;
     j["patterns"] = p.patterns;
@@ -61,11 +63,13 @@ void mck::sampler::to_json(nlohmann::json &j, const mck::sampler::Pad &p)
 void mck::sampler::from_json(const nlohmann::json &j, mck::sampler::Pad &p)
 {
     p.available = j.at("available").get<bool>();
+    p.reverse = j.at("reverse").get<bool>();
     p.tone = j.at("tone").get<unsigned>();
     p.ctrl = j.at("ctrl").get<unsigned>();
-    p.sample = j.at("sample").get<std::string>();
-    p.sampleIdx = j.at("sampleIdx").get<unsigned>();
+    p.samplePath = j.at("samplePath").get<std::string>();
+    p.sampleName = j.at("sampleName").get<std::string>();
     p.gain = j.at("gain").get<double>();
+    p.pan = j.at("pan").get<double>();
     p.pitch = j.at("pitch").get<double>();
     try
     {
@@ -85,7 +89,6 @@ void mck::sampler::to_json(nlohmann::json &j, const mck::sampler::Config &c)
     j["numPads"] = c.numPads;
     j["numSamples"] = c.numSamples;
     j["pads"] = c.pads;
-    j["samples"] = c.samples;
     j["midiChan"] = c.midiChan;
     j["reconnect"] = c.reconnect;
     j["midiInConnections"] = c.midiInConnections;
@@ -100,7 +103,6 @@ void mck::sampler::from_json(const nlohmann::json &j, mck::sampler::Config &c)
     c.numPads = j.at("numPads").get<unsigned>();
     c.numSamples = j.at("numSamples").get<unsigned>();
     c.pads = j.at("pads").get<std::vector<mck::sampler::Pad>>();
-    c.samples = j.at("samples").get<std::vector<mck::sampler::Sample>>();
     c.midiChan = j.at("midiChan").get<unsigned>();
     c.reconnect = j.at("reconnect").get<bool>();
     c.midiInConnections = j.at("midiInConnections").get<std::vector<std::string>>();
@@ -145,24 +147,23 @@ bool mck::sampler::ScanSampleFolder(std::string path, std::vector<Sample> &sampl
     return true;
 }
 
-bool mck::sampler::VerifyConfiguration(Config &config)
+bool mck::sampler::VerifyConfiguration(Config &config, std::string samplePackPath)
 {
     config.numPads = config.pads.size();
-    config.numSamples = config.samples.size();
     for (unsigned i = 0; i < config.numPads; i++)
     {
         config.pads[i].available = false;
+        config.pads[i].gain = std::min(6.0, std::max(-200.0, config.pads[i].gain));
+        config.pads[i].pan = std::min(100.0, std::max(-100.0, config.pads[i].pan));
+        double gainLin = mck::DbToLin(config.pads[i].gain);
+        config.pads[i].gainLeftLin = gainLin * std::sqrt((double)(100 - config.pads[i].pan) / 200.0);
+        config.pads[i].gainRightLin = gainLin * std::sqrt((double)(100 + config.pads[i].pan) / 200.0);
 
-        for (unsigned j = 0; j < config.numSamples; j++)
+        fs::path samplePath(samplePackPath);
+        samplePath.append(config.pads[i].samplePath);
+        if (fs::exists(samplePath))
         {
-            if (config.samples[j].relativePath == config.pads[i].sample)
-            {
-                config.pads[i].sampleIdx = j;
-                config.pads[i].available = true;
-                config.pads[i].gain = std::min(6.0, std::max(-200.0, config.pads[i].gain));
-                config.pads[i].gainLin = mck::DbToLin(config.pads[i].gain);
-                break;
-            }
+            config.pads[i].available = true;
         }
     }
     return true;

@@ -128,10 +128,12 @@ mck::WaveInfoDetail mck::SampleExplorer::LoadSample(unsigned packIdx, unsigned s
   {
     return info;
   }
-
   fs::path sndPath(m_packPaths[packIdx]);
   sndPath.append(m_packs[packIdx].samples[sampleIdx].path);
   info.path = sndPath.string();
+  fs::path relPath(fs::relative(sndPath, fs::path(m_samplePath)));
+  info.relPath = relPath.string();
+  info.name = m_packs[packIdx].samples[sampleIdx].name;
   if (fs::exists(sndPath) == false)
   {
     return info;
@@ -139,6 +141,8 @@ mck::WaveInfoDetail mck::SampleExplorer::LoadSample(unsigned packIdx, unsigned s
 
   info = helper::ImportWaveForm(sndPath.string(), m_sampleRate, m_waveBuffer[1 - m_curWave]);
   info.path = sndPath.string();
+  info.relPath = relPath.string();
+  info.name = m_packs[packIdx].samples[sampleIdx].name;
   info.packIdx = packIdx;
   info.sampleIdx = sampleIdx;
 
@@ -202,6 +206,30 @@ void mck::SampleExplorer::StopSample()
   }
   m_state.stop = true;
 }
+
+mck::WaveInfoDetail mck::SampleExplorer::GetSample(unsigned packIdx, unsigned sampleIdx, std::vector<std::vector<float>> &buffer)
+{
+  WaveInfoDetail ret;
+  if (m_isInitialized == false)
+  {
+    return ret;
+  }
+
+  char newWave = 1 - m_curWave;
+
+  if (packIdx != m_waveInfo[m_curWave].packIdx || sampleIdx != m_waveInfo[m_curWave].sampleIdx || m_waveInfo[m_curWave].valid == false)
+  {
+    m_waveInfo[newWave] = LoadSample(packIdx, sampleIdx);
+    buffer = m_waveBuffer[newWave];
+    return m_waveInfo[newWave];
+  }
+  else
+  {
+    buffer = m_waveBuffer[m_curWave];
+    return m_waveInfo[m_curWave];
+  }
+}
+
 void mck::SampleExplorer::ProcessAudio(float *outLeft, float *outRight, unsigned nframes)
 {
   if (m_isInitialized == false)

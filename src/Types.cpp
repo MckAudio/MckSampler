@@ -101,12 +101,14 @@ void mck::to_json(nlohmann::json &j, const SampleCommand &s)
     j["type"] = s.type;
     j["packIdx"] = s.packIdx;
     j["sampleIdx"] = s.sampleIdx;
+    j["padIdx"] = s.padIdx;
 }
 void mck::from_json(const nlohmann::json &j, SampleCommand &s)
 {
     s.type = j.at("type").get<std::string>();
     s.packIdx = j.at("packIdx").get<unsigned>();
     s.sampleIdx = j.at("sampleIdx").get<unsigned>();
+    s.padIdx = j.at("padIdx").get<unsigned>();
 }
 void mck::to_json(nlohmann::json &j, const SampleInfo &s) {
     j["valid"] = s.valid;

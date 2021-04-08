@@ -1,7 +1,8 @@
 <script>
-    import SliderLabel from "./mck/controls/SliderLabel.svelte"
+    import SliderLabel from "./mck/controls/SliderLabel.svelte";
     import Select from "./mck/controls/Select.svelte";
     import { DbToLog, LogToDb } from "./mck/utils/Tools.svelte";
+    import { ChangeData } from "./Backend.svelte";
     import { SelectedPad } from "./Stores";
 
     export let data = undefined;
@@ -9,16 +10,12 @@
     let gainMin = -110.0;
     let gainMax = 6.0;
     let pad = undefined;
-    let pads = Array.from({length: 16}, (_v, _i) => {
-        return `Pad #${_i+1}`;
+    let pads = Array.from({ length: 16 }, (_v, _i) => {
+        return `Pad #${_i + 1}`;
     });
-    let samples = [];
+
     $: if (data !== undefined) {
-        samples = Array.from(data.samples, (_v) => {
-            return _v.name;
-        });
-        if ($SelectedPad !== undefined && $SelectedPad < data.numPads)
-        {
+        if ($SelectedPad !== undefined && $SelectedPad < data.numPads) {
             pad = data.pads[$SelectedPad];
         } else {
             pad = undefined;
@@ -27,14 +24,34 @@
 
     function SetGain(_value) {
         let _gain = LogToDb(_value, gainMin, gainMax);
-        let _data = JSON.stringify({type: "gain", index: $SelectedPad, value: _gain});
-        SendMessage({section: "pads", msgType: "change", data: _data});
+        ChangeData(["pads", $SelectedPad, "gain"], _gain);
     }
     function SetSample(_idx) {
-        let _data = JSON.stringify({type: "sample", index: $SelectedPad, value: _idx});
-        SendMessage({section: "pads", msgType: "change", data: _data});
+        let _data = JSON.stringify({
+            type: "sample",
+            index: $SelectedPad,
+            value: _idx,
+        });
+        SendMessage({ section: "pads", msgType: "change", data: _data });
     }
 </script>
+
+<main>
+    <div class="header">Drum Controls:</div>
+    <!--<Select items={pads} value={$SelectedPad} Handler={_idx => {SelectedPad.set(_idx);}}/>-->
+    {#if pad !== undefined}
+        <div class="settings">
+            <div class="label">Gain:</div>
+            <SliderLabel
+                value={DbToLog(pad.gain, gainMin, gainMax)}
+                label="{pad.gain.toFixed(1)} dB"
+                Handler={SetGain}
+            />
+            <div class="label">Sample:</div>
+            <div class="text">{pad.sampleName}</div>
+        </div>
+    {/if}
+</main>
 
 <style>
     main {
@@ -59,26 +76,16 @@
         grid-auto-rows: 30px;
         grid-gap: 8px;
     }
-    .label {
+    .label, .text {
         font-family: mck-lato;
         font-size: 14px;
-        font-style: italic;
-        text-align: right;
         line-height: 30px;
     }
+    .label {
+        font-style: italic;
+        text-align: right;
+    }
+    .text {
+        text-align: left;
+    }
 </style>
-
-<main>
-    <div class="header">
-        Drum Controls:
-    </div>
-    <!--<Select items={pads} value={$SelectedPad} Handler={_idx => {SelectedPad.set(_idx);}}/>-->
-    {#if pad !== undefined}
-    <div class="settings">
-        <div class="label">Gain:</div>
-        <SliderLabel value={DbToLog(pad.gain, gainMin, gainMax)} label="{pad.gain.toFixed(1)} dB" Handler={SetGain}/>
-        <div class="label">Sample:</div>
-        <Select items={samples} value={pad.sampleIdx} Handler={SetSample}/>
-    </div>
-    {/if}
-</main>

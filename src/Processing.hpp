@@ -40,6 +40,7 @@ namespace mck
     private:
         void TransportThread();
         bool PrepareSamples();
+        bool AssignSample(SampleCommand cmd);
 
         // GUI Pointer
         GuiWindow *m_gui;
@@ -47,6 +48,7 @@ namespace mck
         // INIT Members
         bool m_isInitialized;
         std::atomic<bool> m_done;
+        std::atomic<bool> m_isProcessing;
 
         // DATA Members
         sampler::Config m_config[2];
@@ -75,7 +77,7 @@ namespace mck
         unsigned m_transportRate;
 
         // Wav Files
-        std::string m_samplePath;
+        //std::string m_samplePath;
         std::vector<mck::AudioSample> m_samples;
         std::vector<mck::AudioVoice> m_voices;
         unsigned m_numVoices;
@@ -93,5 +95,7 @@ namespace mck
         std::string m_samplePackPath;
         SampleExplorer *m_sampleExplorer;
         std::vector<SamplePack> m_samplePacks;
+
+        std::condition_variable m_processCond;
     };
 } // namespace mck
