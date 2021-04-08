@@ -1,7 +1,7 @@
 <script>
     import SliderLabel from "./mck/controls/SliderLabel.svelte";
     import Select from "./mck/controls/Select.svelte";
-    import { DbToLog, LogToDb } from "./mck/utils/Tools.svelte";
+    import { DbToLog, FormatPan, LinToPan, LogToDb, PanToLin } from "./mck/utils/Tools.svelte";
     import { ChangeData } from "./Backend.svelte";
     import { SelectedPad } from "./Stores";
 
@@ -26,6 +26,10 @@
         let _gain = LogToDb(_value, gainMin, gainMax);
         ChangeData(["pads", $SelectedPad, "gain"], _gain);
     }
+    function SetPan(_value) {
+        let _gain = LinToPan(_value);
+        ChangeData(["pads", $SelectedPad, "pan"], _gain);
+    }
     function SetSample(_idx) {
         let _data = JSON.stringify({
             type: "sample",
@@ -41,14 +45,21 @@
     <!--<Select items={pads} value={$SelectedPad} Handler={_idx => {SelectedPad.set(_idx);}}/>-->
     {#if pad !== undefined}
         <div class="settings">
+            <div class="label">Sample:</div>
+            <div class="text">{pad.sampleName}</div>
             <div class="label">Gain:</div>
             <SliderLabel
                 value={DbToLog(pad.gain, gainMin, gainMax)}
                 label="{pad.gain.toFixed(1)} dB"
                 Handler={SetGain}
             />
-            <div class="label">Sample:</div>
-            <div class="text">{pad.sampleName}</div>
+            <div class="label">Pan:</div>
+            <SliderLabel
+                centered={true}
+                value={PanToLin(pad.pan)}
+                label="{FormatPan(pad.pan, true)}"
+                Handler={SetPan}
+            />
         </div>
     {/if}
 </main>
