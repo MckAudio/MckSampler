@@ -1,8 +1,8 @@
 REL_FLAGS = -O2 -DNDEBUG -std=c++17
 DEB_FLAGS = -O0 -DDEBUG -ggdb3 -std=c++17
 INCLUDES = -I./src/json/include -I./src/helper -I./src/webview -I./src/concurrentqueue `pkg-config --cflags gtk+-3.0 webkit2gtk-4.0`
-SOURCES = ./src/main.cpp ./src/Config.cpp ./src/ConfigFile.cpp ./src/GuiWindow.cpp ./src/Processing.cpp ./src/helper/JackHelper.cpp ./src/helper/DspHelper.cpp ./src/helper/Transport.cpp ./src/SampleExplorer.cpp ./src/Types.cpp
-HEADER = ./src/Config.hpp ./src/ConfigFile.hpp ./src/GuiWindow.hpp ./src/Processing.hpp ./src/helper/JackHelper.hpp ./src/helper/DspHelper.hpp ./src/helper/Transport.hpp ./src/SampleExplorer.hpp ./src/Types.hpp
+SOURCES = ./src/main.cpp ./src/Config.cpp ./src/ConfigFile.cpp ./src/GuiWindow.cpp ./src/Processing.cpp ./src/helper/JackHelper.cpp ./src/helper/DspHelper.cpp ./src/helper/Transport.cpp ./src/helper/WaveHelper.cpp ./src/SampleExplorer.cpp ./src/Types.cpp
+HEADER = ./src/Config.hpp ./src/ConfigFile.hpp ./src/GuiWindow.hpp ./src/Processing.hpp ./src/helper/JackHelper.hpp ./src/helper/DspHelper.hpp ./src/helper/Transport.hpp ./src/helper/WaveHelper.hpp ./src/SampleExplorer.hpp ./src/Types.hpp
 LINKS = `pkg-config --libs gtk+-3.0 webkit2gtk-4.0` -ljack -lsndfile -lsamplerate #-lrubberband
 
 release: ${SOURCES} ${HEADER}

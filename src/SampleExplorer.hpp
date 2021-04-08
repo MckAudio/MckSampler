@@ -5,6 +5,7 @@
 #include <atomic>
 #include <mutex>
 #include <condition_variable>
+#include "helper/WaveHelper.hpp"
 
 namespace mck
 {
@@ -24,8 +25,8 @@ namespace mck
         bool Init(unsigned bufferSize, unsigned sampleRate, std::string samplePath);
         
         void RefreshSamples(std::vector<SamplePack> &packs);
-        SampleInfo LoadSample(unsigned packIdx, unsigned sampleIdx);
-        SampleInfo PlaySample(unsigned packIdx, unsigned sampleIdx);
+        WaveInfoDetail LoadSample(unsigned packIdx, unsigned sampleIdx);
+        WaveInfoDetail PlaySample(unsigned packIdx, unsigned sampleIdx);
         void StopSample();
         void ProcessAudio(float *outLeft, float *outRight, unsigned nframes);
 
@@ -36,9 +37,9 @@ namespace mck
         std::string m_samplePath;
         std::vector<SamplePack> m_packs;
         std::vector<std::string> m_packPaths;
-        SampleInfo m_curInfo;
-        float *m_curSampleBuffer;
-        std::vector<std::vector<float>> m_waveBuffer;
+        WaveInfoDetail m_waveInfo[2];
+        std::vector<std::vector<float>> m_waveBuffer[2];
+        char m_curWave;
         PlayState m_state;
 
         std::atomic<bool> m_isProcessing;

@@ -1,6 +1,7 @@
 #include "Processing.hpp"
 #include "GuiWindow.hpp"
 #include "helper/JackHelper.hpp"
+#include "helper/WaveHelper.hpp"
 #include "SampleExplorer.hpp"
 
 // System
@@ -196,15 +197,6 @@ void mck::Processing::Close()
     m_configFile.SetConfig(m_config[m_curConfig]);
     m_configFile.WriteFile(m_configPath);
 
-    for (auto &s : m_samples)
-    {
-        if (s.buffer != nullptr)
-        {
-            delete s.buffer;
-            s.buffer = nullptr;
-        }
-    }
-
     m_transportCond.notify_all();
     if (m_transportThread.joinable())
     {
@@ -292,10 +284,10 @@ void mck::Processing::ReceiveMessage(mck::Message &msg)
                 return;
             }
             if (cmd.type == "load") {
-                SampleInfo info = m_sampleExplorer->LoadSample(cmd.packIdx, cmd.sampleIdx);
+                WaveInfoDetail info = m_sampleExplorer->LoadSample(cmd.packIdx, cmd.sampleIdx);
                 m_gui->SendMessage("samples", "info", info);
             } else if (cmd.type == "play") {
-                SampleInfo info = m_sampleExplorer->PlaySample(cmd.packIdx, cmd.sampleIdx);
+                WaveInfoDetail info = m_sampleExplorer->PlaySample(cmd.packIdx, cmd.sampleIdx);
                 m_gui->SendMessage("samples", "info", info);
             } else if (cmd.type == "stop") {
                 m_sampleExplorer->StopSample();
@@ -504,6 +496,15 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
         resetSample = false;
     }*/
 
+    // Update Samples
+    for (auto &s : m_samples)
+    {
+        if (s.update) {
+            s.update = false;
+            s.curSample = 1 - s.curSample;
+        }
+    }
+
     jack_default_audio_sample_t *out_l = (jack_default_audio_sample_t *)jack_port_get_buffer(m_audioOutL, nframes);
     jack_default_audio_sample_t *out_r = (jack_default_audio_sample_t *)jack_port_get_buffer(m_audioOutR, nframes);
 
@@ -518,28 +519,29 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
             continue;
         }
 
-        mck::AudioSample *s = &m_samples[v.sampleIdx];
+        mck::WaveInfo &info = m_samples[v.sampleIdx].info[m_samples[v.sampleIdx].curSample];
+        std::vector<std::vector<float>> &buffer = m_samples[v.sampleIdx].buffer[m_samples[v.sampleIdx].curSample];
         /*
         for (unsigned i = 0; i < s->numChans; i++)
         {
             memset(s->pitchBuffer[i], 0, bufferSize * sizeof(float));
         }*/
-        len = std::min(m_bufferSize, s->numFrames - v.bufferIdx) - v.startIdx;
+        len = std::min(m_bufferSize, info.lengthSamps - v.bufferIdx) - v.startIdx;
 
-        if (s->numChans > 1)
+        if (info.numChans > 1)
         {
             for (unsigned i = 0; i < len; i++)
             {
-                out_l[v.startIdx + i] += s->buffer[v.bufferIdx + i] * v.gain;
-                out_r[v.startIdx + i] += s->buffer[s->numFrames + v.bufferIdx + i] * v.gain;
+                out_l[v.startIdx + i] += buffer[0][v.bufferIdx + i] * v.gain;
+                out_r[v.startIdx + i] += buffer[1][v.bufferIdx + i] * v.gain;
             }
         }
         else
         {
             for (unsigned i = 0; i < len; i++)
             {
-                out_l[v.startIdx + i] += s->buffer[v.bufferIdx + i] * v.gain * 0.707f;
-                out_r[v.startIdx + i] += s->buffer[v.bufferIdx + i] * v.gain * 0.707f;
+                out_l[v.startIdx + i] += buffer[0][v.bufferIdx + i] * v.gain * 0.707f;
+                out_r[v.startIdx + i] += buffer[0][v.bufferIdx + i] * v.gain * 0.707f;
             }
 
             /*
@@ -568,7 +570,7 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
         v.bufferIdx += len;
         v.startIdx = 0;
 
-        if (v.bufferIdx >= s->numFrames)
+        if (v.bufferIdx >= info.lengthSamps)
         {
             // Stop Sample
             v.playSample = false;
@@ -613,12 +615,7 @@ bool mck::Processing::PrepareSamples()
     m_samples.resize(m_config[m_curConfig].numPads);
     m_voices.resize(m_numVoices);
 
-    SNDFILE *tmpSnd;
-    SF_INFO tmpInfo;
-    SRC_DATA tmpSrc;
-    float *tmpBuf;
-    float *tmpSrcBuf;
-    unsigned numSrcFrames;
+    std::vector<std::vector<float>> tmpBuffer;
 
     for (unsigned i = 0; i < m_config[m_curConfig].numPads; i++)
     {
@@ -628,73 +625,9 @@ bool mck::Processing::PrepareSamples()
             continue;
         }
         m_config[m_curConfig].pads[i].available = true;
-        tmpInfo.format = 0;
-        tmpSnd = sf_open(m_config[m_curConfig].samples[m_config[m_curConfig].pads[i].sampleIdx].fullPath.c_str(), SFM_READ, &tmpInfo);
-        m_samples[i].numChans = tmpInfo.channels;
-        m_samples[i].numFrames = tmpInfo.frames;
-        tmpBuf = new float[tmpInfo.channels * tmpInfo.frames];
-        numSrcFrames = sf_readf_float(tmpSnd, tmpBuf, tmpInfo.frames);
-        m_samples[i].numFrames = numSrcFrames;
-        if (tmpInfo.samplerate != m_sampleRate)
-        {
-            // Sample Rate Conversion
-            double convCoeff = (double)m_sampleRate / (double)tmpInfo.samplerate;
-            numSrcFrames = (unsigned)std::ceil((double)m_samples[i].numFrames * convCoeff);
-            tmpSrcBuf = new float[m_samples[i].numChans * numSrcFrames];
-            tmpSrc.data_in = tmpBuf;
-            tmpSrc.data_out = tmpSrcBuf;
-            tmpSrc.input_frames = m_samples[i].numFrames;
-            tmpSrc.output_frames = numSrcFrames;
-            numSrcFrames = tmpSrc.output_frames;
-            tmpSrc.src_ratio = convCoeff;
-
-            int err = src_simple(&tmpSrc, SRC_SINC_BEST_QUALITY, m_samples[i].numChans);
-            if (err != 0)
-            {
-                std::fprintf(stderr, "Failed to apply samplerate conversion to sample %s:\n%s\nExiting...", m_config[m_curConfig].pads[i].sample.c_str(), src_strerror(err));
-                delete tmpBuf;
-                delete tmpSrcBuf;
-                return false;
-            }
-            m_samples[i].numFrames = tmpSrc.output_frames_gen;
-            /*
-            SNDFILE *outSnd;
-            SF_INFO outInf;
-            outInf.channels = m_samples[i].numChans;
-            outInf.format = SF_FORMAT_WAV | SF_FORMAT_FLOAT;
-            outInf.frames = m_samples[i].numFrames;
-            outInf.samplerate = sampleRate;
-            std::filesystem::path outPath(m_config[m_curConfig].samples[m_config[m_curConfig].pads[i].sampleIdx].fullPath);
-            std::filesystem::path outName = outPath.filename();
-            outName = std::filesystem::path(outName.stem().string() + "_" + std::to_string(outInf.samplerate) + outName.extension().string());
-            outPath = outPath.parent_path().append(outName.string());
-            outSnd = sf_open(outPath.c_str(), SFM_WRITE, &outInf);
-            sf_writef_float(outSnd, tmpSrcBuf, m_samples[i].numFrames);
-            sf_close(outSnd);
-            */
-            delete tmpBuf;
-            tmpBuf = tmpSrcBuf;
-        }
-        // Deinterleaving
-
-        m_samples[i].buffer = new float[m_samples[i].numChans * m_samples[i].numFrames];
-        /*
-        m_samples[i].pitchBuffer = new float *[m_samples[i].numChans];
-        m_samples[i].outBuffer = new float *[m_samples[i].numChans];
-        for (unsigned j = 0; j < m_samples[i].numChans; j++)
-        {
-            m_samples[i].pitchBuffer[j] = new float[bufferSize];
-            m_samples[i].outBuffer[j] = new float[bufferSize];
-        }*/
-        for (unsigned s = 0; s < std::min(m_samples[i].numFrames, numSrcFrames); s++)
-        {
-            for (unsigned c = 0; c < m_samples[i].numChans; c++)
-            {
-                m_samples[i].buffer[c * m_samples[i].numFrames + s] = tmpBuf[s * m_samples[i].numChans + c];
-            }
-        }
-        delete tmpBuf;
-
+        char newSample = 1 - m_samples[i].curSample; 
+        m_samples[i].info[newSample] = helper::ImportWaveFile(m_config[m_curConfig].samples[m_config[m_curConfig].pads[i].sampleIdx].fullPath, m_sampleRate, m_samples[i].buffer[newSample]);
+        m_samples[i].update = true;
         // init pitcher
         //m_samples[i].pitcher = new RubberBand::RubberBandStretcher(sampleRate, m_samples[i].numChans, RubberBand::RubberBandStretcher::OptionProcessRealTime, 1.0, 1.0);
         //m_samples[i].pitcher->setMaxProcessSize(bufferSize);

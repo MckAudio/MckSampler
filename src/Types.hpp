@@ -2,21 +2,23 @@
 #include <string>
 #include <vector>
 #include "nlohmann/json.hpp"
+#include "helper/WaveHelper.hpp"
 //#include <rubberband/RubberBandStretcher.h>
 
 namespace mck
 {
     struct AudioSample
     {
-        unsigned numChans;
-        unsigned numFrames;
-        float *buffer;
+        bool update;
+        char curSample;
+        WaveInfo info[2];
+        std::vector<std::vector<float>> buffer[2];
         /*
         float **pitchBuffer;
         float **outBuffer;
         RubberBand::RubberBandStretcher *pitcher;
         */
-        AudioSample() : numChans(0), numFrames(0), buffer(nullptr) /*, pitchBuffer(nullptr), outBuffer(nullptr), pitcher(nullptr)*/ {}
+        AudioSample() : update(false), curSample(0) {}
     };
     struct AudioVoice
     {

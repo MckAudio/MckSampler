@@ -14,7 +14,8 @@ mck::SampleExplorer::SampleExplorer()
       m_sampleRate(0),
       m_samplePath(""),
       m_packs(),
-      m_packPaths()
+      m_packPaths(),
+      m_curWave(0)
 {
 }
 
@@ -108,9 +109,9 @@ void mck::SampleExplorer::RefreshSamples(std::vector<SamplePack> &packs)
   return;
 }
 
-mck::SampleInfo mck::SampleExplorer::LoadSample(unsigned packIdx, unsigned sampleIdx)
+mck::WaveInfoDetail mck::SampleExplorer::LoadSample(unsigned packIdx, unsigned sampleIdx)
 {
-  SampleInfo info;
+  WaveInfoDetail info;
   info.valid = false;
   info.packIdx = packIdx;
   info.sampleIdx = sampleIdx;
@@ -136,79 +137,18 @@ mck::SampleInfo mck::SampleExplorer::LoadSample(unsigned packIdx, unsigned sampl
     return info;
   }
 
-  SNDFILE *snd;
-  SF_INFO sndInfo;
+  info = helper::ImportWaveForm(sndPath.string(), m_sampleRate, m_waveBuffer[1 - m_curWave]);
+  info.path = sndPath.string();
+  info.packIdx = packIdx;
+  info.sampleIdx = sampleIdx;
 
-  snd = sf_open(sndPath.c_str(), SFM_READ, &sndInfo);
-  if (snd == nullptr)
-  {
-    return info;
-  }
-
-  info.numChans = sndInfo.channels;
-  info.lengthSamps = sndInfo.frames;
-  info.sampleRate = sndInfo.samplerate;
-  info.lengthMs = (unsigned)std::floor(1000.0 * (double)info.lengthSamps / (double)info.sampleRate);
-
-  if (m_curSampleBuffer != nullptr)
-  {
-    free(m_curSampleBuffer);
-    m_curSampleBuffer = nullptr;
-  }
-
-  m_curSampleBuffer = (float *)malloc(info.lengthSamps * info.numChans * sizeof(float));
-  memset(m_curSampleBuffer, 0, info.lengthSamps * info.numChans * sizeof(float));
-
-  // Read Samples from File
-  unsigned numSrcFrames = sf_readf_float(snd, m_curSampleBuffer, sndInfo.frames);
-
-  // Samplerate conversion
-  if (info.sampleRate != m_sampleRate)
-  {
-  }
-
-  // 500us
-  unsigned sampsPerMs = (unsigned)std::ceil((double)info.sampleRate / 2000.0);
-  unsigned lengthMs = (unsigned)std::floor(2000.0 * (double)info.lengthSamps / (double)info.sampleRate);
-
-  // Read Waveform
-  info.waveForm.resize(info.numChans);
-  for (unsigned c = 0; c < info.numChans; c++)
-  {
-    info.waveForm[c].resize(lengthMs, 0.0);
-  }
-  for (unsigned i = 0; i < lengthMs; i++)
-  {
-    for (unsigned c = 0; c < info.numChans; c++)
-    {
-      float wMax = 0.0f;
-      float wMin = 0.0f;
-      for (unsigned s = i * sampsPerMs; s < std::min((i + 1) * sampsPerMs, info.lengthSamps); s++)
-      {
-        float sample = m_curSampleBuffer[s * info.numChans + c];
-        if (sample > wMax)
-        {
-          wMax = sample;
-        }
-        else if (sample < wMin)
-        {
-          wMin = sample;
-        }
-      }
-      info.waveForm[c][i] = std::abs(wMin) > wMax ? wMin : wMax;
-    }
-  }
-
-  sf_close(snd);
-
-  info.valid = true;
-  m_curInfo = info;
+  m_waveInfo[1 - m_curWave] = info;
   return info;
 }
 
-mck::SampleInfo mck::SampleExplorer::PlaySample(unsigned packIdx, unsigned sampleIdx)
+mck::WaveInfoDetail mck::SampleExplorer::PlaySample(unsigned packIdx, unsigned sampleIdx)
 {
-  SampleInfo ret;
+  WaveInfoDetail ret;
   if (m_isInitialized == false)
   {
     return ret;
@@ -216,37 +156,25 @@ mck::SampleInfo mck::SampleExplorer::PlaySample(unsigned packIdx, unsigned sampl
 
   StopSample();
 
-  if (packIdx != m_curInfo.packIdx || sampleIdx != m_curInfo.sampleIdx || m_curInfo.valid == false)
+  char newWave = 1 - m_curWave;
+
+  if (packIdx != m_waveInfo[newWave].packIdx || sampleIdx != m_waveInfo[newWave].sampleIdx || m_waveInfo[newWave].valid == false)
   {
-    ret = LoadSample(packIdx, sampleIdx);
-  } else {
-    ret = m_curInfo;
+    m_waveInfo[newWave] = LoadSample(packIdx, sampleIdx);
   }
 
-  if (m_curInfo.valid == false)
+  ret = m_waveInfo[newWave];
+
+  if (ret.valid == false)
   {
     return ret;
-  }
-
-  m_waveBuffer.resize(m_curInfo.numChans);
-  for (unsigned c = 0; c < m_curInfo.numChans; c++)
-  {
-    m_waveBuffer[c].resize(m_curInfo.lengthSamps, 0.0);
-  }
-
-  for (unsigned s = 0; s < m_curInfo.lengthSamps; s++)
-  {
-    for (unsigned c = 0; c < m_curInfo.numChans; c++)
-    {
-      m_waveBuffer[c][s] = m_curSampleBuffer[s * m_curInfo.numChans + c];
-    }
   }
 
   PlayState state;
   state.active = true;
   state.stop = false;
   state.idx = 0;
-  state.len = m_curInfo.lengthSamps;
+  state.len = m_waveInfo[newWave].lengthSamps;
 
   if (m_isProcessing.load())
   {
@@ -256,6 +184,7 @@ mck::SampleInfo mck::SampleExplorer::PlaySample(unsigned packIdx, unsigned sampl
   }
 
   m_state = state;
+  m_curWave = newWave;
 
   return ret;
 }
@@ -297,23 +226,23 @@ void mck::SampleExplorer::ProcessAudio(float *outLeft, float *outRight, unsigned
     {
       m_state.active = false;
     }
-    if (m_waveBuffer.size() == 1)
+    if (m_waveBuffer[m_curWave].size() == 1)
     {
       for (unsigned s = 0; s < std::min(samplesLeft, nframes); s++)
       {
-        outLeft[s] += m_waveBuffer[0][s + m_state.idx] * 0.707;
-        outRight[s] += m_waveBuffer[0][s + m_state.idx] * 0.707;
+        outLeft[s] += m_waveBuffer[m_curWave][0][s + m_state.idx] * 0.707;
+        outRight[s] += m_waveBuffer[m_curWave][0][s + m_state.idx] * 0.707;
       }
     }
     else
     {
       for (unsigned s = 0; s < std::min(samplesLeft, nframes); s++)
       {
-        outLeft[s] += m_waveBuffer[0][s + m_state.idx];
+        outLeft[s] += m_waveBuffer[m_curWave][0][s + m_state.idx];
       }
       for (unsigned s = 0; s < std::min(samplesLeft, nframes); s++)
       {
-        outRight[s] += m_waveBuffer[1][s + m_state.idx];
+        outRight[s] += m_waveBuffer[m_curWave][1][s + m_state.idx];
       }
     }
     m_state.idx += nframes;
