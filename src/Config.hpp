@@ -58,6 +58,8 @@ namespace mck
         {
             bool available;
             bool reverse;
+            unsigned lengthMs;
+            unsigned lengthSamps;
             unsigned tone;
             unsigned ctrl;
             std::string samplePath;
@@ -72,6 +74,8 @@ namespace mck
             Pad()
                 : available(false),
                   reverse(false),
+                  lengthMs(60000),
+                  lengthSamps(0),
                   tone(255),
                   ctrl(255),
                   samplePath(""),
@@ -109,6 +113,6 @@ namespace mck
         void from_json(const nlohmann::json &j, Config &c);
 
         bool ScanSampleFolder(std::string path, std::vector<Sample> &sampleList);
-        bool VerifyConfiguration(Config &config, std::string samplePackPath);
+        bool VerifyConfiguration(Config &config, std::string samplePackPath, unsigned sampleRate);
     } // namespace sampler
 } // namespace mck

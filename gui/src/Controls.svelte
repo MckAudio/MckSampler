@@ -1,6 +1,7 @@
 <script>
     import SliderLabel from "./mck/controls/SliderLabel.svelte";
     import Select from "./mck/controls/Select.svelte";
+    import InputNumber from "./mck/controls/InputNumber.svelte";
     import { DbToLog, FormatPan, LinToPan, LogToDb, PanToLin } from "./mck/utils/Tools.svelte";
     import { ChangeData } from "./Backend.svelte";
     import { SelectedPad } from "./Stores";
@@ -29,6 +30,9 @@
     function SetPan(_value) {
         let _gain = LinToPan(_value);
         ChangeData(["pads", $SelectedPad, "pan"], _gain);
+    }
+    function SetLength(_value) {
+        ChangeData(["pads", $SelectedPad, "lengthMs"], _value);
     }
     function SetSample(_idx) {
         let _data = JSON.stringify({
@@ -60,6 +64,8 @@
                 label="{FormatPan(pad.pan, true)}"
                 Handler={SetPan}
             />
+            <div class="label">Length:</div>
+            <InputNumber value={pad.lengthMs} unit="ms" Handler={SetLength}/>
         </div>
     {/if}
 </main>

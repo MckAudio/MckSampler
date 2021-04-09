@@ -20,6 +20,10 @@ class GuiWindow;
 
 namespace mck
 {
+
+    const unsigned SAMPLER_NUM_PADS = 16;
+    const unsigned SAMPLER_VOICES_PER_PAD = 4;
+
     class SampleExplorer;
 
     class Processing
@@ -41,6 +45,7 @@ namespace mck
         void TransportThread();
         bool PrepareSamples();
         bool AssignSample(SampleCommand cmd);
+        void SetConfiguration(sampler::Config &config, bool connect = false);
 
         // GUI Pointer
         GuiWindow *m_gui;

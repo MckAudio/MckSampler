@@ -24,14 +24,14 @@ namespace mck
     struct AudioVoice
     {
         bool playSample;
-        bool reverseSample;
-        unsigned sampleIdx;
+        unsigned padIdx;
         unsigned startIdx;
         unsigned bufferIdx;
+        unsigned bufferLen;
         float gainL;
         float gainR;
         float pitch;
-        AudioVoice() : playSample(false), reverseSample(false), sampleIdx(0), startIdx(0), bufferIdx(0), gainL(0.0), gainR(0.0), pitch(1.0) {}
+        AudioVoice() : playSample(false), padIdx(0), startIdx(0), bufferIdx(0), bufferLen(0), gainL(0.0), gainR(0.0), pitch(1.0) {}
     };
     struct Connection
     {

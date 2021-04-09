@@ -29,6 +29,8 @@ namespace mck
         WaveInfoDetail LoadSample(unsigned packIdx, unsigned sampleIdx);
         WaveInfoDetail PlaySample(unsigned packIdx, unsigned sampleIdx);
         WaveInfoDetail GetSample(unsigned packIdx, unsigned sampleIdx, std::vector<std::vector<float>> &buffer);
+        std::string GetSamplePath(unsigned packIdx, unsigned sampleIdx, bool relativePath = true);
+        std::string GetSampleName(unsigned packIdx, unsigned sampleIdx);
         void StopSample();
         void ProcessAudio(float *outLeft, float *outRight, unsigned nframes);
 

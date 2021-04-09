@@ -49,6 +49,7 @@ void mck::sampler::to_json(nlohmann::json &j, const mck::sampler::Pad &p)
 {
     j["available"] = p.available;
     j["reverse"] = p.reverse;
+    j["lengthMs"] = p.lengthMs;
     j["tone"] = p.tone;
     j["ctrl"] = p.ctrl;
     j["samplePath"] = p.samplePath;
@@ -64,6 +65,7 @@ void mck::sampler::from_json(const nlohmann::json &j, mck::sampler::Pad &p)
 {
     p.available = j.at("available").get<bool>();
     p.reverse = j.at("reverse").get<bool>();
+    p.lengthMs = j.at("lengthMs").get<unsigned>();
     p.tone = j.at("tone").get<unsigned>();
     p.ctrl = j.at("ctrl").get<unsigned>();
     p.samplePath = j.at("samplePath").get<std::string>();
@@ -147,7 +149,7 @@ bool mck::sampler::ScanSampleFolder(std::string path, std::vector<Sample> &sampl
     return true;
 }
 
-bool mck::sampler::VerifyConfiguration(Config &config, std::string samplePackPath)
+bool mck::sampler::VerifyConfiguration(Config &config, std::string samplePackPath, unsigned sampleRate)
 {
     config.numPads = config.pads.size();
     for (unsigned i = 0; i < config.numPads; i++)
@@ -158,6 +160,7 @@ bool mck::sampler::VerifyConfiguration(Config &config, std::string samplePackPat
         double gainLin = mck::DbToLin(config.pads[i].gain);
         config.pads[i].gainLeftLin = gainLin * std::sqrt((double)(100 - config.pads[i].pan) / 200.0);
         config.pads[i].gainRightLin = gainLin * std::sqrt((double)(100 + config.pads[i].pan) / 200.0);
+        config.pads[i].lengthSamps = (unsigned)std::floor((double)config.pads[i].lengthMs * (double)sampleRate / 1000.0);
 
         fs::path samplePath(samplePackPath);
         samplePath.append(config.pads[i].samplePath);

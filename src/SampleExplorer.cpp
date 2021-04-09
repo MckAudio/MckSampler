@@ -230,6 +230,47 @@ mck::WaveInfoDetail mck::SampleExplorer::GetSample(unsigned packIdx, unsigned sa
   }
 }
 
+std::string mck::SampleExplorer::GetSamplePath(unsigned packIdx, unsigned sampleIdx, bool relativePath)
+{
+  if (m_isInitialized == false)
+  {
+    return "";
+  }
+  if (packIdx >= m_packs.size())
+  {
+    return "";
+  }
+  if (sampleIdx >= m_packs[packIdx].samples.size())
+  {
+    return "";
+  }
+  fs::path path(m_samplePath);
+  path.append(m_packPaths[packIdx]);
+  path.append(m_packs[packIdx].samples[sampleIdx].path);
+  if (relativePath)
+  {
+    path = fs::relative(path, fs::path(m_samplePath));
+  }
+  return path.string();
+}
+        
+std::string mck::SampleExplorer::GetSampleName(unsigned packIdx, unsigned sampleIdx)
+{
+  if (m_isInitialized == false)
+  {
+    return "";
+  }
+  if (packIdx >= m_packs.size())
+  {
+    return "";
+  }
+  if (sampleIdx >= m_packs[packIdx].samples.size())
+  {
+    return "";
+  }
+  return m_packs[packIdx].samples[sampleIdx].name;
+}
+
 void mck::SampleExplorer::ProcessAudio(float *outLeft, float *outRight, unsigned nframes)
 {
   if (m_isInitialized == false)
