@@ -1,9 +1,3 @@
-[submodule "webview"]
-	path = src/webview
-	url = https://github.com/webview/webview
-[submodule "cpp-httplib"]
-	path = src/cpp-httplib
-	url = https://github.com/yhirose/cpp-httplib.git
 [submodule "gui/MckSvelte"]
 	path = gui/src/mck
 	url = git@github.com:HenriCSHC/MckSvelte
