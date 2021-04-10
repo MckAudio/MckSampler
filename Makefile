@@ -14,7 +14,10 @@ debug: ${SOURCES} ${HEADER}
 	g++ $(DEB_FLAGS) $(INCLUDES) $(SOURCES) -o ./bin/debug/mck-sampler $(LINKS)
 
 install: gui release
+	mkdir -p /usr/share/mck-sampler/gui/
 	cp ./bin/release/mck-sampler /usr/bin
+	cp -r ./www/* /usr/share/mck-sampler/gui/
+	cp -r ./ressource/*.desktop /usr/share/applications/
 
 metronome: ./src/midimetronome.cpp ./src/Metronome.cpp ./src/Metronome.hpp
 	mkdir -p bin

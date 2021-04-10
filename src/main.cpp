@@ -159,8 +159,13 @@ int main(int argc, char **argv)
     {
         CloseApplication();
     }*/
-
-    m_gui.Show("MckSampler", "./www", 9002);
+    #ifdef DEBUG
+        std::printf("[DEBUG MODE]\n");
+        m_gui.Show("MckSampler", "./www", 9002);
+    #else
+        m_gui.Show("MckSampler", "/usr/share/mck-sampler/gui", 9002);
+    #endif
+    
 
     //sleep(-1);
 
