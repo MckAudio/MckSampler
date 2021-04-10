@@ -7,7 +7,7 @@
 #include <iostream>
 
 // GUI
-#include "GuiWindow.hpp"
+#include <GuiWindow.hpp>
 
 // OWN Header
 #include "Config.hpp"
@@ -29,7 +29,7 @@ enum
 std::atomic<bool> m_done = false;
 
 // GUI
-GuiWindow m_gui;
+mck::GuiWindow m_gui;
 
 // PROCESSING
 mck::Processing m_processing;
@@ -105,7 +105,7 @@ int main(int argc, char **argv)
     }
 
     m_processing.SetGuiPtr(&m_gui);
-    m_gui.SetProcessingPtr(&m_processing);
+    m_gui.SetBasePtr((mck::GuiBase *) &m_processing);
 
     /*
     if (configMode == CONFIG_SAMPLES)

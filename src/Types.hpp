@@ -2,7 +2,7 @@
 #include <string>
 #include <vector>
 #include <atomic>
-#include "nlohmann/json.hpp"
+#include <nlohmann/json.hpp>
 #include "helper/WaveHelper.hpp"
 //#include <rubberband/RubberBandStretcher.h>
 
@@ -51,16 +51,6 @@ namespace mck
     };
     void to_json(nlohmann::json &j, const Port &p);
     void from_json(const nlohmann::json &j, Port &p);
-
-    struct Message
-    {
-        std::string section;
-        std::string msgType;
-        std::string data;
-        Message() : section(""), msgType(""), data("") {}
-    };
-    void to_json(nlohmann::json &j, const Message &m);
-    void from_json(const nlohmann::json &j, Message &m);
 
     struct TriggerData
     {

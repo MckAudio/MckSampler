@@ -1,5 +1,4 @@
 #include "Processing.hpp"
-#include "GuiWindow.hpp"
 #include "helper/DspHelper.hpp"
 #include "helper/JackHelper.hpp"
 #include "helper/WaveHelper.hpp"

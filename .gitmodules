@@ -1,6 +1,3 @@
-[submodule "json"]
-	path = src/json
-	url = https://github.com/nlohmann/json.git
 [submodule "webview"]
 	path = src/webview
 	url = https://github.com/webview/webview
@@ -13,6 +10,6 @@
 [submodule "src/helper"]
 	path = src/helper
 	url = git@github.com:HenriCSHC/MckHelper
-[submodule "src/concurrentqueue"]
-	path = src/concurrentqueue
-	url = https://github.com/cameron314/concurrentqueue
+[submodule "src/gui"]
+	path = src/gui
+	url = git@github.com:HenriCSHC/MckGui

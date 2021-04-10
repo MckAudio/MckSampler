@@ -2,4 +2,4 @@
 Name=MckSampler
 Exec=mck-sampler
 Type=Application
-Categories=Music,Media,Multimedia;
+Categories=Audio;AudioVideo;Midi;

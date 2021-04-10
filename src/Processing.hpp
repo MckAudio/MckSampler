@@ -11,12 +11,11 @@
 #include <jack/types.h>
 #include <concurrentqueue.h>
 
+#include <GuiWindow.hpp>
 #include "helper/Transport.hpp"
 #include "Types.hpp"
 #include "Config.hpp"
 #include "ConfigFile.hpp"
-
-class GuiWindow;
 
 namespace mck
 {
@@ -26,7 +25,7 @@ namespace mck
 
     class SampleExplorer;
 
-    class Processing
+    class Processing : GuiBase
     {
     public:
         Processing();
