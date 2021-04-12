@@ -13,6 +13,10 @@ debug: ${SOURCES} ${HEADER}
 	mkdir -p bin/debug
 	g++ $(DEB_FLAGS) $(INCLUDES) $(SOURCES) -o ./bin/debug/mck-sampler $(LINKS)
 
+dependencies:
+	git submodule update --init --recursive
+	cd gui && npm install
+
 install: gui release
 	mkdir -p /usr/share/mck-sampler/gui/
 	cp ./bin/release/mck-sampler /usr/bin

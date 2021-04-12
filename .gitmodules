@@ -1,6 +1,6 @@
 [submodule "gui/MckSvelte"]
 	path = gui/src/mck
-	url = git@github.com:HenriCSHC/MckSvelte
+	url = ../MckSvelte.git
 [submodule "src/helper"]
 	path = src/helper
 	url = ../MckHelper.git

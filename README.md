@@ -29,13 +29,7 @@ sudo dnf install gtk3-devel webkit2gtk3-devel
 ## Getting started
 
 ```
-git submodule update --init
-cd gui
-npm install
-cd ..
-
-make
-make gui
+make dependencies
 
 sudo make install
 ```
