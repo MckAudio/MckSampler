@@ -3,7 +3,9 @@
 	url = git@github.com:HenriCSHC/MckSvelte
 [submodule "src/helper"]
 	path = src/helper
-	url = git@github.com:HenriCSHC/MckHelper
+	url = ../MckHelper.git
 [submodule "src/gui"]
 	path = src/gui
-	url = git@github.com:HenriCSHC/MckGui
+	url = ../MckGui.git
+[submodule "gui/src/mck"]
+	url = ../MckSvelte.git
