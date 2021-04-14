@@ -5,6 +5,7 @@
     import { DbToLog, FormatPan, LinToPan, LogToDb, PanToLin } from "./mck/utils/Tools.svelte";
     import { ChangeData } from "./Backend.svelte";
     import { SelectedPad } from "./Stores";
+import Button from "./mck/controls/Button.svelte";
 
     export let data = undefined;
 
@@ -66,6 +67,26 @@
             />
             <div class="label">Length:</div>
             <InputNumber value={pad.lengthMs} unit="ms" Handler={SetLength}/>
+            <div class="label">Playback:</div>
+            <Button value={pad.reverse} title="Reverse" Handler={_v => ChangeData(["pads", $SelectedPad, "reverse"], _v)}/>
+        </div>
+        <div class="settings">
+            <div class="label">FX:</div>
+            <div class="text">Delay</div>
+            <div class="label">Gain:</div>
+            <SliderLabel
+                value={DbToLog(pad.delay.gain, gainMin, 0.0)}
+                label="{pad.delay.gain.toFixed(1)} dB"
+                Handler={_v => ChangeData(["pads", $SelectedPad, "delay", "gain"], LogToDb(_v, gainMin, 0.0))}
+            />
+            <div class="label">Feedback:</div>
+            <SliderLabel
+                value={pad.delay.feedback}
+                label="{(pad.delay.feedback * 100.0).toFixed(1)} %"
+                Handler={_v => ChangeData(["pads", $SelectedPad, "delay", "feedback"], _v)}
+            />
+            <div class="label">Time:</div>
+            <InputNumber value={pad.delay.timeMs} unit="ms" Handler={_v => ChangeData(["pads", $SelectedPad, "delay", "timeMs"], _v)}/>
         </div>
     {/if}
 </main>
@@ -87,7 +108,6 @@
         font-weight: bold;
     }
     .settings {
-        grid-column: 1/2;
         display: grid;
         grid-template-columns: 1fr 4fr;
         grid-auto-rows: 30px;

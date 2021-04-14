@@ -9,3 +9,6 @@
 	url = ../MckGui.git
 [submodule "gui/src/mck"]
 	url = ../MckSvelte.git
+[submodule "src/q"]
+	path = src/q
+	url = ../q.git

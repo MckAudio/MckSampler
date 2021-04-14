@@ -4,6 +4,7 @@
             "name": "Debian",
             "includePath": [
                 "${workspaceFolder}/**",
+                "${workspaceFolder}/src/q/q_lib/include/**",
                 "/usr/include/webkitgtk-4.0",
                 "/usr/include/gtk-3.0",
                 "/usr/include/at-spi2-atk/2.0",

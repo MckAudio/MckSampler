@@ -54,6 +54,35 @@ namespace mck
         void to_json(nlohmann::json &j, const Pattern &p);
         void from_json(const nlohmann::json &j, Pattern &p);
 
+        enum DelayType {
+            DLY_DIGITAL = 0,
+            DLY_ANALOG,
+            DLY_LENGTH
+        };
+
+        struct Delay
+        {
+            bool active;
+            char type;
+            unsigned timeMs;
+            unsigned timeSamps; // priv
+            double gain;
+            double gainLin;     // priv
+            double feedback;
+            Delay()
+                : active(false),
+                  type(DLY_DIGITAL),
+                  timeMs(1000),
+                  timeSamps(0),
+                  gain(-6.0),
+                  gainLin(0.0),
+                  feedback(0.5)
+            {
+            }
+        };
+        void to_json(nlohmann::json &j, const Delay &d);
+        void from_json(const nlohmann::json &j, Delay &d);
+
         struct Pad
         {
             bool available;
@@ -69,6 +98,7 @@ namespace mck
             double gainLeftLin;
             double gainRightLin;
             double pitch;
+            Delay delay;
             unsigned nPatterns;
             std::vector<Pattern> patterns;
             Pad()
@@ -83,6 +113,7 @@ namespace mck
                   gain(0.0),
                   pan(0.0),
                   pitch(1.0),
+                  delay(),
                   nPatterns(1),
                   patterns()
             {

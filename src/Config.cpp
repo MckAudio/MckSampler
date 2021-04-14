@@ -45,6 +45,23 @@ void mck::sampler::from_json(const nlohmann::json &j, mck::sampler::Pattern &p)
     p.steps = j.at("steps").get<std::vector<Step>>();
 }
 
+void mck::sampler::to_json(nlohmann::json &j, const Delay &d)
+{
+    j["active"] = d.active;
+    j["type"] = d.type;
+    j["timeMs"] = d.timeMs;
+    j["gain"] = d.gain;
+    j["feedback"] = d.feedback;
+}
+void mck::sampler::from_json(const nlohmann::json &j, Delay &d)
+{
+    d.active = j.at("active").get<bool>();
+    d.type = std::min((char)DLY_ANALOG, std::max((char)DLY_DIGITAL, j.at("type").get<char>()));
+    d.timeMs = std::max((unsigned)1, std::min((unsigned)10000, j.at("timeMs").get<unsigned>()));
+    d.gain = j.at("gain").get<double>();
+    d.feedback = std::min(1.0, std::max(0.0, j.at("feedback").get<double>()));
+}
+
 void mck::sampler::to_json(nlohmann::json &j, const mck::sampler::Pad &p)
 {
     j["available"] = p.available;
@@ -57,6 +74,7 @@ void mck::sampler::to_json(nlohmann::json &j, const mck::sampler::Pad &p)
     j["gain"] = p.gain;
     j["pan"] = p.pan;
     j["pitch"] = p.pitch;
+    j["delay"] = p.delay;
     j["nPatterns"] = p.nPatterns;
     j["patterns"] = p.patterns;
 }
@@ -73,6 +91,14 @@ void mck::sampler::from_json(const nlohmann::json &j, mck::sampler::Pad &p)
     p.gain = j.at("gain").get<double>();
     p.pan = j.at("pan").get<double>();
     p.pitch = j.at("pitch").get<double>();
+    try
+    {
+        p.delay = j.at("delay").get<Delay>();
+    }
+    catch (std::exception &e)
+    {
+        p.delay = Delay();
+    }
     try
     {
         p.nPatterns = j.at("nPatterns").get<unsigned>();

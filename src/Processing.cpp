@@ -9,13 +9,22 @@
 #include <filesystem>
 #include <nlohmann/json.hpp>
 
+namespace fs = std::filesystem;
+
 // Audio
 #include <jack/jack.h>
 #include <jack/midiport.h>
 #include <sndfile.h>
 #include <samplerate.h>
 
-namespace fs = std::filesystem;
+// FX
+#include <q/support/literals.hpp>
+#include <q/fx/delay.hpp>
+#include <q/fx/lowpass.hpp>
+
+namespace q = cycfi::q;
+using namespace q::literals;
+
 
 static int JackProcess(jack_nframes_t nframes, void *arg)
 {
@@ -108,6 +117,13 @@ bool mck::Processing::Init()
     m_bufferSize = jack_get_buffer_size(m_client);
     m_sampleRate = jack_get_sample_rate(m_client);
     m_transportRate = m_sampleRate;
+
+    // 2B - Init FX
+    for (auto &sample : m_samples)
+    {
+        sample.delay[0] = new q::delay(m_sampleRate);
+        sample.delay[1] = new q::delay(m_sampleRate);
+    }
 
     // 3A - Scan Sample Packs
     std::filesystem::path samplePackPath(homeDir);
@@ -287,6 +303,10 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
 
     if (m_updateConfig.load())
     {
+        for (unsigned i = 0; i < m_samples.size(); i++)
+        {
+            m_samples[i].curDelay = m_samples[i].newDelay;
+        }
         m_curConfig = m_newConfig;
         m_updateConfig = false;
     }
@@ -729,6 +749,10 @@ void mck::Processing::SetConfiguration(sampler::Config &config, bool connect)
         config.pads[i].gainLeftLin = gainLin * std::sqrt((double)(100 - config.pads[i].pan) / 200.0);
         config.pads[i].gainRightLin = gainLin * std::sqrt((double)(100 + config.pads[i].pan) / 200.0);
         config.pads[i].lengthSamps = (unsigned)std::floor((double)config.pads[i].lengthMs * (double)m_sampleRate / 1000.0);
+        // Update Delay
+        config.pads[i].delay.gain = std::min(6.0, std::max(-200.0, config.pads[i].delay.gain));
+        config.pads[i].delay.gainLin = DbToLin(config.pads[i].delay.gain);
+        config.pads[i].delay.timeSamps = (unsigned)std::floor((double)config.pads[i].delay.timeMs * (double)m_sampleRate / 1000.0);
     }
 
     if (m_isProcessing.load())
@@ -744,6 +768,12 @@ void mck::Processing::SetConfiguration(sampler::Config &config, bool connect)
         if (updateSamples[i])
         {
             m_samples[i].update = true;
+        }
+        if ((i >= m_config[m_curConfig].pads.size()) || (config.pads[i].delay.timeSamps != m_config[m_curConfig].pads[i].delay.timeSamps))
+        {
+            m_samples[i].newDelay = 1 - m_samples[i].curDelay;
+            delete m_samples[i].delay[m_samples[i].newDelay];
+            m_samples[i].delay[m_samples[i].newDelay] = new q::delay(config.pads[i].delay.timeSamps);
         }
     }
 

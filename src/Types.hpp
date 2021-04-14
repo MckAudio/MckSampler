@@ -5,6 +5,7 @@
 #include <nlohmann/json.hpp>
 #include "helper/WaveHelper.hpp"
 //#include <rubberband/RubberBandStretcher.h>
+#include <q/fx/delay.hpp>
 
 namespace mck
 {
@@ -12,14 +13,34 @@ namespace mck
     {
         bool update;
         char curSample;
+        char curDelay;
+        char newDelay;
         WaveInfo info[2];
         std::vector<std::vector<float>> buffer[2];
+        cycfi::q::delay *delay[2];
         /*
         float **pitchBuffer;
         float **outBuffer;
         RubberBand::RubberBandStretcher *pitcher;
         */
-        AudioSample() : update(false), curSample(0) {}
+        AudioSample()
+            : update(false),
+              curSample(0),
+              curDelay(0),
+              newDelay(1)
+        {
+        }
+        ~AudioSample()
+        {
+            if (delay[0] != nullptr)
+            {
+                free(delay[0]);
+            }
+            if (delay[1] != nullptr)
+            {
+                free(delay[1]);
+            }
+        }
     };
     struct AudioVoice
     {
