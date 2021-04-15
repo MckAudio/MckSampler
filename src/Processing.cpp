@@ -25,7 +25,6 @@ namespace fs = std::filesystem;
 namespace q = cycfi::q;
 using namespace q::literals;
 
-
 static int JackProcess(jack_nframes_t nframes, void *arg)
 {
     auto proc = (mck::Processing *)arg;
@@ -121,8 +120,12 @@ bool mck::Processing::Init()
     // 2B - Init FX
     for (auto &sample : m_samples)
     {
-        sample.delay[0] = new q::delay(m_sampleRate);
-        sample.delay[1] = new q::delay(m_sampleRate);
+        sample.delay[0][0] = new q::delay(m_sampleRate);
+        sample.delay[0][1] = new q::delay(m_sampleRate);
+        sample.delay[1][0] = new q::delay(m_sampleRate);
+        sample.delay[1][1] = new q::delay(m_sampleRate);
+        sample.dsp[0] = new float[m_bufferSize];
+        sample.dsp[1] = new float[m_bufferSize];
     }
 
     // 3A - Scan Sample Packs
@@ -507,14 +510,12 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
             s.update = false;
             s.curSample = 1 - s.curSample;
         }
+
+        memset(s.dsp[0], 0, m_bufferSize * sizeof(float));
+        memset(s.dsp[1], 0, m_bufferSize * sizeof(float));
     }
 
-    jack_default_audio_sample_t *out_l = (jack_default_audio_sample_t *)jack_port_get_buffer(m_audioOutL, nframes);
-    jack_default_audio_sample_t *out_r = (jack_default_audio_sample_t *)jack_port_get_buffer(m_audioOutR, nframes);
-
-    memset(out_l, 0, nframes * sizeof(jack_default_audio_sample_t));
-    memset(out_r, 0, nframes * sizeof(jack_default_audio_sample_t));
-
+    // Voices
     unsigned len = 0;
     for (auto &v : m_voices)
     {
@@ -546,16 +547,16 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
             float gainR = std::min(1.0f, v.gainR * std::sqrt(2.0f));
             for (unsigned i = 0; i < len; i++)
             {
-                out_l[v.startIdx + i] += buffer[0][v.bufferIdx + i] * gainL;
-                out_r[v.startIdx + i] += buffer[1][v.bufferIdx + i] * gainR;
+                m_samples[v.padIdx].dsp[0][i + v.startIdx] += buffer[0][v.bufferIdx + i] * gainL;
+                m_samples[v.padIdx].dsp[1][i + v.startIdx] += buffer[1][v.bufferIdx + i] * gainR;
             }
         }
         else
         {
             for (unsigned i = 0; i < len; i++)
             {
-                out_l[v.startIdx + i] += buffer[0][v.bufferIdx + i] * v.gainL;
-                out_r[v.startIdx + i] += buffer[0][v.bufferIdx + i] * v.gainR;
+                m_samples[v.padIdx].dsp[0][i + v.startIdx] += buffer[0][v.bufferIdx + i] * v.gainL;
+                m_samples[v.padIdx].dsp[1][i + v.startIdx] += buffer[0][v.bufferIdx + i] * v.gainR;
             }
 
             /*
@@ -588,6 +589,35 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
         {
             // Stop Sample
             v.playSample = false;
+        }
+    }
+
+    jack_default_audio_sample_t *out_l = (jack_default_audio_sample_t *)jack_port_get_buffer(m_audioOutL, nframes);
+    jack_default_audio_sample_t *out_r = (jack_default_audio_sample_t *)jack_port_get_buffer(m_audioOutR, nframes);
+
+    memset(out_l, 0, nframes * sizeof(jack_default_audio_sample_t));
+    memset(out_r, 0, nframes * sizeof(jack_default_audio_sample_t));
+
+    float dly_l = 0.0f;
+    float dly_r = 0.0f;
+
+    for (unsigned i = 0; i < m_samples.size(); i++)
+    {
+        auto &s = m_samples[i];
+        auto &p = m_config[m_curConfig].pads[i];
+
+        for (unsigned j = 0; j < nframes; j++)
+        {
+            dly_l = (*s.delay[s.curDelay][0])();
+            dly_r = (*s.delay[s.curDelay][1])();
+
+            // Mix Buffers to master out
+            out_l[j] += (s.dsp[0][j] + (dly_l * p.delay.gainLin));// * p.gainLeftLin));
+            out_r[j] += (s.dsp[1][j] + (dly_r * p.delay.gainLin));// * p.gainRightLin));
+
+            // Delay
+            s.delay[s.curDelay][0]->push(s.dsp[0][j] + p.delay.feedback * dly_l);
+            s.delay[s.curDelay][1]->push(s.dsp[1][j] + p.delay.feedback * dly_r);
         }
     }
 
@@ -739,7 +769,9 @@ void mck::Processing::SetConfiguration(sampler::Config &config, bool connect)
             {
                 config.pads[i].available = false;
             }
-        } else if (config.pads[i].available) {
+        }
+        else if (config.pads[i].available)
+        {
             config.pads[i].lengthMs = std::min(config.pads[i].lengthMs, m_samples[i].info[m_samples[i].curSample].lengthMs);
         }
 
@@ -772,8 +804,10 @@ void mck::Processing::SetConfiguration(sampler::Config &config, bool connect)
         if ((i >= m_config[m_curConfig].pads.size()) || (config.pads[i].delay.timeSamps != m_config[m_curConfig].pads[i].delay.timeSamps))
         {
             m_samples[i].newDelay = 1 - m_samples[i].curDelay;
-            delete m_samples[i].delay[m_samples[i].newDelay];
-            m_samples[i].delay[m_samples[i].newDelay] = new q::delay(config.pads[i].delay.timeSamps);
+            delete m_samples[i].delay[m_samples[i].newDelay][0];
+            delete m_samples[i].delay[m_samples[i].newDelay][1];
+            m_samples[i].delay[m_samples[i].newDelay][0] = new q::delay(config.pads[i].delay.timeSamps);
+            m_samples[i].delay[m_samples[i].newDelay][1] = new q::delay(config.pads[i].delay.timeSamps);
         }
     }
 

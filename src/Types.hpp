@@ -17,7 +17,8 @@ namespace mck
         char newDelay;
         WaveInfo info[2];
         std::vector<std::vector<float>> buffer[2];
-        cycfi::q::delay *delay[2];
+        cycfi::q::delay *delay[2][2];
+        float *dsp[2];
         /*
         float **pitchBuffer;
         float **outBuffer;
@@ -32,13 +33,26 @@ namespace mck
         }
         ~AudioSample()
         {
+            /*
             if (delay[0] != nullptr)
             {
-                free(delay[0]);
+                delete delay[0];
+                delay[0] = nullptr;
             }
             if (delay[1] != nullptr)
             {
-                free(delay[1]);
+                delete delay[1];
+                delay[1] = nullptr;
+            }*/
+            if (dsp[0] != nullptr)
+            {
+                delete dsp[0];
+                dsp[0] = nullptr;
+            }
+            if (dsp[1] != nullptr)
+            {
+                delete dsp[1];
+                dsp[1] = nullptr;
             }
         }
     };
