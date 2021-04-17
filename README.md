@@ -1,14 +1,19 @@
 # MckSampler
 
+![MckSampler Screenshot](screenshot.png)
+
 ## Description
 
-MckSampler is a one shot sample player that allows the user to trigger drum samples in WAV format with MIDI note messages.
+MckSampler is a software drum machine that is tailored to be used with multitouch capable devices like convertibles or tablets. 
+MckSampler allows the user to trigger drum samples in WAV format with 16 different pads. 
+The samples can also be triggered with MIDI note messages or through the integrated sequencer.
 
-At this point MckSampler is just a command line program that creates its configuration in the folder ```$HOME/.mck/sampler/config.json```.
+MckSampler creates its configuration in the folder ```$HOME/.mck/sampler/config.json```.
 
-The configuration is created with the command ```./mck-sampler --config```.
-
-The desired WAV files have to go in the folder ```$HOME/.mck/sampler/audio/```.
+MckSampler reads one shot samples from the folder ```$HOME/.local/share/mck/sampler/```. These samples should be arranged in subfolders and need to have a configuration file with the extension  ```.mcksp```. Some ready-to-use samplepacks can be found in the [MckSamplePacks](https://github.com/MckAudio/MckSamplePacks) repository. To use the MckSamplePacks with MckSampler just run:
+```
+git clone https://github.com/MckAudio/MckSamplePacks $HOME/.local/share/mck/sampler
+```
 
 ## Build Dependencies
 
@@ -39,15 +44,17 @@ sudo make install
 - [x] JSON config file
 - [x] Samplerate conversion
 - [x] WAV file import
-- [x] Configuration of pads, samples and controls per cli
-- [x] Web interface
+- [x] GUI using Webkit2GTK and Svelte
 - [ ] Sample import from any directory
 - [ ] Choke groups (stop one sample if another is triggered)
 - [ ] N * 16 Step Sequencer
   - [ ] Listen to Jack Transport
   - [ ] Lead Jack Transport
   - [ ] Polyrhythm with variable step length 
-- [ ] Modification per pad
+- [ ] Modification / FX per pad
+  - [x] Delay
+  - [x] Compressor
+  - [x] sample length and sample direction
+  - [ ] ADSR
   - [ ] Pitch
   - [ ] LowPass Filter
-  - [ ] ADSR / Length
