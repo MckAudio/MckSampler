@@ -124,6 +124,12 @@ bool mck::Processing::Init()
         sample.delay[0][1] = new q::delay(m_sampleRate);
         sample.delay[1][0] = new q::delay(m_sampleRate);
         sample.delay[1][1] = new q::delay(m_sampleRate);
+        sample.env[0] = new q::fast_rms_envelope_follower(70_ms, m_sampleRate);
+        sample.env[1] = new q::fast_rms_envelope_follower(70_ms, m_sampleRate);
+        sample.comp[0] = new q::compressor(-10_dB, 0.5);
+        sample.comp[1] = new q::compressor(-10_dB, 0.5);
+        sample.lp[0] = new q::one_pole_lowpass(1000_Hz, m_sampleRate);
+        sample.lp[1] = new q::one_pole_lowpass(1000_Hz, m_sampleRate);
         sample.dsp[0] = new float[m_bufferSize];
         sample.dsp[1] = new float[m_bufferSize];
     }
@@ -394,6 +400,7 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
                         m_voices[m_voiceIdx].startIdx = midiEvent.time;
                         m_voices[m_voiceIdx].bufferIdx = 0;
                         m_voices[m_voiceIdx].bufferLen = m_config[m_curConfig].pads[j].lengthSamps;
+                        m_voices[m_voiceIdx].bufferIdx = m_config[m_curConfig].pads[j].reverse ? m_voices[m_voiceIdx].bufferLen - 1 : 0;
                         m_voices[m_voiceIdx].gainL = ((float)(midiEvent.buffer[2] & 0x7f) / 127.0f) * m_config[m_curConfig].pads[j].gainLeftLin;
                         m_voices[m_voiceIdx].gainR = ((float)(midiEvent.buffer[2] & 0x7f) / 127.0f) * m_config[m_curConfig].pads[j].gainRightLin;
                         m_voices[m_voiceIdx].pitch = m_config[m_curConfig].pads[j].pitch;
@@ -431,8 +438,8 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
                 m_voices[m_voiceIdx].playSample = true;
                 m_voices[m_voiceIdx].padIdx = idx;
                 m_voices[m_voiceIdx].startIdx = 0;
-                m_voices[m_voiceIdx].bufferIdx = 0;
                 m_voices[m_voiceIdx].bufferLen = m_config[m_curConfig].pads[idx].lengthSamps;
+                m_voices[m_voiceIdx].bufferIdx = m_config[m_curConfig].pads[idx].reverse ? m_voices[m_voiceIdx].bufferLen - 1 : 0;
                 m_voices[m_voiceIdx].gainL = m_config[m_curConfig].pads[idx].gainLeftLin * strength;
                 m_voices[m_voiceIdx].gainR = m_config[m_curConfig].pads[idx].gainRightLin * strength;
                 m_voices[m_voiceIdx].pitch = m_config[m_curConfig].pads[idx].pitch;
@@ -469,8 +476,8 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
                 m_voices[m_voiceIdx].playSample = true;
                 m_voices[m_voiceIdx].padIdx = padIdx;
                 m_voices[m_voiceIdx].startIdx = ts.pulseIdx % m_bufferSize;
-                m_voices[m_voiceIdx].bufferIdx = 0;
                 m_voices[m_voiceIdx].bufferLen = pad.lengthSamps;
+                m_voices[m_voiceIdx].bufferIdx = pad.reverse ? m_voices[m_voiceIdx].bufferLen - 1 : 0;
                 m_voices[m_voiceIdx].gainL = pad.gainLeftLin * strength;
                 m_voices[m_voiceIdx].gainR = pad.gainRightLin * strength;
                 m_voices[m_voiceIdx].pitch = pad.pitch;
@@ -494,13 +501,6 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
     {
         m_transportRate += m_bufferSize;
     }
-
-    /*
-    if (resetSample)
-    {
-        sf_seek(sndFile, 0, SEEK_SET);
-        resetSample = false;
-    }*/
 
     // Update Samples
     for (auto &s : m_samples)
@@ -533,62 +533,74 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
         }
 
         std::vector<std::vector<float>> &buffer = m_samples[v.padIdx].buffer[m_samples[v.padIdx].curSample];
-        /*
-        for (unsigned i = 0; i < s->numChans; i++)
-        {
-            memset(s->pitchBuffer[i], 0, bufferSize * sizeof(float));
-        }*/
-        len = std::min(m_bufferSize, v.bufferLen - v.bufferIdx) - v.startIdx;
 
-        if (info.numChans > 1)
+        if (m_config[m_curConfig].pads[v.padIdx].reverse)
         {
-            // Compensate Mono Panning Law
-            float gainL = std::min(1.0f, v.gainL * std::sqrt(2.0f));
-            float gainR = std::min(1.0f, v.gainR * std::sqrt(2.0f));
-            for (unsigned i = 0; i < len; i++)
+            len = std::min(m_bufferSize, v.bufferIdx) - v.startIdx;
+
+            if (info.numChans > 1)
             {
-                m_samples[v.padIdx].dsp[0][i + v.startIdx] += buffer[0][v.bufferIdx + i] * gainL;
-                m_samples[v.padIdx].dsp[1][i + v.startIdx] += buffer[1][v.bufferIdx + i] * gainR;
+                // Compensate Mono Panning Law
+                float gainL = std::min(1.0f, v.gainL * std::sqrt(2.0f));
+                float gainR = std::min(1.0f, v.gainR * std::sqrt(2.0f));
+                for (unsigned i = 0; i < len; i++)
+                {
+                    m_samples[v.padIdx].dsp[0][i + v.startIdx] += buffer[0][v.bufferIdx - i] * gainL;
+                    m_samples[v.padIdx].dsp[1][i + v.startIdx] += buffer[1][v.bufferIdx - i] * gainR;
+                }
             }
+            else
+            {
+                for (unsigned i = 0; i < len; i++)
+                {
+                    m_samples[v.padIdx].dsp[0][i + v.startIdx] += buffer[0][v.bufferIdx - i] * v.gainL;
+                    m_samples[v.padIdx].dsp[1][i + v.startIdx] += buffer[0][v.bufferIdx - i] * v.gainR;
+                }
+            }
+            int newIdx = (int)v.bufferIdx - (int)len;
+            v.startIdx = 0;
+
+            if (newIdx <= 0)
+            {
+                // Stop Sample
+                v.bufferIdx = 0;
+                v.playSample = false;
+            } else {
+                v.bufferIdx = (unsigned)newIdx;
+            }
+
         }
         else
         {
-            for (unsigned i = 0; i < len; i++)
-            {
-                m_samples[v.padIdx].dsp[0][i + v.startIdx] += buffer[0][v.bufferIdx + i] * v.gainL;
-                m_samples[v.padIdx].dsp[1][i + v.startIdx] += buffer[0][v.bufferIdx + i] * v.gainR;
-            }
+            len = std::min(m_bufferSize, v.bufferLen - v.bufferIdx) - v.startIdx;
 
-            /*
-            memcpy(s->pitchBuffer[0] + v.startIdx, s->buffer + v.bufferIdx, len);
-            s->pitcher->setPitchScale(v.pitch);
-            unsigned processed = 0;
-            unsigned procOut = 0;
-            while (processed < bufferSize)
+            if (info.numChans > 1)
             {
-                unsigned procIn = s->pitcher->getSamplesRequired();
-                procIn = std::min(bufferSize - processed, procIn);
-                s->pitcher->process(s->pitchBuffer + processed, procIn, false);
-                processed += procIn;
-                int avail = s->pitcher->available();
-                int actual = s->pitcher->retrieve(s->outBuffer + procOut, avail);
-                procOut += actual;
+                // Compensate Mono Panning Law
+                float gainL = std::min(1.0f, v.gainL * std::sqrt(2.0f));
+                float gainR = std::min(1.0f, v.gainR * std::sqrt(2.0f));
+                for (unsigned i = 0; i < len; i++)
+                {
+                    m_samples[v.padIdx].dsp[0][i + v.startIdx] += buffer[0][v.bufferIdx + i] * gainL;
+                    m_samples[v.padIdx].dsp[1][i + v.startIdx] += buffer[1][v.bufferIdx + i] * gainR;
+                }
             }
-
-            for (unsigned i = 0; i < len; i++)
+            else
             {
-                out_l[v.startIdx + i] += s->outBuffer[0][i] * v.gain * 0.707f;
-                out_r[v.startIdx + i] += s->outBuffer[0][i] * v.gain * 0.707f;
+                for (unsigned i = 0; i < len; i++)
+                {
+                    m_samples[v.padIdx].dsp[0][i + v.startIdx] += buffer[0][v.bufferIdx + i] * v.gainL;
+                    m_samples[v.padIdx].dsp[1][i + v.startIdx] += buffer[0][v.bufferIdx + i] * v.gainR;
+                }
             }
-            */
-        }
-        v.bufferIdx += len;
-        v.startIdx = 0;
+            v.bufferIdx += len;
+            v.startIdx = 0;
 
-        if (v.bufferIdx >= v.bufferLen)
-        {
-            // Stop Sample
-            v.playSample = false;
+            if (v.bufferIdx >= v.bufferLen)
+            {
+                // Stop Sample
+                v.playSample = false;
+            }
         }
     }
 
@@ -600,6 +612,8 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
 
     float dly_l = 0.0f;
     float dly_r = 0.0f;
+    q::decibel env_l(-60_dB);
+    q::decibel env_r(-60_dB);
 
     for (unsigned i = 0; i < m_samples.size(); i++)
     {
@@ -611,13 +625,28 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
             dly_l = (*s.delay[s.curDelay][0])();
             dly_r = (*s.delay[s.curDelay][1])();
 
+            if (p.delay.type == sampler::DLY_ANALOG)
+            {
+                dly_l = (*s.lp[0])(dly_l);
+                dly_r = (*s.lp[1])(dly_r);
+            }
+
+            env_l = (*s.env[0])(s.dsp[0][j]);
+            env_r = (*s.env[1])(s.dsp[1][j]);
+
+            if (p.comp.active)
+            {
+                s.dsp[0][j] *= (float((*s.comp[0])(env_l)) * p.comp.makeupLin);
+                s.dsp[1][j] *= (float((*s.comp[1])(env_r)) * p.comp.makeupLin);
+            }
+
             // Mix Buffers to master out
-            out_l[j] += (s.dsp[0][j] + (dly_l * p.delay.gainLin));// * p.gainLeftLin));
-            out_r[j] += (s.dsp[1][j] + (dly_r * p.delay.gainLin));// * p.gainRightLin));
+            out_l[j] += (s.dsp[0][j] + (dly_l * p.delay.gainLin)); // * p.gainLeftLin));
+            out_r[j] += (s.dsp[1][j] + (dly_r * p.delay.gainLin)); // * p.gainRightLin));
 
             // Delay
-            s.delay[s.curDelay][0]->push(s.dsp[0][j] + p.delay.feedback * dly_l);
-            s.delay[s.curDelay][1]->push(s.dsp[1][j] + p.delay.feedback * dly_r);
+            s.delay[s.curDelay][0]->push(s.dsp[0][j] * (float)p.delay.active + p.delay.feedback * dly_l);
+            s.delay[s.curDelay][1]->push(s.dsp[1][j] * (float)p.delay.active + p.delay.feedback * dly_r);
         }
     }
 
@@ -761,7 +790,7 @@ void mck::Processing::SetConfiguration(sampler::Config &config, bool connect)
             if (info.valid)
             {
                 config.pads[i].available = true;
-                config.pads[i].lengthMs = info.lengthMs;
+                config.pads[i].maxLengthMs = info.lengthMs;
                 m_samples[i].info[newSample] = info;
                 updateSamples[i] = true;
             }
@@ -772,19 +801,22 @@ void mck::Processing::SetConfiguration(sampler::Config &config, bool connect)
         }
         else if (config.pads[i].available)
         {
-            config.pads[i].lengthMs = std::min(config.pads[i].lengthMs, m_samples[i].info[m_samples[i].curSample].lengthMs);
+            config.pads[i].maxLengthMs = m_samples[i].info[m_samples[i].curSample].lengthMs;
         }
+        config.pads[i].lengthMs = std::min(config.pads[i].lengthMs, config.pads[i].maxLengthMs);
+        config.pads[i].lengthSamps = (unsigned)std::floor((double)config.pads[i].lengthMs * (double)m_sampleRate / 1000.0);
 
         config.pads[i].gain = std::min(6.0, std::max(-200.0, config.pads[i].gain));
         config.pads[i].pan = std::min(100.0, std::max(-100.0, config.pads[i].pan));
         double gainLin = DbToLin(config.pads[i].gain);
         config.pads[i].gainLeftLin = gainLin * std::sqrt((double)(100 - config.pads[i].pan) / 200.0);
         config.pads[i].gainRightLin = gainLin * std::sqrt((double)(100 + config.pads[i].pan) / 200.0);
-        config.pads[i].lengthSamps = (unsigned)std::floor((double)config.pads[i].lengthMs * (double)m_sampleRate / 1000.0);
         // Update Delay
         config.pads[i].delay.gain = std::min(6.0, std::max(-200.0, config.pads[i].delay.gain));
         config.pads[i].delay.gainLin = DbToLin(config.pads[i].delay.gain);
         config.pads[i].delay.timeSamps = (unsigned)std::floor((double)config.pads[i].delay.timeMs * (double)m_sampleRate / 1000.0);
+        // Update Compressor
+        config.pads[i].comp.makeupLin = DbToLin(config.pads[i].comp.makeup);
     }
 
     if (m_isProcessing.load())
@@ -801,13 +833,29 @@ void mck::Processing::SetConfiguration(sampler::Config &config, bool connect)
         {
             m_samples[i].update = true;
         }
-        if ((i >= m_config[m_curConfig].pads.size()) || (config.pads[i].delay.timeSamps != m_config[m_curConfig].pads[i].delay.timeSamps))
+
+        bool updateDsp = (i >= m_config[m_curConfig].pads.size());
+
+        if (updateDsp || (config.pads[i].delay.timeSamps != m_config[m_curConfig].pads[i].delay.timeSamps))
         {
             m_samples[i].newDelay = 1 - m_samples[i].curDelay;
             delete m_samples[i].delay[m_samples[i].newDelay][0];
             delete m_samples[i].delay[m_samples[i].newDelay][1];
             m_samples[i].delay[m_samples[i].newDelay][0] = new q::delay(config.pads[i].delay.timeSamps);
             m_samples[i].delay[m_samples[i].newDelay][1] = new q::delay(config.pads[i].delay.timeSamps);
+        }
+        /*
+        if (updateDsp || (config.pads[i].comp.attackMs != m_config[m_curConfig].pads[i].comp.attackMs) || (config.pads[i].comp.releaseMs != m_config[m_curConfig].pads[i].comp.releaseMs))
+        {
+            m_samples[i].env[0]->hold(config.pads[i].comp.attackMs, m_sampleRate);
+            m_samples[i].env[1]->threshold(config.pads[i].comp.releaseMs, m_sampleRate);
+        }*/
+        if (updateDsp || (config.pads[i].comp.threshold != m_config[m_curConfig].pads[i].comp.threshold) || (config.pads[i].comp.ratio != m_config[m_curConfig].pads[i].comp.ratio))
+        {
+            m_samples[i].comp[0]->threshold(q::decibel(config.pads[i].comp.threshold, q::decibel::direct));
+            m_samples[i].comp[0]->ratio(1.0f / config.pads[i].comp.ratio);
+            m_samples[i].comp[1]->threshold(q::decibel(config.pads[i].comp.threshold, q::decibel::direct));
+            m_samples[i].comp[1]->ratio(1.0f / config.pads[i].comp.ratio);
         }
     }
 

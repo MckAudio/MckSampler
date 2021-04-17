@@ -6,18 +6,28 @@
 #include "helper/WaveHelper.hpp"
 //#include <rubberband/RubberBandStretcher.h>
 #include <q/fx/delay.hpp>
+#include <q/fx/lowpass.hpp>
+#include <q/fx/dynamic.hpp>
+#include <q/fx/envelope.hpp>
 
 namespace mck
 {
     struct AudioSample
     {
+        // Sample
         bool update;
         char curSample;
         char curDelay;
         char newDelay;
         WaveInfo info[2];
         std::vector<std::vector<float>> buffer[2];
+        // Delay
         cycfi::q::delay *delay[2][2];
+        cycfi::q::one_pole_lowpass *lp[2];
+        // Compressor
+        cycfi::q::fast_rms_envelope_follower *env[2];
+        cycfi::q::compressor *comp[2];
+        // Buffer
         float *dsp[2];
         /*
         float **pitchBuffer;

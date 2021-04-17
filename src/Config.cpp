@@ -57,9 +57,30 @@ void mck::sampler::from_json(const nlohmann::json &j, Delay &d)
 {
     d.active = j.at("active").get<bool>();
     d.type = std::min((char)DLY_ANALOG, std::max((char)DLY_DIGITAL, j.at("type").get<char>()));
-    d.timeMs = std::max((unsigned)1, std::min((unsigned)10000, j.at("timeMs").get<unsigned>()));
+    d.timeMs = std::max((unsigned)10, std::min((unsigned)1000, j.at("timeMs").get<unsigned>()));
     d.gain = j.at("gain").get<double>();
     d.feedback = std::min(1.0, std::max(0.0, j.at("feedback").get<double>()));
+}
+
+
+void mck::sampler::to_json(nlohmann::json &j, const Compressor &c)
+{
+    j["active"] = c.active;
+    j["attackMs"] = c.attackMs;
+    j["releaseMs"] = c.releaseMs;
+    j["threshold"] = c.threshold;
+    j["ratio"] = c.ratio;
+    j["makeup"] = c.makeup;
+}
+void mck::sampler::from_json(const nlohmann::json &j, Compressor &c)
+{
+    
+    c.active = j.at("active").get<bool>();
+    c.attackMs = std::max((unsigned)1, std::min((unsigned)500, j.at("attackMs").get<unsigned>()));
+    c.releaseMs = std::max((unsigned)1, std::min((unsigned)1000, j.at("releaseMs").get<unsigned>()));
+    c.threshold = std::max(-60.0, std::min(0.0, j.at("threshold").get<double>()));
+    c.ratio = std::max(1.0, std::min(10.0, j.at("ratio").get<double>()));
+    c.makeup = std::max(0.0, std::min(20.0, j.at("makeup").get<double>()));
 }
 
 void mck::sampler::to_json(nlohmann::json &j, const mck::sampler::Pad &p)
@@ -67,6 +88,7 @@ void mck::sampler::to_json(nlohmann::json &j, const mck::sampler::Pad &p)
     j["available"] = p.available;
     j["reverse"] = p.reverse;
     j["lengthMs"] = p.lengthMs;
+    j["maxLengthMs"] = p.maxLengthMs;
     j["tone"] = p.tone;
     j["ctrl"] = p.ctrl;
     j["samplePath"] = p.samplePath;
@@ -75,6 +97,7 @@ void mck::sampler::to_json(nlohmann::json &j, const mck::sampler::Pad &p)
     j["pan"] = p.pan;
     j["pitch"] = p.pitch;
     j["delay"] = p.delay;
+    j["comp"] = p.comp;
     j["nPatterns"] = p.nPatterns;
     j["patterns"] = p.patterns;
 }
@@ -98,6 +121,14 @@ void mck::sampler::from_json(const nlohmann::json &j, mck::sampler::Pad &p)
     catch (std::exception &e)
     {
         p.delay = Delay();
+    }
+    try
+    {
+        p.comp = j.at("comp").get<Compressor>();
+    }
+    catch (std::exception &e)
+    {
+        p.comp = Compressor();
     }
     try
     {

@@ -23,6 +23,18 @@
         });
         SelectedPad.set(_idx);
     }
+
+    $: if (data !== undefined && data.pads.length >= 16)
+    {
+        dataReady = true;
+        for (let i = 0; i < 8; i++)
+        {
+            upperPads[i].name = data.pads[i].sampleName !== "" ? data.pads[i].sampleName : "Empty";
+            lowerPads[i].name = data.pads[i+8].sampleName !== "" ? data.pads[i+8].sampleName : "Empty";
+        }
+    } else {
+        dataReady = false;
+    }
 </script>
 
 <style>

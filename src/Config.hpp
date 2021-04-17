@@ -54,7 +54,8 @@ namespace mck
         void to_json(nlohmann::json &j, const Pattern &p);
         void from_json(const nlohmann::json &j, Pattern &p);
 
-        enum DelayType {
+        enum DelayType
+        {
             DLY_DIGITAL = 0,
             DLY_ANALOG,
             DLY_LENGTH
@@ -67,12 +68,12 @@ namespace mck
             unsigned timeMs;
             unsigned timeSamps; // priv
             double gain;
-            double gainLin;     // priv
+            double gainLin; // priv
             double feedback;
             Delay()
                 : active(false),
                   type(DLY_DIGITAL),
-                  timeMs(1000),
+                  timeMs(300),
                   timeSamps(0),
                   gain(-6.0),
                   gainLin(0.0),
@@ -83,12 +84,36 @@ namespace mck
         void to_json(nlohmann::json &j, const Delay &d);
         void from_json(const nlohmann::json &j, Delay &d);
 
+        struct Compressor
+        {
+            bool active;
+            unsigned attackMs;
+            unsigned releaseMs;
+            double threshold;
+            double ratio;
+            double makeup;
+            double makeupLin;
+            Compressor()
+                : active(false),
+                  attackMs(50),
+                  releaseMs(300),
+                  threshold(-10.0),
+                  ratio(2.0),
+                  makeup(0.0),
+                  makeupLin(1.0)
+            {
+            }
+        };
+        void to_json(nlohmann::json &j, const Compressor &c);
+        void from_json(const nlohmann::json &j, Compressor &c);
+
         struct Pad
         {
             bool available;
             bool reverse;
             unsigned lengthMs;
             unsigned lengthSamps;
+            unsigned maxLengthMs;
             unsigned tone;
             unsigned ctrl;
             std::string samplePath;
@@ -99,6 +124,7 @@ namespace mck
             double gainRightLin;
             double pitch;
             Delay delay;
+            Compressor comp;
             unsigned nPatterns;
             std::vector<Pattern> patterns;
             Pad()
@@ -106,6 +132,7 @@ namespace mck
                   reverse(false),
                   lengthMs(60000),
                   lengthSamps(0),
+                  maxLengthMs(60000),
                   tone(255),
                   ctrl(255),
                   samplePath(""),
@@ -114,6 +141,7 @@ namespace mck
                   pan(0.0),
                   pitch(1.0),
                   delay(),
+                  comp(),
                   nPatterns(1),
                   patterns()
             {
