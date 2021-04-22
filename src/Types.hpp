@@ -167,6 +167,56 @@ namespace mck
     void to_json(nlohmann::json &j, const SampleCommand &s);
     void from_json(const nlohmann::json &j, SampleCommand &s);
 
+    enum SampleEditCmd
+    {
+        SCMD_CREATE = 0,
+        SCMD_DELETE,
+        SCMD_CHANGE,
+        SCMD_IMPORT,
+        SCMD_EXPORT,
+        SCMD_LENGTH
+    };
+
+    enum SampleEditClass
+    {
+        SEC_PACK = 0,
+        SEC_CATEGORY,
+        SEC_SAMPLE,
+        SEC_LENGTH
+    };
+    enum SampleEditType
+    {
+        SET_NAME = 0,
+        SET_INDEX,
+        SET_CATEGORY,
+        SET_LENGTH
+    };
+
+    struct SampleEdit
+    {
+        unsigned cmd;       // create, delete, change
+        unsigned classType; // pack, category, sample
+        unsigned editType;
+        unsigned numberValue;
+        std::string stringValue;
+        unsigned packIdx;
+        unsigned categoryIdx;
+        unsigned sampleIdx;
+        SampleEdit()
+            : cmd(SCMD_CHANGE),
+              classType(SEC_SAMPLE),
+              editType(SET_NAME),
+              numberValue(0),
+              stringValue(""),
+              packIdx(0),
+              categoryIdx(0),
+              sampleIdx(0)
+        {
+        }
+    };
+    void to_json(nlohmann::json &j, const SampleEdit &s);
+    void from_json(const nlohmann::json &j, SampleEdit &s);
+
     struct SampleInfo
     {
         bool valid;

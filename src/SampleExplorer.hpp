@@ -31,10 +31,17 @@ namespace mck
         WaveInfoDetail GetSample(unsigned packIdx, unsigned sampleIdx, std::vector<std::vector<float>> &buffer);
         std::string GetSamplePath(unsigned packIdx, unsigned sampleIdx, bool relativePath = true);
         std::string GetSampleName(unsigned packIdx, unsigned sampleIdx);
+        bool ApplyEditCommand(SampleEdit &cmd);
         void StopSample();
         void ProcessAudio(float *outLeft, float *outRight, unsigned nframes);
 
     private:
+        bool WritePack(std::string path, SamplePack &pack);
+        bool UpdatePack(unsigned packIdx);
+        bool CreatePack(std::string name);
+        bool CreateCategory(std::string name, unsigned packIdx);
+        bool ImportSample(std::string path, unsigned packIdx, unsigned categoryIdx);
+
         bool m_isInitialized;
         unsigned m_bufferSize;
         unsigned m_sampleRate;

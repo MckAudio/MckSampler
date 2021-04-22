@@ -9,11 +9,29 @@
     export let samples = undefined;
     export let sampleInfo = undefined;
 
+    const editCmdTypes = ["CREATE", "DELETE", "CHANGE", "IMPORT", "EXPORT"];
+    const editClassTypes = ["PACK", "CATEGORY", "SAMPLE"];
+    const editEditTypes = ["NAME", "INDEX", "CATEGORY"];
+
+    const editTemplate = {
+        cmd: 0,
+        classType: 0,
+        editType: 0,
+        numberValue: 0,
+        stringValue: "",
+        packIdx: 0,
+        categoryIdx: 0,
+        sampleIdx: 0,
+    };
+
     let samplesReady = false;
     $: samplesReady = samples !== undefined && typeof samples == "object";
 
     let infoReady = false;
-    $:infoReady = sampleInfo !== undefined && activeSample !== undefined && sampleInfo.valid;
+    $: infoReady =
+        sampleInfo !== undefined &&
+        activeSample !== undefined &&
+        sampleInfo.valid;
 
     let packs = [];
     let activePack = undefined;
@@ -62,8 +80,8 @@
                 type: "load",
                 packIdx: activePack,
                 sampleIdx: _idx,
-                padIdx: $SelectedPad
-            })
+                padIdx: $SelectedPad,
+            }),
         });
         activeSample = _idx;
     }
@@ -77,12 +95,12 @@
                 type: "play",
                 packIdx: activePack,
                 sampleIdx: _idx,
-                padIdx: $SelectedPad
-            })
+                padIdx: $SelectedPad,
+            }),
         });
         activeSample = _idx;
     }
-    
+
     function StopSample(_idx) {
         _idx = _idx !== undefined ? _idx : activeSample;
         SendMessage({
@@ -92,8 +110,8 @@
                 type: "stop",
                 packIdx: activePack,
                 sampleIdx: _idx,
-                padIdx: $SelectedPad
-            })
+                padIdx: $SelectedPad,
+            }),
         });
     }
 
@@ -106,11 +124,18 @@
                 type: "assign",
                 packIdx: activePack,
                 sampleIdx: _idx,
-                padIdx: $SelectedPad
-            })
+                padIdx: $SelectedPad,
+            }),
         });
     }
 
+    function SendEditCmd(_cmd) {
+        SendMessage({
+            section: "samples",
+            msgType: "edit",
+            data: JSON.stringify(_cmd),
+        });
+    }
 
     onMount(() => {
         if (SendMessage) {
@@ -134,6 +159,15 @@
                 activePack = _val;
             }}
         />
+        <Button
+            title="+"
+            Handler={() => {
+                let _cmd = JSON.parse(JSON.stringify(editTemplate));
+                _cmd.cmd = 0;
+                _cmd.classType = 0;
+                SendEditCmd(_cmd);
+            }}
+        />
 
         {#if activePack !== undefined}
             <div class="label">Category:</div>
@@ -145,18 +179,57 @@
                     activeCategory = _val;
                 }}
             />
-            <div class="label">Samples:</div>
-            <div class="table">
-                {#each samples[activePack].samples as sample, i}
-                    {#if sample.type === activeCategory}
-                        <i>{sample.index}</i>
-                        <span>{sample.name}</span>
-                        <Button Handler={() => AssignSample(i)} title="Assign"></Button>
-                        <Button Handler={() => PlaySample(i)} title="Play"></Button>
-                        <Button value={i === activeSample} Handler={() => SelectSample(i)} title="Select"></Button>
-                    {/if}
-                {/each}
-            </div>
+            <Button
+                title="+"
+                Handler={() => {
+                    let _cmd = JSON.parse(JSON.stringify(editTemplate));
+                    _cmd.cmd = 0;
+                    _cmd.classType = 1;
+                    _cmd.packIdx = activePack;
+                    SendEditCmd(_cmd);
+                }}
+            />
+            {#if activeCategory !== undefined}
+                <div class="label">Samples:</div>
+                <i
+                    >{activeSample !== undefined
+                        ? samples[activePack].samples[activeSample].name
+                        : ""}</i
+                >
+                <Button
+                    title="+"
+                    Handler={() => {
+                        let _cmd = JSON.parse(JSON.stringify(editTemplate));
+                        _cmd.cmd = 0;
+                        _cmd.classType = 2;
+                        _cmd.packIdx = activePack;
+                        _cmd.categoryIdx = activeCategory;
+                        SendEditCmd(_cmd);
+                    }}
+                />
+                <div />
+                <div class="table">
+                    {#each samples[activePack].samples as sample, i}
+                        {#if sample.type === activeCategory}
+                            <i>{sample.index}</i>
+                            <span>{sample.name}</span>
+                            <Button
+                                Handler={() => AssignSample(i)}
+                                title="Assign"
+                            />
+                            <Button
+                                Handler={() => PlaySample(i)}
+                                title="Play"
+                            />
+                            <Button
+                                value={i === activeSample}
+                                Handler={() => SelectSample(i)}
+                                title="Select"
+                            />
+                        {/if}
+                    {/each}
+                </div>
+            {/if}
         {:else}
             <div />
             <div />
@@ -165,7 +238,9 @@
     {#if infoReady}
         <div class="detail">
             <div class="label">Name:</div>
-            <div class="text">{samples[activePack].samples[activeSample].name}</div>
+            <div class="text">
+                {samples[activePack].samples[activeSample].name}
+            </div>
             <div class="label">Channels:</div>
             <div class="text">{sampleInfo.numChans}</div>
             <div class="label">Length:</div>
@@ -173,7 +248,7 @@
             <div class="label">SampleRate:</div>
             <div class="text">{sampleInfo.sampleRate}</div>
             <div class="wave">
-                <WaveForm data={sampleInfo.waveForm}/>
+                <WaveForm data={sampleInfo.waveForm} />
             </div>
             <div class="buttons">
                 <Button Handler={() => StopSample()}>Stop</Button>
@@ -197,13 +272,14 @@
         overflow: hidden;
         display: grid;
         grid-gap: 8px;
-        grid-template-columns: auto 1fr;
-        grid-template-rows: auto auto 1fr;
+        grid-template-columns: auto 1fr 48px;
+        grid-template-rows: repeat(3, auto) 1fr;
     }
     .table {
+        grid-column: 2/-1;
         overflow-y: scroll;
         display: grid;
-        grid-template-columns: auto 1fr repeat(3, auto);
+        grid-template-columns: auto 1fr repeat(2, auto) 48px;
         grid-auto-rows: auto;
         grid-gap: 8px;
     }
@@ -229,7 +305,9 @@
         grid-column: 1/-1;
     }
     span,
-    i, .text, .label {
+    i,
+    .text,
+    .label {
         font-family: mck-lato;
         font-size: 14px;
         line-height: 30px;
