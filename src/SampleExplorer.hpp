@@ -9,6 +9,8 @@
 
 namespace mck
 {
+    class GuiWindow;
+
     class SampleExplorer
     {
         struct PlayState
@@ -31,7 +33,7 @@ namespace mck
         WaveInfoDetail GetSample(unsigned packIdx, unsigned sampleIdx, std::vector<std::vector<float>> &buffer);
         std::string GetSamplePath(unsigned packIdx, unsigned sampleIdx, bool relativePath = true);
         std::string GetSampleName(unsigned packIdx, unsigned sampleIdx);
-        bool ApplyEditCommand(SampleEdit &cmd);
+        bool ApplyEditCommand(SampleEdit &cmd, GuiWindow *gui);
         void StopSample();
         void ProcessAudio(float *outLeft, float *outRight, unsigned nframes);
 
@@ -40,7 +42,7 @@ namespace mck
         bool UpdatePack(unsigned packIdx);
         bool CreatePack(std::string name);
         bool CreateCategory(std::string name, unsigned packIdx);
-        bool ImportSample(std::string path, unsigned packIdx, unsigned categoryIdx);
+        bool ImportSample(std::string path, unsigned packIdx, unsigned categoryIdx, GuiWindow *gui);
 
         bool m_isInitialized;
         unsigned m_bufferSize;

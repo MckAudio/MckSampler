@@ -304,7 +304,7 @@ void mck::Processing::ReceiveMessage(mck::Message &msg)
                 std::fprintf(stderr, "Failed to parse edit message: %s\n", e.what());
                 return;
             }
-            if (m_sampleExplorer->ApplyEditCommand(cmd))
+            if (m_sampleExplorer->ApplyEditCommand(cmd, m_gui))
             {
                 m_sampleExplorer->RefreshSamples(m_samplePacks);
                 m_gui->SendMessage("samples", "packs", m_samplePacks);

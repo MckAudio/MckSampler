@@ -1,9 +1,11 @@
 #include "SampleExplorer.hpp"
+#include "gui/GuiWindow.hpp"
 #include <filesystem>
 #include <nlohmann/json.hpp>
 #include <cstdio>
 #include <fstream>
 #include <algorithm>
+#include <regex>
 #include <sndfile.h>
 #include <samplerate.h>
 
@@ -106,10 +108,10 @@ void mck::SampleExplorer::RefreshSamples(std::vector<SamplePack> &packs)
         }
     }
     // Sort by name
-    std::sort(tmpPacks.begin(), tmpPacks.end(), \
-    [](const std::pair<SamplePack, std::string> &a, const std::pair<SamplePack, std::string> &b) -> bool {
-        return a.first.name < b.first.name;
-    });
+    std::sort(tmpPacks.begin(), tmpPacks.end(),
+              [](const std::pair<SamplePack, std::string> &a, const std::pair<SamplePack, std::string> &b) -> bool {
+                  return a.first.name < b.first.name;
+              });
 
     m_packPaths.resize(tmpPacks.size());
     m_packs.resize(tmpPacks.size());
@@ -285,7 +287,7 @@ std::string mck::SampleExplorer::GetSampleName(unsigned packIdx, unsigned sample
     return m_packs[packIdx].samples[sampleIdx].name;
 }
 
-bool mck::SampleExplorer::ApplyEditCommand(SampleEdit &cmd)
+bool mck::SampleExplorer::ApplyEditCommand(SampleEdit &cmd, GuiWindow *gui)
 {
     if (m_isInitialized == false)
     {
@@ -308,7 +310,7 @@ bool mck::SampleExplorer::ApplyEditCommand(SampleEdit &cmd)
             CreateCategory(cmd.stringValue, cmd.packIdx);
             break;
         case SEC_SAMPLE:
-            ImportSample(cmd.stringValue, cmd.packIdx, cmd.categoryIdx);
+            ImportSample(cmd.stringValue, cmd.packIdx, cmd.categoryIdx, gui);
             break;
         default:
             return false;
@@ -476,8 +478,60 @@ bool mck::SampleExplorer::CreateCategory(std::string name, unsigned packIdx)
 
     return true;
 }
-bool mck::SampleExplorer::ImportSample(std::string path, unsigned packIdx, unsigned categoryIdx)
+bool mck::SampleExplorer::ImportSample(std::string path, unsigned packIdx, unsigned categoryIdx, GuiWindow *gui)
 {
+    if (m_isInitialized == false)
+    {
+        return false;
+    }
+    if (packIdx >= m_packs.size())
+    {
+        return false;
+    }
+    if (categoryIdx >= m_packs[packIdx].categories.size())
+    {
+        return false;
+    }
 
-    return true;
+    std::vector<std::string> files;
+    gui->ShowOpenFileDialog("Import one or more sample files", "audio/wav", files, true);
+
+    fs::path catPath(m_samplePath);
+    catPath.append(m_packPaths[packIdx]).append(m_packs[packIdx].categories[categoryIdx]);
+
+    unsigned sampleIndex = 1 + std::count_if(m_packs[packIdx].samples.begin(),
+                                             m_packs[packIdx].samples.end(),
+                                             [&categoryIdx](const SamplePackSample &s) { return s.type == categoryIdx; });
+
+    for (auto &f : files)
+    {
+        // Check file
+        fs::path oldPath(f);
+        if (fs::exists(oldPath) == false)
+        {
+            continue;
+        }
+
+        // Copy file into category folder
+        fs::path newPath(catPath);
+        std::string idxStr = std::to_string(sampleIndex);
+        idxStr.insert(idxStr.begin(), 3 - idxStr.size(), '0');
+        newPath.append(idxStr + "_" + oldPath.filename().string());
+        if (fs::copy_file(oldPath, newPath) == false)
+        {
+            continue;
+        }
+
+        // Update m_packs
+        fs::path relPath = fs::relative(newPath, fs::path(m_samplePath).append(m_packPaths[packIdx]));
+        SamplePackSample sample;
+        sample.path = relPath.string();
+        sample.name = oldPath.stem().string();
+        sample.name = std::regex_replace(sample.name, std::regex("_"), " ");
+        sample.type = categoryIdx;
+        sample.index = sampleIndex++;
+        m_packs[packIdx].samples.push_back(sample);
+    }
+
+    return UpdatePack(packIdx);
 }
