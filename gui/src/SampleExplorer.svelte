@@ -1,8 +1,15 @@
 <script>
     import { onMount, onDestroy } from "svelte";
+
+    // DSP Elements
+    import WaveForm from "./mck/dsp/WaveForm.svelte";
+
+    // GUI Elements
     import Select from "./mck/controls/Select.svelte";
     import Button from "./mck/controls/Button.svelte";
-    import WaveForm from "./mck/dsp/WaveForm.svelte";
+    import InputText from "./mck/controls/InputText.svelte";
+
+    // TOOLS
     import { SelectedPad } from "./Stores.js";
 
     export let data = undefined;
@@ -39,6 +46,11 @@
     let activeCategory = undefined;
     let categoryName = "";
     let activeSample = undefined;
+
+    // Editing
+    let editPack = false;
+    let editCategory = false;
+    let editSample = undefined;
 
     /*
     $: if (sampleInfo !== undefined && sampleInfo.valid)
@@ -151,32 +163,17 @@
 <div class="main">
     <div class="overview">
         <div class="label">Pack:</div>
-        <Select
-            items={packs}
-            value={activePack}
-            Handler={(_val) => {
-                activeSample = undefined;
-                activePack = _val;
-            }}
-        />
-        <Button
-            title="+"
-            Handler={() => {
-                let _cmd = JSON.parse(JSON.stringify(editTemplate));
-                _cmd.cmd = 0;
-                _cmd.classType = 0;
-                SendEditCmd(_cmd);
-            }}
-        />
-
-        {#if activePack !== undefined}
-            <div class="label">Category:</div>
-            <Select
-                items={categories}
-                value={activeCategory}
-                Handler={(_val) => {
-                    activeSample = undefined;
-                    activeCategory = _val;
+        {#if editPack}
+            <InputText
+                value={packs[activePack]}
+                Handler={(_v) => {
+                    let _cmd = JSON.parse(JSON.stringify(editTemplate));
+                    _cmd.cmd = 2; // Change
+                    _cmd.classType = 0; // Pack
+                    _cmd.editType = 0; // Name
+                    _cmd.packIdx = activePack;
+                    _cmd.stringValue = _v;
+                    SendEditCmd(_cmd);
                 }}
             />
             <Button
@@ -184,14 +181,98 @@
                 Handler={() => {
                     let _cmd = JSON.parse(JSON.stringify(editTemplate));
                     _cmd.cmd = 0;
-                    _cmd.classType = 1;
+                    _cmd.classType = 0;
+                    SendEditCmd(_cmd);
+                }}
+            />
+            <Button
+                title="Del"
+                Handler={() => {
+                    let _cmd = JSON.parse(JSON.stringify(editTemplate));
+                    _cmd.cmd = 1; // Delete
+                    _cmd.classType = 0; // Pack
                     _cmd.packIdx = activePack;
                     SendEditCmd(_cmd);
                 }}
             />
+        {:else}
+            <div style="grid-column: 2/-2">
+                <Select
+                    items={packs}
+                    value={activePack}
+                    Handler={(_val) => {
+                        activeSample = undefined;
+                        activePack = _val;
+                    }}
+                />
+            </div>
+        {/if}
+        <Button
+            title="Edit"
+            value={editPack}
+            Handler={(_v) => {
+                editPack = _v;
+            }}
+        />
+        {#if activePack !== undefined}
+            <div class="label">Category:</div>
+            {#if editCategory}
+                <InputText
+                    value={categories[activeCategory]}
+                    Handler={(_v) => {
+                        let _cmd = JSON.parse(JSON.stringify(editTemplate));
+                        _cmd.cmd = 2; // Change
+                        _cmd.classType = 1; // Pack
+                        _cmd.editType = 0; // Name
+                        _cmd.packIdx = activePack;
+                        _cmd.categoryIdx = activeCategory;
+                        _cmd.stringValue = _v;
+                        SendEditCmd(_cmd);
+                    }}
+                />
+                <Button
+                    title="Del"
+                    Handler={() => {
+                        let _cmd = JSON.parse(JSON.stringify(editTemplate));
+                        _cmd.cmd = 1; // Delete
+                        _cmd.classType = 1; // Pack
+                        _cmd.packIdx = activePack;
+                        _cmd.categoryIdx = activeCategory;
+                        SendEditCmd(_cmd);
+                    }}
+                />
+                <Button
+                    title="+"
+                    Handler={() => {
+                        let _cmd = JSON.parse(JSON.stringify(editTemplate));
+                        _cmd.cmd = 0;
+                        _cmd.classType = 1;
+                        _cmd.packIdx = activePack;
+                        SendEditCmd(_cmd);
+                    }}
+                />
+            {:else}
+                <div style="grid-column: 2/-2">
+                    <Select
+                        items={categories}
+                        value={activeCategory}
+                        Handler={(_val) => {
+                            activeSample = undefined;
+                            activeCategory = _val;
+                        }}
+                    />
+                </div>
+            {/if}
+            <Button
+                title="Edit"
+                value={editCategory}
+                Handler={(_v) => {
+                    editCategory = _v;
+                }}
+            />
             {#if activeCategory !== undefined}
                 <div class="label">Samples:</div>
-                <i
+                <i style="grid-column: 2/-2"
                     >{activeSample !== undefined
                         ? samples[activePack].samples[activeSample].name
                         : ""}</i
@@ -226,13 +307,42 @@
                                 Handler={() => SelectSample(i)}
                                 title="Select"
                             />
+                            {#if i === editSample}
+                                <InputText
+                                    value={sample.name}
+                                    Handler={(_v) => {
+                                        let _cmd = JSON.parse(
+                                            JSON.stringify(editTemplate)
+                                        );
+                                        _cmd.cmd = 2; // Change
+                                        _cmd.classType = 1; // Pack
+                                        _cmd.editType = 0; // Name
+                                        _cmd.packIdx = activePack;
+                                        _cmd.sampleIdx = i;
+                                        _cmd.stringValue = _v;
+                                        SendEditCmd(_cmd);
+                                    }}
+                                />
+                                <Button
+                                    title="Del"
+                                    Handler={() => {
+                                        let _cmd = JSON.parse(
+                                            JSON.stringify(editTemplate)
+                                        );
+                                        _cmd.cmd = 1; // Delete
+                                        _cmd.classType = 1; // Pack
+                                        _cmd.packIdx = activePack;
+                                        _cmd.sampleIdx = i;
+                                        SendEditCmd(_cmd);
+                                    }}
+                                />
+                            {/if}
                         {/if}
                     {/each}
                 </div>
             {/if}
         {:else}
-            <div />
-            <div />
+            <div style="grid-column: 1/-1" />
         {/if}
     </div>
     {#if infoReady}
@@ -272,7 +382,7 @@
         overflow: hidden;
         display: grid;
         grid-gap: 8px;
-        grid-template-columns: auto 1fr 48px;
+        grid-template-columns: auto 1fr repeat(3, 48px);
         grid-template-rows: repeat(3, auto) 1fr;
     }
     .table {
@@ -280,7 +390,7 @@
         overflow-y: scroll;
         display: grid;
         grid-template-columns: auto 1fr repeat(2, auto) 48px;
-        grid-auto-rows: auto;
+        grid-auto-rows: min-content;
         grid-gap: 8px;
     }
     .detail {
