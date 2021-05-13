@@ -97,6 +97,28 @@ void mck::from_json(const nlohmann::json &j, SampleCommand &s)
     s.sampleIdx = j.at("sampleIdx").get<unsigned>();
     s.padIdx = j.at("padIdx").get<unsigned>();
 }
+void mck::to_json(nlohmann::json &j, const SampleEdit &s)
+{
+    j["cmd"] = s.cmd;
+    j["classType"] = s.classType;
+    j["editType"] = s.editType;
+    j["numberValue"] = s.numberValue;
+    j["stringValue"] = s.stringValue;
+    j["packIdx"] = s.packIdx;
+    j["categoryIdx"] = s.categoryIdx;
+    j["sampleIdx"] = s.sampleIdx;
+}
+void mck::from_json(const nlohmann::json &j, SampleEdit &s)
+{
+    s.cmd = j.at("cmd").get<unsigned>();
+    s.classType = j.at("classType").get<unsigned>();
+    s.editType = j.at("editType").get<unsigned>();
+    s.numberValue = j.at("numberValue").get<unsigned>();
+    s.stringValue = j.at("stringValue").get<std::string>();
+    s.packIdx = j.at("packIdx").get<unsigned>();
+    s.categoryIdx = j.at("categoryIdx").get<unsigned>();
+    s.sampleIdx = j.at("sampleIdx").get<unsigned>();
+}
 void mck::to_json(nlohmann::json &j, const SampleInfo &s) {
     j["valid"] = s.valid;
     j["packIdx"] = s.packIdx;

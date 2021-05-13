@@ -293,6 +293,23 @@ void mck::Processing::ReceiveMessage(mck::Message &msg)
                 AssignSample(cmd);
             }
         }
+        else if (msg.msgType == "edit")
+        {
+            SampleEdit cmd;
+            try {
+                cmd = nlohmann::json::parse(msg.data);
+            }
+            catch (std::exception &e)
+            {
+                std::fprintf(stderr, "Failed to parse edit message: %s\n", e.what());
+                return;
+            }
+            if (m_sampleExplorer->ApplyEditCommand(cmd, m_gui))
+            {
+                m_sampleExplorer->RefreshSamples(m_samplePacks);
+                m_gui->SendMessage("samples", "packs", m_samplePacks);
+            }
+        }
     }
 }
 

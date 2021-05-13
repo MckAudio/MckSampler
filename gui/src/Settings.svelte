@@ -87,6 +87,10 @@
                         transport.nBeats.toString()}</span
                 >
             </div>
+            <div class="control">
+                <i>Gtk:</i>
+                <Button Handler={()=>ShowMessageBox('hallo')}>Show Message</Button>
+            </div>
         {/if}
 </div>
 

@@ -17,6 +17,11 @@ git clone https://github.com/MckAudio/MckSamplePacks $HOME/.local/share/mck/samp
 
 ## Build Dependencies
 
+### Submodules
+```
+git submodule update --init --recursive
+```
+
 ### Debian / Ubuntu
 ```
 sudo apt install build-essential node npm git
@@ -29,6 +34,13 @@ sudo apt install libgtk-3-dev libwebkit2gtk-4.0-dev
 sudo dnf install make automake libtool gcc-c++ nodejs npm git
 sudo dnf install libsamplerate-devel libsndfile-devel jack-audio-connection-kit-devel
 sudo dnf install gtk3-devel webkit2gtk3-devel
+```
+
+### Manjaro / Arch
+```
+sudo pacman -Sy gcc make automake gdb nodejs npm git
+sudo pacman -S libsamplerate libsndfile jack2
+sudo pacman -S gtk3 webkit2gtk
 ```
 
 ## Getting started

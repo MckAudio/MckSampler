@@ -93,7 +93,7 @@ bool mck::ConfigFile::VerifyPath(std::string path)
     std::filesystem::path fp(path);
     if (std::filesystem::exists(fp.parent_path()) == false)
     {
-        std::filesystem::create_directories(path);
+        std::filesystem::create_directories(fp.parent_path());
     }
 
     return std::filesystem::exists(path);
