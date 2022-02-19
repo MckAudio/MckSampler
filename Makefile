@@ -40,3 +40,8 @@ guitest: ./src/wvtest.cpp
 	g++ ./src/wvtest.cpp `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0` -o ./bin/wvtest
 
 all: release metronome looper
+
+run-debug: debug
+	cd gui && npm run dev &
+	WEBKIT_INSPECTOR_SERVER=127.0.0.1:1234 ./bin/debug/mck-sampler
+	#epiphany inspector://127.0.0.1:1234

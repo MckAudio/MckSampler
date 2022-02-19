@@ -2,15 +2,18 @@
     import TogglePad from "./mck/controls/TogglePad.svelte";
     import { SelectedPad, SelectedPattern } from "./Stores.js";
 
-    import * as jsonpatch from 'fast-json-patch/index.mjs';
-import TwoChoicePad from "./mck/controls/TwoChoicePad.svelte";
+    import * as jsonpatch from "fast-json-patch/index.mjs";
+    import TwoChoicePad from "./mck/controls/TwoChoicePad.svelte";
 
     export let data = undefined;
     export let transport = undefined;
+    export let showAll = true;
 
     let nStep = -1;
     let steps = [];
-    let blanks = Array.from({length: 15}, (_v, _i) => _i);
+    let blanks = Array.from({ length: 15 }, (_v, _i) => _i);
+    let nPads = 16;
+    let body = undefined;
 
     let useTriplet = false;
 
@@ -22,27 +25,56 @@ import TwoChoicePad from "./mck/controls/TwoChoicePad.svelte";
         );
     }
 
-    $: if (data !== undefined) {
+    $: if (data !== undefined && body !== undefined) {
+        console.log("[DATA]", data);
         let _steps = [];
         let _pad = $SelectedPad;
-        let _pattern = undefined;;
+        let _pattern = undefined;
 
-        if (_pad !== undefined) {
-            if (data.pads[_pad].nPatterns > 0) {
-                _pattern = $SelectedPattern;
-                if (_pattern === undefined) {
-                    _pattern = 0;
-                } else {
-                    _pattern = Math.min(_pattern, data.pads[_pad].nPatterns - 1);
-                }
-                _steps = Array.from(data.pads[_pad].patterns[_pattern].steps, (_p, _i) => {
+        if (body !== undefined) {
+            if (showAll) {
+                body.style.gridTemplateRows = `auto repeat(${nPads}, 1fr) 1fr`;
+            } else {
+                body.style.gridTemplateRows = "auto 1fr 1fr";
+            }
+        }
+        
+        if (showAll) {
+            _steps = Array.from(data.pads, (_p, _i) => {
+                return Array.from(_p.patterns[0].steps, (_step, _j) => {
                     return {
-                        index: _i,
-                        name: (_i + 1).toString(),
-                        active: _p.active,
-                        value: _p.velocity / 127.0
+                        pad: _i,
+                        index: _j,
+                        name: (_j + 1).toString(),
+                        active: _step.active,
+                        value: _step.velocity / 127.0,
                     };
                 });
+            });
+        } else {
+            if (_pad !== undefined) {
+                if (data.pads[_pad].nPatterns > 0) {
+                    _pattern = $SelectedPattern;
+                    if (_pattern === undefined) {
+                        _pattern = 0;
+                    } else {
+                        _pattern = Math.min(
+                            _pattern,
+                            data.pads[_pad].nPatterns - 1
+                        );
+                    }
+                    _steps = Array.from(
+                        data.pads[_pad].patterns[_pattern].steps,
+                        (_p, _i) => {
+                            return {
+                                index: _i,
+                                name: (_i + 1).toString(),
+                                active: _p.active,
+                                value: _p.velocity / 127.0,
+                            };
+                        }
+                    );
+                }
             }
         }
 
@@ -51,8 +83,7 @@ import TwoChoicePad from "./mck/controls/TwoChoicePad.svelte";
         steps = _steps;
     }
 
-    function SetStep(_idx, _active, _value)
-    {
+    function SetStep(_idx, _active, _value) {
         let _data = jsonpatch.deepClone(data);
         let _obs = jsonpatch.observe(_data);
         let _pad = $SelectedPad;
@@ -60,34 +91,52 @@ import TwoChoicePad from "./mck/controls/TwoChoicePad.svelte";
 
         _data.pads[_pad].patterns[_pattern].steps[_idx].active = _active;
         if (_active) {
-            _data.pads[_pad].patterns[_pattern].steps[_idx].velocity = _value * 127.0;
+            _data.pads[_pad].patterns[_pattern].steps[_idx].velocity =
+                _value * 127.0;
         }
         let _patch = jsonpatch.generate(_obs);
         SendMessage({
             section: "data",
             msgType: "patch",
-            data: JSON.stringify(_patch)
+            data: JSON.stringify(_patch),
         });
     }
 </script>
 
-<div class="main">
+<div class="main" bind:this={body}>
     {#if steps.length > 0}
-    <div class="label">Step Sequencer:</div>
-        <TwoChoicePad icons={["./content/music-note.svg", "./content/music-notes.svg"]} labels={["1/4", "1/8"]}/>
+        <div class="label">Step Sequencer:</div>
+        <TwoChoicePad
+            icons={["./content/music-note.svg", "./content/music-notes.svg"]}
+            labels={["1/4", "1/8"]}
+        />
         {#each blanks as blank}
-            <div/>
+            <div />
         {/each}
     {/if}
-    {#each steps as step, i}
-        <TogglePad
-            selected={i === nStep}
-            active={step.active}
-            value={step.value}
-            label={step.name}
-            Handler={(_active, _value) => SetStep(i, _active, _value)}
-        />
-    {/each}
+    {#if showAll}
+        {#each steps as pattern}
+            {#each pattern as step, i}
+                <TogglePad
+                    selected={i === nStep}
+                    active={step.active}
+                    value={step.value}
+                    label={step.name}
+                    Handler={(_active, _value) => SetStep(i, _active, _value)}
+                />
+            {/each}
+        {/each}
+    {:else}
+        {#each steps as step, i}
+            <TogglePad
+                selected={i === nStep}
+                active={step.active}
+                value={step.value}
+                label={step.name}
+                Handler={(_active, _value) => SetStep(i, _active, _value)}
+            />
+        {/each}
+    {/if}
 </div>
 
 <style>
@@ -101,6 +150,10 @@ import TwoChoicePad from "./mck/controls/TwoChoicePad.svelte";
         grid-column-gap: 16px;
         grid-template-columns: repeat(16, 1fr);
         grid-template-rows: auto 1fr 1fr;
+        overflow-y: auto;
+        overflow-x: hidden;
+        width: 100%;
+        height: 100%;
     }
     .label {
         grid-column: 1/-1;
