@@ -51,6 +51,28 @@ make dependencies
 sudo make install
 ```
 
+## Debugging and GUI Hot Reload
+
+```
+# Build application in debug mode, GUI will be loaded from local port 9002
+make debug
+
+# Build GUI in debug mode, listen to file changes and serve the page on port 9002
+cd gui && npm run dev
+
+# Run application with enabled debuggign tools
+WEBKIT_INSPECTOR_SERVER=127.0.0.1:1234 ./bin/debug/mck-sampler
+
+# Open webkit enabled browser like epiphany (GNOME Web)
+epiphany inspector://127.0.0.1:1234
+```
+
+or just
+
+```
+make run-debug
+```
+
 ## Features (including planned stuff)
 
 - [x] JSON config file
