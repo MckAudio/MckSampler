@@ -9,8 +9,8 @@
         LogToDb,
         PanToLin,
     } from "./mck/utils/Tools.svelte";
-    import { ChangeData } from "./Backend.svelte";
-    import { SelectedPad } from "./Stores";
+    import { ChangeData, SendToBackend } from "./Backend.svelte";
+    import { SelectedPad } from "./Stores.svelte";
     import Button from "./mck/controls/Button.svelte";
 
     export let data = undefined;
@@ -47,7 +47,7 @@
             index: $SelectedPad,
             value: _idx,
         });
-        SendMessage({ section: "pads", msgType: "change", data: _data });
+        SendToBackend({ section: "pads", msgType: "change", data: _data });
     }
 </script>
 

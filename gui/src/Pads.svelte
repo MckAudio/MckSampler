@@ -1,6 +1,8 @@
-<script>
+<script lang="ts">
+import { SendToBackend } from "./Backend.svelte";
+
     import Pad from "./mck/controls/Pad.svelte";
-    import { SelectedPad } from "./Stores.js";
+    import { SelectedPad } from "./Stores.svelte";
 
     export let data = undefined;
 
@@ -13,7 +15,7 @@
     });
 
     function PadHandler(_idx, _val) {
-        SendMessage({
+        SendToBackend({
             section: "pads",
             msgType: "trigger",
             data: JSON.stringify({

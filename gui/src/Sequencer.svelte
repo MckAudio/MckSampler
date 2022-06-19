@@ -1,13 +1,15 @@
 <script>
-    import TogglePad from "./mck/controls/TogglePad.svelte";
-    import { SelectedPad, SelectedPattern } from "./Stores.js";
+    import ValuePad from "./mck/controls/ValuePad.svelte";
+    import { SelectedPad, SelectedPattern } from "./Stores.svelte";
 
-    import * as jsonpatch from "fast-json-patch/index.mjs";
     import TwoChoicePad from "./mck/controls/TwoChoicePad.svelte";
+    import { SendToBackend } from "./Backend.svelte";
+
+    import fastJsonPatch from "fast-json-patch";
 
     export let data = undefined;
     export let transport = undefined;
-    export let showAll = true;
+    export let showAll = false;
 
     let nStep = -1;
     let steps = [];
@@ -84,8 +86,8 @@
     }
 
     function SetStep(_idx, _active, _value) {
-        let _data = jsonpatch.deepClone(data);
-        let _obs = jsonpatch.observe(_data);
+        let _data = fastJsonPatch.deepClone(data);
+        let _obs = fastJsonPatch.observe(_data);
         let _pad = $SelectedPad;
         let _pattern = $SelectedPattern;
 
@@ -94,8 +96,8 @@
             _data.pads[_pad].patterns[_pattern].steps[_idx].velocity =
                 _value * 127.0;
         }
-        let _patch = jsonpatch.generate(_obs);
-        SendMessage({
+        let _patch = fastJsonPatch.generate(_obs);
+        SendToBackend({
             section: "data",
             msgType: "patch",
             data: JSON.stringify(_patch),
@@ -117,7 +119,7 @@
     {#if showAll}
         {#each steps as pattern}
             {#each pattern as step, i}
-                <TogglePad
+                <ValuePad
                     selected={i === nStep}
                     active={step.active}
                     value={step.value}
@@ -128,7 +130,7 @@
         {/each}
     {:else}
         {#each steps as step, i}
-            <TogglePad
+            <ValuePad
                 selected={i === nStep}
                 active={step.active}
                 value={step.value}

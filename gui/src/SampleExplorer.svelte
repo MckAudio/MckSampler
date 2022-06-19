@@ -10,7 +10,8 @@
     import InputText from "./mck/controls/InputText.svelte";
 
     // TOOLS
-    import { SelectedPad } from "./Stores.js";
+    import { SelectedPad } from "./Stores.svelte";
+import { SendToBackend } from "./Backend.svelte";
 
     export let data = undefined;
     export let samples = undefined;
@@ -85,7 +86,7 @@
     }
 
     function SelectSample(_idx) {
-        SendMessage({
+        SendToBackend({
             section: "samples",
             msgType: "command",
             data: JSON.stringify({
@@ -100,7 +101,7 @@
 
     function PlaySample(_idx) {
         _idx = _idx !== undefined ? _idx : activeSample;
-        SendMessage({
+        SendToBackend({
             section: "samples",
             msgType: "command",
             data: JSON.stringify({
@@ -115,7 +116,7 @@
 
     function StopSample(_idx) {
         _idx = _idx !== undefined ? _idx : activeSample;
-        SendMessage({
+        SendToBackend({
             section: "samples",
             msgType: "command",
             data: JSON.stringify({
@@ -129,7 +130,7 @@
 
     function AssignSample(_idx) {
         _idx = _idx !== undefined ? _idx : activeSample;
-        SendMessage({
+        SendToBackend({
             section: "samples",
             msgType: "command",
             data: JSON.stringify({
@@ -142,7 +143,7 @@
     }
 
     function SendEditCmd(_cmd) {
-        SendMessage({
+        SendToBackend({
             section: "samples",
             msgType: "edit",
             data: JSON.stringify(_cmd),
@@ -150,8 +151,8 @@
     }
 
     onMount(() => {
-        if (SendMessage) {
-            SendMessage({
+        if (SendToBackend) {
+            SendToBackend({
                 section: "samples",
                 msgType: "get",
                 data: "",

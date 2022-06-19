@@ -8,11 +8,9 @@
 	import Select from "./mck/controls/Select.svelte";
 	import Button from "./mck/controls/Button.svelte";
 
-	import { SelectedPad } from "./Stores.js";
-
-	import * as jsonpatch from "fast-json-patch/index.mjs";
-	import { applyOperation } from "fast-json-patch/index.mjs";
+	import { SelectedPad } from "./Stores.svelte";
 	import SampleExplorer from "./SampleExplorer.svelte";
+	import { SendToBackend } from "./Backend.svelte";
 
 	let data = undefined;
 	let dataReady = false;
@@ -21,9 +19,9 @@
 	let samples = undefined;
 	let sampleInfo = undefined;
 	let samplesReady = false;
-    let pads = Array.from({length: 16}, (_v, _i) => {
-        return `Pad #${_i+1}`;
-    });
+	let pads = Array.from({ length: 16 }, (_v, _i) => {
+		return `Pad #${_i + 1}`;
+	});
 	let content = undefined;
 	let contentHeight = 0;
 	let oldch = 0;
@@ -64,13 +62,11 @@
 
 	onMount(() => {
 		document.addEventListener("backendMessage", ReceiveBackendMessage);
-		if (SendMessage) {
-			SendMessage({
-				section: "data",
-				msgType: "get",
-				data: "",
-			});
-		}
+		SendToBackend({
+			section: "data",
+			msgType: "get",
+			data: "",
+		});
 
 		document.addEventListener(
 			"touchstart",
@@ -99,39 +95,45 @@
 		>
 			<div class="tabbar">
 				<div class="tabs">
-				<Button
-					value={activeContent === 0}
-					Handler={() => {
-						activeContent = 0;
-					}}>Controls</Button
-				>
-				<Button
-					value={activeContent === 1}
-					Handler={() => {
-						activeContent = 1;
-					}}>Sequencer</Button
-				>
-				<Button
-					value={activeContent === 2}
-					Handler={() => {
-						activeContent = 2;
-					}}>Samples</Button
-				>
+					<Button
+						value={activeContent === 0}
+						Handler={() => {
+							activeContent = 0;
+						}}>Controls</Button
+					>
+					<Button
+						value={activeContent === 1}
+						Handler={() => {
+							activeContent = 1;
+						}}>Sequencer</Button
+					>
+					<Button
+						value={activeContent === 2}
+						Handler={() => {
+							activeContent = 2;
+						}}>Samples</Button
+					>
 				</div>
 				<div style="grid-column: -2/-1">
-					<Select items={pads} value={$SelectedPad} Handler={_idx => {SelectedPad.set(_idx);}}/>
+					<Select
+						items={pads}
+						value={$SelectedPad}
+						Handler={(_idx) => {
+							SelectedPad.set(_idx);
+						}}
+					/>
 				</div>
 			</div>
-			<div class="spacer"/>
+			<div class="spacer" />
 			{#if activeContent === 0}
 				<Controls {data} />
 			{:else if activeContent === 1}
 				<Sequencer {data} {transport} />
 			{:else if activeContent === 2}
-				<SampleExplorer {data} {samples} {sampleInfo}/>
+				<SampleExplorer {data} {samples} {sampleInfo} />
 			{/if}
-			<div class="spacer"/>
-			<Pads bind:activePad {data} />
+			<div class="spacer" />
+			<Pads {data} />
 		</div>
 		<div class="master" />
 	{/if}
@@ -153,7 +155,7 @@
 		box-shadow: 1px 0px 4px 1px #555;
 	}
 	.content {
-        overflow: hidden;
+		overflow: hidden;
 		grid-column: 2/3;
 		padding: 16px;
 		grid-gap: 8px;

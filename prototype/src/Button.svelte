@@ -1,5 +1,9 @@
-<script>
+<script lang="ts">
     export let active = false;
+
+    function MouseHandler(_evt: MouseEvent) {
+        
+    }
 </script>
 
 <main class="{active ? 'active' : ''}" on:click={() => {active = !active;}}>

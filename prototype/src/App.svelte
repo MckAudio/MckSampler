@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import Button from "./Button.svelte";
 </script>
 
@@ -6,7 +6,7 @@
   <div />
   <div class="content">
     <div class="top">
-      <Button />
+      <Button active={true}/>
       <Button />
       <Button />
       <Button />
