@@ -12,3 +12,6 @@
 [submodule "src/q"]
 	path = src/q
 	url = ../q.git
+[submodule "deps/TypeGenerator"]
+	path = deps/TypeGenerator
+	url = ../TypeGenerator.git
