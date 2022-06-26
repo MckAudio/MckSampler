@@ -1,4 +1,4 @@
-#include <cstdio>  // fprintf
+#include <cstdio>   // fprintf
 #include <unistd.h> // sleep
 #include <stdlib.h>
 #include <signal.h>
@@ -42,7 +42,7 @@ int main(int argc, char **argv)
 {
     // Get Arguments
     if (argc >= 2)
-    {   
+    {
         std::string command(argv[1]);
         if (command == "--help" || command == "-h")
         {
@@ -54,24 +54,32 @@ int main(int argc, char **argv)
 
     // Init Processing
     bool ret = m_processing.Init();
-    if (ret == false) {
+    if (ret == false)
+    {
         return EXIT_FAILURE;
     }
 
     m_processing.SetGuiPtr(&m_gui);
-    m_gui.SetBasePtr((mck::GuiBase *) &m_processing);
+    m_gui.SetBasePtr((mck::GuiBase *)&m_processing);
 
     signal(SIGQUIT, SignalHandler);
     signal(SIGTERM, SignalHandler);
     signal(SIGHUP, SignalHandler);
     signal(SIGINT, SignalHandler);
 
-    #ifdef DEBUG
-        std::printf("[DEBUG MODE]\n");
-        m_gui.Show("MckSampler", "./www", 9002);
-    #else
-        m_gui.Show("MckSampler", "/usr/share/mck-sampler/gui", 9002);
-    #endif
+    mck::GuiSettings guiSettings;
+    guiSettings.height = 480;
+    guiSettings.width = 800;
+    guiSettings.title = "MckSampler";
+#ifdef DEBUG
+    guiSettings.path = "./www";
+    guiSettings.port = 3000;
+    m_gui.ShowDebug(guiSettings);
+#else
+    guiSettings.path = "/usr/share/mck-sampler/gui";
+    guiSettings.port = 9002;
+    m_gui.Show(guiSettings);
+#endif
 
     CloseApplication();
 
