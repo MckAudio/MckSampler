@@ -1,18 +1,20 @@
 <script lang="ts">
-    import Pad from "../../src/mck/controls/Pad.svelte";
+    import SelectorPad from "../../src/mck/controls/SelectorPad.svelte";
+
+    export let style: "dark" | "light" | "custom" = "light";
+    export let idx = -1;
 
     let pads = [0, 1, 2, 3, 4, 5, 6, 7];
-    let idx = -1;
 </script>
 
-<main>
+<div class="main">
     {#each pads as padIdx}
-        <Pad label="#{padIdx + 1}" selected={padIdx === idx} Handler={() => {idx = padIdx;}}/>
+        <SelectorPad {style} label="#{padIdx + 1}" selected={padIdx === idx} Handler={() => {idx = padIdx;}}/>
     {/each}
-</main>
+</div>
 
 <style>
-    main {
+    .main {
         width: calc(100% - 16px);
         height: calc(100% - 16px);
         display: grid;

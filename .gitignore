@@ -6,3 +6,4 @@ src/types/cpp
 src/types/hpp
 src/types/ts
 .vscode/*.log
+gui/mck-sampler-ui/src/types

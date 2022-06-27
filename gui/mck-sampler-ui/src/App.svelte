@@ -1,9 +1,15 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import ContentSelector from "./ContentSelector.svelte";
   import EnginePads from "./EnginePads.svelte";
   import EngineSelector from "./EngineSelector.svelte";
+
+  export let style: "dark" | "light" | "custom" = "light";
+
+  let idx = -1;
+
   function ReceiveBackendMessage(event: CustomEvent) {
-    console.log(JSON.stringify(event.detail));
+    //console.log(JSON.stringify(event.detail));
   }
 
   onMount(() => {
@@ -11,17 +17,19 @@
   });
 </script>
 
-<main>
-  <div class="side left" />
+<div class="main {style}">
+  <div class="side left">
+    <ContentSelector bind:style />
+  </div>
   <div class="side right" />
   <div class="header">
-    <EngineSelector />
+    <EngineSelector {style} bind:idx/>
   </div>
   <div class="footer">
-    <EnginePads />
+    <EnginePads {style} {idx}/>
   </div>
   <div class="content" />
-</main>
+</div>
 
 <style>
   :root {
@@ -30,20 +38,34 @@
     font-family: mck-lato;
   }
 
-  main {
-    padding: 0px;
+  .main {
+    padding: 1px;
     margin: 0px;
-    background-color: #333333;
-    width: 800px;
-    height: 480px;
+    width: 798px;
+    height: 478px;
     display: grid;
     grid-template-columns: 80px 1fr 80px;
-    grid-template-rows: 80px 1fr 80px;
+    grid-template-rows: 40px 1fr 80px;
     gap: 1px;
   }
 
+  .main.dark {
+    background-color: #3a3a3a;
+  }
+
+  .main.light {
+    background-color: #cccccc;
+  }
+
+  .main.dark div {
+    background-color: #2a2a2a;
+  }
+
+  .main.light div {
+    background-color: #fafafa;
+  }
+
   .side {
-    background-color: darkorchid;
     grid-row: 1/-1;
   }
   .side.left {
@@ -53,18 +75,15 @@
     grid-column: -2/-1;
   }
   .header {
-    background-color: aquamarine;
     grid-row: 1/2;
     grid-column: 2/-2;
   }
   .footer {
-    background-color: aquamarine;
     grid-row: -2/-1;
     grid-column: 2/-2;
   }
   .content {
     grid-row: 2/-2;
     grid-column: 2/-2;
-    background-color: darkolivegreen;
   }
 </style>

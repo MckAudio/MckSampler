@@ -1,17 +1,20 @@
 <script lang="ts">
     import Pad from "../../src/mck/controls/Pad.svelte";
 
+    export let style: "dark" | "light" | "custom" = "light";
+    export let idx = -1;
+
     let pads = [0, 1, 2, 3, 4, 5, 6, 7];
 </script>
 
-<main>
+<div class="main">
     {#each pads as padIdx}
-        <Pad label="#{padIdx + 1}"/>
+        <Pad {style} selected={idx === padIdx}/>
     {/each}
-</main>
+</div>
 
 <style>
-    main {
+    .main {
         width: calc(100% - 16px);
         height: calc(100% - 16px);
         display: grid;

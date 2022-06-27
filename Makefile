@@ -21,6 +21,7 @@ dependencies:
 
 types:
 	node deps/TypeGenerator src/types/Transport.yaml
+	mv src/types/ts/* gui/mck-sampler-ui/src/types/
 
 install: gui release
 	mkdir -p /usr/share/mck-sampler/gui/
@@ -50,3 +51,6 @@ run-debug: debug
 	cd gui && npm run dev &
 	WEBKIT_INSPECTOR_SERVER=127.0.0.1:1234 ./bin/debug/mck-sampler
 	#epiphany inspector://127.0.0.1:1234
+
+run:
+	WEBKIT_INSPECTOR_SERVER=127.0.0.1:1234 ./bin/debug/mck-sampler
