@@ -27,8 +27,7 @@
   :root {
     padding: 0px;
     margin: 0px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
-      Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+    font-family: mck-lato;
   }
 
   main {

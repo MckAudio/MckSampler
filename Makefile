@@ -16,11 +16,16 @@ debug: ${SOURCES} ${HEADER}
 dependencies:
 	git submodule update --init --recursive
 	cd gui && npm install
+	cd gui/mck-sampler-ui && npm install
+	cd deps/TypeGenerator && npm install
+
+types:
+	node deps/TypeGenerator src/types/Transport.yaml
 
 install: gui release
 	mkdir -p /usr/share/mck-sampler/gui/
 	cp ./bin/release/mck-sampler /usr/bin
-	cp -r ./www/* /usr/share/mck-sampler/gui/
+	cp -r ./gui/mck-sampler-ui/dist/* /usr/share/mck-sampler/gui/
 	cp -r ./ressource/*.desktop /usr/share/applications/
 
 metronome: ./src/midimetronome.cpp ./src/Metronome.cpp ./src/Metronome.hpp
@@ -33,7 +38,7 @@ looper: ./src/midilooper.cpp ./src/Metronome.cpp ./src/Metronome.hpp
 
 .PHONY: gui
 gui:
-	cd gui && npm run build
+	cd gui/mck-sampler-ui && npm run build
 
 guitest: ./src/wvtest.cpp
 	mkdir -p bin

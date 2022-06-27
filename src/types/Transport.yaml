@@ -1,0 +1,38 @@
+meta:
+  author: Matt McK
+classes:
+  TransportState:
+    type: class
+    members:
+      state:
+        type: signed
+        default: 0
+      tempo:
+        type: float
+        default: 120.0
+      pulseIdx:
+        type: unsigned
+      nPulses:
+        type: unsigned
+      pulseLen:
+        type: unsigned
+      beat:
+        type: unsigned
+      nBeats:
+        type: unsigned
+      beatLen:
+        type: unsigned
+      bar:
+        type: unsigned
+      barLen:
+        type: unsigned
+      jackTransport:
+        type: signed
+  TransportCommand:
+    type: class
+    members:
+      mode:
+        type: signed
+      tempo:
+        type: float
+        default: 120.0
