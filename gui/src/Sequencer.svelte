@@ -159,7 +159,7 @@
     }
     .label {
         grid-column: 1/-1;
-        font-family: mck-lato;
+        font-family: 'mck-lato', 'Lato';
         font-size: 14px;
         font-weight: bold;
     }

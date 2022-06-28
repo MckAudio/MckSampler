@@ -1,10 +1,13 @@
 <script lang="ts">
+  import Settings from "./pages/Settings.svelte";
   import { onMount } from "svelte";
   import ContentSelector from "./ContentSelector.svelte";
   import EnginePads from "./EnginePads.svelte";
   import EngineSelector from "./EngineSelector.svelte";
 
-  export let style: "dark" | "light" | "custom" = "light";
+  export let style: "dark" | "light" | "custom" = "dark";
+
+  let activeContent = -1;
 
   let idx = -1;
 
@@ -19,23 +22,27 @@
 
 <div class="main {style}">
   <div class="side left">
-    <ContentSelector bind:style />
+    <ContentSelector bind:activeContent {style} />
   </div>
   <div class="side right" />
   <div class="header">
-    <EngineSelector {style} bind:idx/>
+    <EngineSelector {style} bind:idx />
   </div>
   <div class="footer">
-    <EnginePads {style} {idx}/>
+    <EnginePads {style} {idx} />
   </div>
-  <div class="content" />
+  <div class="content">
+    {#if activeContent === 0}
+      <Settings bind:style />
+    {/if}
+  </div>
 </div>
 
 <style>
   :root {
     padding: 0px;
     margin: 0px;
-    font-family: mck-lato;
+    font-family: "mck-lato", "Lato";
   }
 
   .main {

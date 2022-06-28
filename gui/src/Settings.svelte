@@ -94,7 +94,7 @@
         display: grid;
         grid-auto-rows: auto;
         font-size: 14px;
-        font-family: mck-lato;
+        font-family: 'mck-lato', 'Lato';
         row-gap: 4px;
         grid-row-gap: 4px;
     }
