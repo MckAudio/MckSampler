@@ -5,12 +5,12 @@
     export let style: "dark" | "light" | "custom" = "light";
     export let activeContent = -1;
 
-    let pages = ["Settings", "Pads", "Mixer"];
+    let pages = ["Controls", "Settings", "Pads", "Mixer"];
     $: console.log(style);
 </script>
 
-<div class="main">
-    <div />
+<div class="main {style}">
+    <div class="label">MckAudio</div>
     {#each pages as page, i}
         <SelectorPad
             {style}
@@ -31,5 +31,18 @@
         grid-auto-rows: 24px;
         gap: 16px;
         margin: 8px;
+    }
+    .label {
+        font-family: 'mck-lato', 'Lato';
+        font-style: italic;
+        font-size: 14px;
+        line-height: 24px;
+        text-align: center;
+    }
+    .main.light .label {
+        color: #555;
+    }
+    .main.dark .label {
+        color: #ff9900;
     }
 </style>

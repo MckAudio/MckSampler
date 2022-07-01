@@ -4,10 +4,13 @@
   import ContentSelector from "./ContentSelector.svelte";
   import EnginePads from "./EnginePads.svelte";
   import EngineSelector from "./EngineSelector.svelte";
+  import Controls from "./pages/Controls.svelte";
+  import Mixer from "./pages/Mixer.svelte";
+  import Pads from "./pages/Pads.svelte";
 
   export let style: "dark" | "light" | "custom" = "dark";
 
-  let activeContent = -1;
+  let activeContent = 0;
 
   let idx = -1;
 
@@ -26,14 +29,24 @@
   </div>
   <div class="side right" />
   <div class="header">
-    <EngineSelector {style} bind:idx />
+    {#if activeContent === 0}
+      <EngineSelector {style} bind:idx />
+    {/if}
   </div>
   <div class="footer">
-    <EnginePads {style} {idx} />
+    {#if activeContent !== 2}
+      <EnginePads {style} {idx} />
+    {/if}
   </div>
   <div class="content">
     {#if activeContent === 0}
+      <Controls {style} />
+    {:else if activeContent === 1}
       <Settings bind:style />
+    {:else if activeContent === 2}
+      <Pads {style} />
+    {:else if activeContent === 3}
+      <Mixer {style} />
     {/if}
   </div>
 </div>
