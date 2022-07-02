@@ -7,19 +7,37 @@
   import Controls from "./pages/Controls.svelte";
   import Mixer from "./pages/Mixer.svelte";
   import Pads from "./pages/Pads.svelte";
+  import { SendToBackend } from "./tools/Backend.svelte";
+  import type { BackendMessage } from "./tools/Types";
+  import type { TransportState } from "./types/Transport";
+  import { SamplerConfig } from "./types/Sampler";
 
   export let style: "dark" | "light" | "custom" = "dark";
 
   let activeContent = 0;
-
   let idx = -1;
+  let config = new SamplerConfig();
 
   function ReceiveBackendMessage(event: CustomEvent) {
-    //console.log(JSON.stringify(event.detail));
+    let msg = event.detail as BackendMessage;
+    console.log("MSG", msg);
+
+    if (msg.section === "data" && msg.msgType === "full") {
+      config = msg.data as SamplerConfig;
+      console.log("PADS", config.pads);
+    } else if (msg.section === "transport" && msg.msgType === "realtime") {
+      let rt = msg.data as TransportState;
+      console.log("Tempo", rt.tempo);
+    }
   }
 
   onMount(() => {
     document.addEventListener("backendMessage", ReceiveBackendMessage);
+    SendToBackend({
+      section: "data",
+      msgType: "get",
+      data: "",
+    });
   });
 </script>
 
@@ -46,7 +64,7 @@
     {:else if activeContent === 2}
       <Pads {style} />
     {:else if activeContent === 3}
-      <Mixer {style} />
+      <Mixer {style} {config}/>
     {/if}
   </div>
 </div>

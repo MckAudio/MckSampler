@@ -1,0 +1,60 @@
+meta:
+  author: Matt McK
+classes:
+  SamplerTrigger:
+    type: class
+    members:
+      index:
+        type: unsigned
+        default: 0
+      strength:
+        type: float
+        default: 0.5
+  SamplerPad:
+    type: class
+    members:
+      available:
+        type: boolean
+      reverse:
+        type: boolean
+      lengthMs:
+        type: unsigned
+        default: 60000
+      lengthSamps:
+        type: unsigned
+      maxLengthMs:
+        type: unsigned
+        default: 60000
+      tone:
+        type: unsigned
+        default: 255
+      ctrl:
+        type: unsigned
+        default: 255
+      samplePath:
+        type: string
+      sampleName:
+        type: string
+      gain:
+        type: float
+      pan:
+        type: float
+      pitch:
+        type: float
+        default: 1.0
+# Add delay, comp, nPatterns and patterns
+  SamplerConfig:
+    type: class
+    members:
+      tempo:
+        type: float
+        default: 110.0
+      numPads:
+        type: unsigned
+      numSamples:
+        type: unsigned
+      pads:
+        type: array
+        items:
+          type: link
+          name: SamplerPad

@@ -20,7 +20,8 @@ dependencies:
 	cd deps/TypeGenerator && npm install
 
 types:
-	node deps/TypeGenerator src/types/Transport.yaml
+	node deps/TypeGenerator src/types/Sampler.yaml src/types/Transport.yaml
+	mkdir -p gui/mck-sampler-ui/src/types/ || true
 	mv src/types/ts/* gui/mck-sampler-ui/src/types/
 
 install: gui release
