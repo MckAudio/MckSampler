@@ -296,7 +296,8 @@ void mck::Processing::ReceiveMessage(mck::Message &msg)
         else if (msg.msgType == "edit")
         {
             SampleEdit cmd;
-            try {
+            try
+            {
                 cmd = nlohmann::json::parse(msg.data);
             }
             catch (std::exception &e)
@@ -433,7 +434,7 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
                     if ((midiEvent.buffer[1] & 0x7f) == m_config[m_curConfig].pads[j].ctrl)
                     {
                         m_config[m_curConfig].pads[j].gain = (float)(midiEvent.buffer[2] & 0x7f) / 127.0f;
-                        //m_config[m_curConfig].pads[j].pitch = ((float)(midiEvent.buffer[2] & 0x7f) / 127.0f) * 1.5f + 0.5;
+                        // m_config[m_curConfig].pads[j].pitch = ((float)(midiEvent.buffer[2] & 0x7f) / 127.0f) * 1.5f + 0.5;
                     }
                 }
             }
@@ -582,10 +583,11 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
                 // Stop Sample
                 v.bufferIdx = 0;
                 v.playSample = false;
-            } else {
+            }
+            else
+            {
                 v.bufferIdx = (unsigned)newIdx;
             }
-
         }
         else
         {
@@ -733,8 +735,8 @@ bool mck::Processing::PrepareSamples()
         m_config[m_curConfig].pads[i].available = true;
         m_samples[i].update = true;
         // init pitcher
-        //m_samples[i].pitcher = new RubberBand::RubberBandStretcher(sampleRate, m_samples[i].numChans, RubberBand::RubberBandStretcher::OptionProcessRealTime, 1.0, 1.0);
-        //m_samples[i].pitcher->setMaxProcessSize(bufferSize);
+        // m_samples[i].pitcher = new RubberBand::RubberBandStretcher(sampleRate, m_samples[i].numChans, RubberBand::RubberBandStretcher::OptionProcessRealTime, 1.0, 1.0);
+        // m_samples[i].pitcher->setMaxProcessSize(bufferSize);
     }
     return true;
 }

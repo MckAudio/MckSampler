@@ -20,7 +20,7 @@
 namespace mck
 {
 
-    const unsigned SAMPLER_NUM_PADS = 16;
+    const unsigned SAMPLER_NUM_PADS = 8;
     const unsigned SAMPLER_VOICES_PER_PAD = 4;
 
     class SampleExplorer;

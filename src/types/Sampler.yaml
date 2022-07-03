@@ -58,3 +58,26 @@ classes:
         items:
           type: link
           name: SamplerPad
+      midiChan:
+        type: unsigned
+        minimum: 0
+        maximum: 127
+      reconnect:
+        type: boolean
+        default: true
+      miniInConnections:
+        type: array
+        items:
+          type: string
+      miniOutConnections:
+        type: array
+        items:
+          type: string
+      audioLeftConnections:
+        type: array
+        items:
+          type: string
+      audioRightConnections:
+        type: array
+        items:
+          type: string

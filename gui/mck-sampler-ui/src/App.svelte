@@ -15,19 +15,16 @@
   export let style: "dark" | "light" | "custom" = "dark";
 
   let activeContent = 0;
-  let idx = -1;
+  let idx = 0;
   let config = new SamplerConfig();
 
   function ReceiveBackendMessage(event: CustomEvent) {
     let msg = event.detail as BackendMessage;
-    console.log("MSG", msg);
 
     if (msg.section === "data" && msg.msgType === "full") {
       config = msg.data as SamplerConfig;
-      console.log("PADS", config.pads);
     } else if (msg.section === "transport" && msg.msgType === "realtime") {
       let rt = msg.data as TransportState;
-      console.log("Tempo", rt.tempo);
     }
   }
 
@@ -41,33 +38,35 @@
   });
 </script>
 
-<div class="main {style}">
-  <div class="side left">
-    <ContentSelector bind:activeContent {style} />
+{#if config !== undefined}
+  <div class="main {style}">
+    <div class="side left">
+      <ContentSelector bind:activeContent {style} />
+    </div>
+    <div class="side right" />
+    <div class="header">
+      {#if activeContent === 0}
+        <EngineSelector {style} bind:idx />
+      {/if}
+    </div>
+    <div class="footer">
+      {#if activeContent !== 2}
+        <EnginePads {style} {idx} />
+      {/if}
+    </div>
+    <div class="content">
+      {#if activeContent === 0}
+        <Controls {style} {idx} data={config.pads[idx]} />
+      {:else if activeContent === 1}
+        <Settings bind:style />
+      {:else if activeContent === 2}
+        <Pads {style} />
+      {:else if activeContent === 3}
+        <Mixer {style} {config} />
+      {/if}
+    </div>
   </div>
-  <div class="side right" />
-  <div class="header">
-    {#if activeContent === 0}
-      <EngineSelector {style} bind:idx />
-    {/if}
-  </div>
-  <div class="footer">
-    {#if activeContent !== 2}
-      <EnginePads {style} {idx} />
-    {/if}
-  </div>
-  <div class="content">
-    {#if activeContent === 0}
-      <Controls {style} />
-    {:else if activeContent === 1}
-      <Settings bind:style />
-    {:else if activeContent === 2}
-      <Pads {style} />
-    {:else if activeContent === 3}
-      <Mixer {style} {config}/>
-    {/if}
-  </div>
-</div>
+{/if}
 
 <style>
   :root {
@@ -85,6 +84,7 @@
     grid-template-columns: 80px 1fr 80px;
     grid-template-rows: 40px 1fr 80px;
     gap: 1px;
+    overflow: hidden;
   }
 
   .main.dark {
@@ -105,6 +105,7 @@
 
   .side {
     grid-row: 1/-1;
+    overflow: hidden;
   }
   .side.left {
     grid-column: 1/2;
@@ -115,13 +116,16 @@
   .header {
     grid-row: 1/2;
     grid-column: 2/-2;
+    overflow: hidden;
   }
   .footer {
     grid-row: -2/-1;
     grid-column: 2/-2;
+    overflow: hidden;
   }
   .content {
     grid-row: 2/-2;
     grid-column: 2/-2;
+    overflow: hidden;
   }
 </style>

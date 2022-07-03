@@ -1,12 +1,38 @@
 <script lang="ts">
     import type { SamplerConfig } from "../types/Sampler";
-
     import Dial from "../../../src/mck/controls/Dial.svelte";
+    import type { DialSettings } from "../../../src/mck/controls/Types";
+    import {
+        DbToLog,
+        LinToPan,
+        LogToDb,
+        PanToLin,
+    } from "../../../src/mck/utils/Tools.svelte";
+import { ChangeData } from "../tools/Backend.svelte";
 
     export let style: "dark" | "light" | "custom" = "dark";
     export let config: SamplerConfig = undefined;
 
-    let controls = ["Pan", "FX 1", "FX 2", "Gain"];
+    let controls: Array<DialSettings> = [
+        {
+            name: "Pan",
+            key: "pan",
+            unit: "%",
+            dec: 0,
+            default: 0.0,
+            formatValue: (val) => LinToPan(val),
+            extractValue: (val) => PanToLin(val),
+        },
+        {
+            name: "Level",
+            key: "gain",
+            unit: "dB",
+            dec: 1,
+            default: 0.0,
+            formatValue: (val) => LogToDb(val, -60.0, 6.0),
+            extractValue: (val) => DbToLog(val, -60.0, 6.0),
+        },
+    ];
 
     let rows = [0, 1, 2, 3];
     let pads = [];
@@ -20,13 +46,9 @@
 
 {#if config !== undefined}
     <div class="main">
-        {#each rows as row}
+        {#each controls as ctrl}
             {#each pads as pad, i}
-                {#if controls[row] === "Pan"}
-                <Dial {style} label={controls[row]} value={(pad.pan / 200.0) + 0.5}/>
-                {:else}
-                <Dial {style} label={controls[row]} />
-                {/if}
+                <Dial {style} settings={ctrl} value={pad[ctrl.key]} Handler={v => ChangeData(["pads", i, ctrl.key], v)} />
             {/each}
         {/each}
     </div>
