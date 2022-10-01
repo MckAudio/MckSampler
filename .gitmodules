@@ -1,17 +1,12 @@
-[submodule "gui/MckSvelte"]
-	path = gui/src/mck
-	url = ../MckSvelte.git
 [submodule "src/helper"]
 	path = src/helper
 	url = ../MckHelper.git
-[submodule "src/gui"]
-	path = src/gui
-	url = ../MckGui.git
-[submodule "gui/src/mck"]
-	url = ../MckSvelte.git
 [submodule "src/q"]
 	path = src/q
 	url = ../q.git
 [submodule "deps/TypeGenerator"]
 	path = deps/TypeGenerator
 	url = ../TypeGenerator.git
+[submodule "JUCE"]
+	path = deps/JUCE
+	url = https://github.com/juce-framework/JUCE
