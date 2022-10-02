@@ -20,7 +20,8 @@ class MainComponent : public juce::Component
     }
 
     void paint(juce::Graphics& g) override {
-        g.setFont(64);
+        g.fillAll(getLookAndFeel().findColour(DocumentWindow::backgroundColourId));
+        g.setFont(juce::Font(smallUnit, juce::Font::plain));
         g.setColour(juce::Colours::lightseagreen);
         g.drawText(currentSizeAsString, getLocalBounds(), juce::Justification::centred, true);
     }

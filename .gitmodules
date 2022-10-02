@@ -10,3 +10,6 @@
 [submodule "JUCE"]
 	path = deps/JUCE
 	url = https://github.com/juce-framework/JUCE
+[submodule "deps/MckJuce"]
+	path = deps/MckJuce
+	url = git@github.com:MckAudio/MckJuce.git

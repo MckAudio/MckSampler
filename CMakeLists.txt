@@ -4,6 +4,9 @@ project(MCK_SAMPLER VERSION 0.0.1)
 
 add_subdirectory(deps/JUCE)
 
+add_subdirectory(deps/MckJuce/Content)
+set_property(TARGET MckBinaryData PROPERTY POSITION_INDEPENDENT_CODE ON)
+
 juce_add_gui_app(MckSamplerApp
     VERSION 0.0.1
     COMPANY_NAME MckAudio
@@ -12,8 +15,14 @@ juce_add_gui_app(MckSamplerApp
 
 juce_generate_juce_header(MckSamplerApp)
 
+target_include_directories(MckSamplerApp
+PRIVATE
+./deps/MckJuce/Source)
+
 target_sources(MckSamplerApp
     PRIVATE
+    ./deps/MckJuce/Source/BwLookAndFeel.cpp
+    ./deps/MckJuce/Source/MckLookAndFeel.cpp
     src/Main.cpp
     src/MainComponent.hpp
     src/BarControlComponent.hpp
@@ -32,7 +41,7 @@ target_compile_definitions(MckSamplerApp
 
 target_link_libraries(MckSamplerApp
     PRIVATE
-    #MckBinaryData
+    MckBinaryData
     juce::juce_core
     juce::juce_data_structures
     juce::juce_events

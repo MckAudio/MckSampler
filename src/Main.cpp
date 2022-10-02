@@ -1,5 +1,6 @@
 #include <JuceHeader.h>
 #include "MainComponent.hpp"
+#include "MckLookAndFeel.hpp"
 
 class Application : public juce::JUCEApplication
 {
@@ -22,10 +23,13 @@ private:
     public:
         MainWindow(const juce::String &name, juce::Component *c, JUCEApplication &a)
             : DocumentWindow(name,
-                             juce::Desktop::getInstance().getDefaultLookAndFeel().findColour(DocumentWindow::backgroundColourId),
+                             getLookAndFeel().findColour(DocumentWindow::backgroundColourId),
                              juce::DocumentWindow::minimiseButton | juce::DocumentWindow::closeButton),
               app(a)
         {
+            setLookAndFeel(&mckLookAndFeel);
+            LookAndFeel::setDefaultLookAndFeel(&mckLookAndFeel);
+            
             setUsingNativeTitleBar(false);
             setResizable(false, false);
             setSize(800, 480);
@@ -41,6 +45,7 @@ private:
 
     private:
         JUCEApplication &app;
+        MckLookAndFeel mckLookAndFeel;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainWindow)
     };
