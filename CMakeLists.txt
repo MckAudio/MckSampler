@@ -23,12 +23,14 @@ target_sources(MckSamplerApp
     PRIVATE
     ./deps/MckJuce/Source/BwLookAndFeel.cpp
     ./deps/MckJuce/Source/MckLookAndFeel.cpp
-    src/Main.cpp
-    src/MainComponent.hpp
     src/BarControlComponent.hpp
     src/BarMenuComponent.hpp
     src/BarPadComponent.hpp
     src/BarSelectorComponent.hpp
+    src/Content.hpp
+    src/Dial.hpp
+    src/Main.cpp
+    src/MainComponent.hpp
 )
 
 target_compile_definitions(MckSamplerApp

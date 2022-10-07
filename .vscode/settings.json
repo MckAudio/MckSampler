@@ -73,6 +73,7 @@
         "valarray": "cpp",
         "variant": "cpp",
         "numbers": "cpp",
-        "semaphore": "cpp"
+        "semaphore": "cpp",
+        "*.mm": "cpp"
     }
 }
