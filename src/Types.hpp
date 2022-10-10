@@ -3,7 +3,7 @@
 #include <vector>
 #include <atomic>
 #include <nlohmann/json.hpp>
-#include "helper/WaveHelper.hpp"
+#include <MckHelper/WaveHelper.hpp>
 //#include <rubberband/RubberBandStretcher.h>
 #include <q/fx/delay.hpp>
 #include <q/fx/lowpass.hpp>

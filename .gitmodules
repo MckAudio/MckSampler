@@ -1,8 +1,8 @@
 [submodule "src/helper"]
-	path = src/helper
+	path = deps/helper
 	url = ../MckHelper.git
 [submodule "src/q"]
-	path = src/q
+	path = deps/q
 	url = ../q.git
 [submodule "deps/TypeGenerator"]
 	path = deps/TypeGenerator
@@ -13,3 +13,6 @@
 [submodule "deps/MckJuce"]
 	path = deps/MckJuce
 	url = git@github.com:MckAudio/MckJuce.git
+[submodule "deps/concurrentqueue"]
+	path = deps/concurrentqueue
+	url = https://github.com/cameron314/concurrentqueue.git

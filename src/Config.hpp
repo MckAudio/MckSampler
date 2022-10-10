@@ -154,6 +154,7 @@ namespace mck
         struct Config
         {
             double tempo;
+            unsigned activePad;
             unsigned numPads;
             unsigned numSamples;
             std::vector<Pad> pads;
@@ -163,7 +164,7 @@ namespace mck
             std::vector<std::string> midiOutConnections;
             std::vector<std::string> audioLeftConnections;
             std::vector<std::string> audioRightConnections;
-            Config() : tempo(110.0), numPads(0), midiChan(0), numSamples(0), reconnect(true)
+            Config() : tempo(110.0), activePad(0), numPads(0), numSamples(0), midiChan(0), reconnect(true)
             {
                 pads.resize(numPads);
             };

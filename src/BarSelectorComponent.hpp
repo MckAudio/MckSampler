@@ -1,12 +1,18 @@
 #pragma once
 #include <JuceHeader.h>
 #include "Content.hpp"
+#include "Processing.hpp"
 
-class SelectorComponent : public ControlComponentBase, public juce::Button::Listener
+class SelectorComponent : public ControlComponentBase, public juce::Button::Listener, public mck::Processing::Listener
 {
 public:
     SelectorComponent()
     {
+        mck::Processing::GetInstance()->addListener(this);
+    }
+    ~SelectorComponent()
+    {
+        mck::Processing::GetInstance()->removeListener(this);
     }
 
     void paint(juce::Graphics &g) override
@@ -20,7 +26,7 @@ public:
 
         for (size_t i = 1; i < numPads; i++)
         {
-            g.fillRect(i*itemWidth, margin, 1, h - 2*margin);
+            g.fillRect(i * itemWidth, margin, 1, h - 2 * margin);
         }
     }
     void resized() override
@@ -74,13 +80,23 @@ private:
     {
         removeAllChildren();
 
-        int i = 1;
+        auto conf = mck::Processing::GetInstance()->GetCurrentConfig();
+        size_t i = 0;
         for (auto &b : buttons)
         {
-            b.setButtonText("Pad #" + std::to_string(i++));
+            if (i < conf.numPads && conf.pads[i].sampleName != "")
+            {
+                b.setButtonText(conf.pads[i].sampleName);
+            }
+            else
+            {
+                b.setButtonText("Pad #" + std::to_string(i + 1));
+            }
             b.setToggleable(true);
             b.addListener(this);
             addAndMakeVisible(b);
+
+            i++;
         }
         drawLabels = false;
         drawButtons = true;
@@ -91,13 +107,22 @@ private:
     {
         removeAllChildren();
 
-        int i = 1;
+        auto conf = mck::Processing::GetInstance()->GetCurrentConfig();
+        size_t i = 0;
         for (auto &l : labels)
         {
             l.setFont(juce::Font(16, juce::Font::plain));
-            l.setText("Pad #" + std::to_string(i++), juce::NotificationType::dontSendNotification);
+            if (i < conf.numPads && conf.pads[i].sampleName != "")
+            {
+                l.setText(conf.pads[i].sampleName, juce::NotificationType::dontSendNotification);
+            }
+            else
+            {
+                l.setText("Pad #" + std::to_string(i + 1), juce::NotificationType::dontSendNotification);
+            }
             l.setJustificationType(juce::Justification::centred);
             addAndMakeVisible(l);
+            i++;
         }
         drawButtons = false;
         drawLabels = true;
@@ -106,12 +131,26 @@ private:
 
     void buttonClicked(juce::Button *b) override
     {
-        for (auto &button : buttons)
+
+        for (size_t i = 0; i < 8; i++)
         {
-            button.setToggleState(false, false);
-            if (b == &button)
+            //buttons[i].setToggleState(false, false);
+            if (b == &buttons[i])
             {
-                button.setToggleState(true, false);
+                //buttons[i].setToggleState(true, false);
+                mck::Processing::GetInstance()->SetActivePad(i);
+            }
+        }
+    }
+
+    void configChanged(const mck::sampler::Config &config) override
+    {
+        for (size_t i = 0; i < std::min(config.numPads, static_cast<const unsigned>(8)); i++)
+        {
+            if (i == config.activePad) {
+                buttons[i].setToggleState(true, false);
+            } else {
+                buttons[i].setToggleState(false, false);
             }
         }
     }

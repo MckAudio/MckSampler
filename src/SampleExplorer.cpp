@@ -1,5 +1,4 @@
 #include "SampleExplorer.hpp"
-#include "gui/GuiWindow.hpp"
 #include <filesystem>
 #include <nlohmann/json.hpp>
 #include <cstdio>
@@ -494,7 +493,7 @@ bool mck::SampleExplorer::ImportSample(std::string path, unsigned packIdx, unsig
     }
 
     std::vector<std::string> files;
-    gui->ShowOpenFileDialog("Import one or more sample files", "audio/wav", files, true);
+    //gui->ShowOpenFileDialog("Import one or more sample files", "audio/wav", files, true);
 
     fs::path catPath(m_samplePath);
     catPath.append(m_packPaths[packIdx]).append(m_packs[packIdx].categories[categoryIdx]);

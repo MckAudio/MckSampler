@@ -1,6 +1,7 @@
 #include <JuceHeader.h>
 #include "MainComponent.hpp"
 #include "MckLookAndFeel.hpp"
+#include "Processing.hpp"
 
 class Application : public juce::JUCEApplication
 {
@@ -13,9 +14,13 @@ public:
     void initialise(const juce::String &) override
     {
         mainWindow.reset(new MainWindow(getApplicationName(), new MainComponent(), *this));
+
+        mck::Processing::GetInstance()->Init();
     }
 
-    void shutdown() override {}
+    void shutdown() override {
+        mck::Processing::GetInstance()->Close();
+    }
 
 private:
     class MainWindow : public juce::DocumentWindow

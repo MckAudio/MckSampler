@@ -1,5 +1,5 @@
 #include "Config.hpp"
-#include "helper/DspHelper.hpp"
+#include <MckHelper/DspHelper.hpp>
 
 void mck::sampler::to_json(nlohmann::json &j, const mck::sampler::Sample &s)
 {
@@ -145,6 +145,7 @@ void mck::sampler::from_json(const nlohmann::json &j, mck::sampler::Pad &p)
 void mck::sampler::to_json(nlohmann::json &j, const mck::sampler::Config &c)
 {
     j["tempo"] = c.tempo;
+    j["activePad"] = c.activePad;
     j["numPads"] = c.numPads;
     j["numSamples"] = c.numSamples;
     j["pads"] = c.pads;
@@ -159,6 +160,11 @@ void mck::sampler::to_json(nlohmann::json &j, const mck::sampler::Config &c)
 void mck::sampler::from_json(const nlohmann::json &j, mck::sampler::Config &c)
 {
     c.tempo = j.at("tempo").get<double>();
+    try {
+        c.activePad = j.at("activePad").get<unsigned>();
+    } catch (std::exception &e) {
+        c.activePad = 0;
+    }
     c.numPads = j.at("numPads").get<unsigned>();
     c.numSamples = j.at("numSamples").get<unsigned>();
     c.pads = j.at("pads").get<std::vector<mck::sampler::Pad>>();

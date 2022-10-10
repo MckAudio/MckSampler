@@ -1,13 +1,15 @@
 #pragma once
 #include <JuceHeader.h>
 #include "Content.hpp"
+#include "Processing.hpp"
 
-class PadComponent : public ControlComponentBase
+class PadComponent : public ControlComponentBase, public juce::Button::Listener
 {
     public:
     PadComponent() {
         for(auto&b : buttons)
         {
+            b.addListener(this);
             addAndMakeVisible(b);
         }
     }
@@ -38,6 +40,15 @@ class PadComponent : public ControlComponentBase
     }
 
     private:
+        void buttonClicked (Button *b) override {
+            for (size_t i = 0; i < 8; i++)
+            {
+                if (b == buttons + i)
+                {
+                    mck::Processing::GetInstance()->Trigger(i, 1.0);
+                }
+            }
+        }
     static const size_t numPads{8};
     static const int margin{8};
     static const int buttonSize{64};

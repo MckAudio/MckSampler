@@ -1,7 +1,7 @@
 #include "Processing.hpp"
-#include "helper/DspHelper.hpp"
-#include "helper/JackHelper.hpp"
-#include "helper/WaveHelper.hpp"
+#include <MckHelper/DspHelper.hpp>
+#include <MckHelper/JackHelper.hpp>
+#include <MckHelper/WaveHelper.hpp>
 #include "SampleExplorer.hpp"
 
 // System
@@ -31,9 +31,10 @@ static int JackProcess(jack_nframes_t nframes, void *arg)
     return proc->ProcessAudioMidi(nframes);
 }
 
+static mck::Processing *instance;
+
 mck::Processing::Processing()
-    : m_gui(nullptr),
-      m_isInitialized(false),
+    : m_isInitialized(false),
       m_done(false),
       m_isProcessing(false),
       m_config(),
@@ -66,6 +67,16 @@ mck::Processing::~Processing()
     {
         Close();
     }
+}
+
+mck::Processing *mck::Processing::GetInstance()
+{
+    if (instance == nullptr)
+    {
+        instance = new Processing();
+    }
+
+    return instance;
 }
 
 bool mck::Processing::Init()
@@ -198,6 +209,48 @@ void mck::Processing::Close()
     m_isInitialized = false;
 }
 
+void mck::Processing::Trigger(size_t idx, double strength)
+{
+    std::printf("Triggering PAD #%d\n", idx + 1);
+    m_triggerQueue.try_enqueue(std::pair<unsigned, double>(idx, strength));
+}
+
+void mck::Processing::SetLevel(size_t idx, double level)
+{
+    auto config = m_config[m_curConfig];
+
+    if (idx >= config.numPads)
+    {
+        return;
+    }
+    config.pads[idx].gain = level;
+    SetConfiguration(config);
+}
+
+void mck::Processing::SetPan(size_t idx, double pan)
+{
+    auto config = m_config[m_curConfig];
+
+    if (idx >= config.numPads)
+    {
+        return;
+    }
+    config.pads[idx].pan = pan;
+    SetConfiguration(config);
+}
+
+void mck::Processing::SetActivePad(size_t idx)
+{
+    auto config = m_config[m_curConfig];
+
+    if (idx >= config.numPads)
+    {
+        return;
+    }
+    config.activePad = idx;
+    SetConfiguration(config);
+}
+/*
 void mck::Processing::ReceiveMessage(mck::Message &msg)
 {
     if (msg.section == "pads")
@@ -313,12 +366,7 @@ void mck::Processing::ReceiveMessage(mck::Message &msg)
         }
     }
 }
-
-void mck::Processing::SetGuiPtr(GuiWindow *gui)
-{
-    m_gui = gui;
-}
-
+*/
 int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
 {
     if (m_isInitialized == false)
@@ -688,10 +736,11 @@ void mck::Processing::TransportThread()
             return;
         }
 
-        if (m_gui != nullptr)
-        {
-            m_gui->SendMessage("transport", "realtime", m_transportState);
-        }
+        /*
+                if (m_gui != nullptr)
+                {
+                    m_gui->SendMessage("transport", "realtime", m_transportState);
+                }*/
     }
 }
 
@@ -768,6 +817,7 @@ void mck::Processing::SetConfiguration(sampler::Config &config, bool connect)
         config.pads.resize(SAMPLER_NUM_PADS);
     }
     config.numPads = config.pads.size();
+    config.activePad = std::min(config.numPads - 1, config.activePad);
     std::vector<bool> updateSamples;
     updateSamples.resize(config.numPads, false);
     for (unsigned i = 0; i < config.numPads; i++)
@@ -881,11 +931,11 @@ void mck::Processing::SetConfiguration(sampler::Config &config, bool connect)
     m_newConfig = 1 - m_curConfig;
     m_config[m_newConfig] = config;
     m_updateConfig = true;
-
-    if (m_gui != nullptr)
-    {
-        m_gui->SendMessage("data", "full", config);
-    }
+    /*
+        if (m_gui != nullptr)
+        {
+            m_gui->SendMessage("data", "full", config);
+        }*/
     m_configFile.SetConfig(config);
     m_configFile.WriteFile(m_configPath);
 
@@ -912,4 +962,7 @@ void mck::Processing::SetConfiguration(sampler::Config &config, bool connect)
             }
         }
     }
+
+    configListeners.call([this](Listener &l)
+                         { l.configChanged(m_config[m_newConfig]); });
 }

@@ -27,8 +27,10 @@ public:
         resized();
     }
 
-    ~MainComponent() {
-        if (contentComponent != nullptr) {
+    ~MainComponent()
+    {
+        if (contentComponent != nullptr)
+        {
             delete contentComponent;
             contentComponent = nullptr;
         }
@@ -52,7 +54,8 @@ public:
         ctrlComponent.setBounds(getWidth() - bigUnit, 0, bigUnit, getHeight());
         padComponent.setBounds(bigUnit, getHeight() - bigUnit, getWidth() - 2 * bigUnit, bigUnit);
 
-        if (contentComponent != nullptr) {
+        if (contentComponent != nullptr)
+        {
             contentComponent->setBounds(bigUnit, smallUnit, defaultWidth - 2 * bigUnit, defaultHeight - bigUnit - smallUnit);
         }
     }
@@ -68,6 +71,10 @@ public:
 
         switch (contentType)
         {
+        case Content::Controls:
+            contentComponent = new ControlPageComponent();
+            addAndMakeVisible(contentComponent);
+            break;
         case Content::Mixer:
             contentComponent = new MixerComponent();
             addAndMakeVisible(contentComponent);
@@ -87,7 +94,8 @@ public:
         resized();
     }
 
-    void menuItemChanged(int idx) override {
+    void menuItemChanged(int idx) override
+    {
         std::cout << "Menu item: " << idx << std::endl;
         if (idx >= Content::Type::Controls && idx < Content::Type::Length)
         {
@@ -112,7 +120,7 @@ private:
     SelectorComponent selComponent;
 
     // MixerComponent mixerComponent;
-    juce::Component *contentComponent {nullptr};
+    juce::Component *contentComponent{nullptr};
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
 };

@@ -1,6 +1,7 @@
 #pragma once
 #include <JuceHeader.h>
 #include "Dial.hpp"
+#include "Processing.hpp"
 
 class Content
 {
@@ -13,98 +14,101 @@ public:
         Mixer,
         Length
     };
+
+    enum Ctrl
+    {
+        Pan = 0,
+        Pitch,
+        Reverb,
+        Level
+    };
 };
 
 class ControlComponentBase : public juce::Component
 {
-    public:
-        virtual void setActiveContent(Content::Type contentType) {
-            activeContentType = contentType;
-        }
-        
-    protected:
-        Content::Type activeContentType { Content::Controls };
+public:
+    virtual void setActiveContent(Content::Type contentType)
+    {
+        activeContentType = contentType;
+    }
+
+protected:
+    Content::Type activeContentType{Content::Controls};
 };
 
-class MixerComponent : public juce::Component
+class ControlPageComponent : public juce::Component, public juce::Slider::Listener, public mck::Processing::Listener
 {
 public:
-    MixerComponent()
-    {
-        size_t d = 0;
-        for (size_t i = 0; i < numChannels; i++)
-        {
-            for (size_t j = 0; j < numCtrls; j++, d++)
-            {
-                labels[d].setFont(juce::Font(fontSize, juce::Font::plain));
-                labels[d].setJustificationType(juce::Justification::centred);
-                labels[d].setText(labelTexts[j], juce::NotificationType::dontSendNotification);
-                addAndMakeVisible(dials[d]);
-                addAndMakeVisible(labels[d]);
-            }
-        }
-    }
-    void paint(juce::Graphics &g) override
-    {
-        // g.fillAll(juce::Colours::blanchedalmond);
-        auto area = getLocalBounds();
-        g.setColour(getLookAndFeel().findColour(juce::ComboBox::outlineColourId));
-        for (size_t i = 0; i < numChannels; i++)
-        {
-            g.fillRect((i + 1) * rowWidth, upperRowMargin, 1, area.getHeight() - upperRowMargin - lowerRowMargin);
-        }
-    }
-    void resized() override
-    {
-        int d = 0;
-        for (size_t i = 0; i < numChannels; i++)
-        {
-            auto area = getLocalBounds();
-            area.removeFromLeft(i * rowWidth);
-            area.removeFromRight((numChannels - 1 - i) * rowWidth);
+    ControlPageComponent();
+    ~ControlPageComponent();
 
-            for (size_t j = 0; j < numCtrls; j++, d++)
-            {
-                dials[d].setBounds(i * rowWidth + colMargin, j * rowHeight + upperRowMargin, dialHeight, dialHeight);
-                labels[d].setBounds(i * rowWidth + colMargin, j * rowHeight + upperRowMargin + dialHeight, dialHeight, fontSize);
-            }
-        }
-    }
+    void paint(juce::Graphics &g) override;
+    void resized() override;
 
 private:
-    const static size_t numCtrls{4};
-    const static size_t numChannels{8};
-    const static size_t numDials{numCtrls * numChannels};
+    void sliderValueChanged(Slider *slider) override;
+    void configChanged(const mck::sampler::Config &config) override;
+};
 
-    const static int labelHeight{20};
-    const static int upperRowMargin{4};
-    const static int lowerRowMargin{8};
-    const static int colMargin{8};
-    const static int dialHeight{64};
-    const static int fontSize{14};
-    const static int rowWidth{80};
-    const static int rowHeight{upperRowMargin + dialHeight + fontSize + lowerRowMargin};
+class MixerComponent : public juce::Component,
+                       public juce::Slider::Listener,
+                       public mck::Processing::Listener
+{
+public:
+    MixerComponent();
+    ~MixerComponent();
 
-    Dial dials[numDials];
-    juce::Label labels[numDials];
-    juce::String labelTexts[numCtrls] = {
+    void paint(juce::Graphics &g) override;
+    void resized() override;
+
+private:
+    void sliderValueChanged(Slider *slider) override;
+
+    void configChanged(const mck::sampler::Config &config) override;
+
+    const size_t numCtrls{4};
+    const size_t numChannels{8};
+    const size_t numDials{numCtrls * numChannels};
+    const int labelHeight{20};
+    const int upperRowMargin{4};
+    const int lowerRowMargin{8};
+    const int colMargin{8};
+    const int dialHeight{64};
+    const int fontSize{14};
+    const int rowWidth{80};
+    const int rowHeight{upperRowMargin + dialHeight + fontSize + lowerRowMargin};
+
+    Dial dials[32];
+    juce::Label labels[32];
+    juce::String labelTexts[4] = {
         "Pan", "Pitch", "Reverb", "Level"};
 };
 
-class PadsComponent : public juce::Component
+class PadsComponent : public juce::Component, public juce::Button::Listener
 {
 public:
     PadsComponent()
     {
-        int i = 1;
+        auto conf = mck::Processing::GetInstance()->GetCurrentConfig();
+        size_t i = 0;
         for (auto &p : pads)
         {
-            p.setButtonText("Pad #" + std::to_string(i++));
+            if (i < conf.numPads)
+            {
+                p.setButtonText(conf.pads[i].sampleName);
+            }
+            else
+            {
+                p.setButtonText("Pad #" + std::to_string(i + 1));
+            }
+            p.addListener(this);
             addAndMakeVisible(p);
+            i++;
         }
     }
 
-    void resized() override {
+    void resized() override
+    {
         auto area = getLocalBounds();
         auto w = area.getWidth() / numCols;
         auto h = area.getHeight() / numRows;
@@ -114,12 +118,14 @@ public:
         {
             for (int c = 0; c < numCols; c++, pIdx++)
             {
-                pads[pIdx].setBounds(juce::Rectangle<int>(c*w, r*h, w, h).reduced(margin));
+                pads[pIdx].setBounds(juce::Rectangle<int>(c * w, r * h, w, h).reduced(margin));
             }
         }
     }
 
 private:
+    void buttonClicked(Button *b) override;
+
     const static size_t numPads{8};
     const static size_t numRows{2};
     const static size_t numCols{4};

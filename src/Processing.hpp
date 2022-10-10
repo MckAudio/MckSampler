@@ -1,5 +1,7 @@
 #pragma once
 
+#include <JuceHeader.h>
+
 #include <vector>
 #include <deque>
 #include <string>
@@ -11,8 +13,7 @@
 #include <jack/types.h>
 #include <concurrentqueue.h>
 
-#include <GuiWindow.hpp>
-#include "helper/Transport.hpp"
+#include <MckHelper/Transport.hpp>
 #include "Types.hpp"
 #include "Config.hpp"
 #include "ConfigFile.hpp"
@@ -25,20 +26,54 @@ namespace mck
 
     class SampleExplorer;
 
-    class Processing : GuiBase
+    class Processing
     {
-    public:
+    protected:
         Processing();
+
+    public:
+        Processing(Processing &) = delete;
+
         ~Processing();
+
+        void operator=(const Processing &) = delete;
+
+        static Processing *GetInstance();
 
         int ProcessAudioMidi(jack_nframes_t nframes);
 
         bool Init();
         void Close();
 
-        void ReceiveMessage(mck::Message &msg);
+        void Trigger(size_t idx, double strength);
 
-        void SetGuiPtr(GuiWindow *gui);
+        void SetLevel(size_t idx, double level);
+
+        void SetPan(size_t idx, double pan);
+
+        void SetActivePad(size_t idx);
+
+        sampler::Config GetCurrentConfig()
+        {
+            return m_config[m_curConfig];
+        }
+
+        // void ReceiveMessage(mck::Message &msg);
+
+        class JUCE_API Listener
+        {
+        public:
+            virtual ~Listener() = default;
+
+            virtual void configChanged(const sampler::Config &config) = 0;
+        };
+
+        void addListener(Listener *newListener)
+        {
+            configListeners.add(newListener);
+            newListener->configChanged(m_config[m_curConfig]);
+        };
+        void removeListener(Listener *listener) { configListeners.remove(listener); };
 
     private:
         void TransportThread();
@@ -46,8 +81,7 @@ namespace mck
         bool AssignSample(SampleCommand cmd);
         void SetConfiguration(sampler::Config &config, bool connect = false);
 
-        // GUI Pointer
-        GuiWindow *m_gui;
+        ListenerList<Listener> configListeners;
 
         // INIT Members
         bool m_isInitialized;
@@ -81,7 +115,7 @@ namespace mck
         unsigned m_transportRate;
 
         // Wav Files
-        //std::string m_samplePath;
+        // std::string m_samplePath;
         std::vector<mck::AudioSample> m_samples;
         std::vector<mck::AudioVoice> m_voices;
         unsigned m_numVoices;

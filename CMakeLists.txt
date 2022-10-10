@@ -4,7 +4,9 @@ project(MCK_SAMPLER VERSION 0.0.1)
 
 add_subdirectory(deps/JUCE)
 
+add_subdirectory(deps/helper)
 add_subdirectory(deps/MckJuce/Content)
+
 set_property(TARGET MckBinaryData PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 juce_add_gui_app(MckSamplerApp
@@ -17,7 +19,11 @@ juce_generate_juce_header(MckSamplerApp)
 
 target_include_directories(MckSamplerApp
 PRIVATE
-./deps/MckJuce/Source)
+./deps/MckJuce/Source
+./deps/concurrentqueue
+./deps/helper/include
+./deps/q/infra/include
+./deps/q/q_lib/include)
 
 target_sources(MckSamplerApp
     PRIVATE
@@ -27,10 +33,21 @@ target_sources(MckSamplerApp
     src/BarMenuComponent.hpp
     src/BarPadComponent.hpp
     src/BarSelectorComponent.hpp
+    src/Config.cpp
+    src/Config.hpp
+    src/ConfigFile.cpp
+    src/ConfigFile.hpp
+    src/Content.cpp
     src/Content.hpp
     src/Dial.hpp
     src/Main.cpp
     src/MainComponent.hpp
+    src/Processing.cpp
+    src/Processing.hpp
+    src/SampleExplorer.cpp
+    src/SampleExplorer.hpp
+    src/Types.cpp
+    src/Types.hpp
 )
 
 target_compile_definitions(MckSamplerApp
@@ -43,6 +60,7 @@ target_compile_definitions(MckSamplerApp
 
 target_link_libraries(MckSamplerApp
     PRIVATE
+    MckHelper
     MckBinaryData
     juce::juce_core
     juce::juce_data_structures
