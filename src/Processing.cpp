@@ -250,6 +250,11 @@ void mck::Processing::SetActivePad(size_t idx)
     config.activePad = idx;
     SetConfiguration(config);
 }
+
+void mck::Processing::SetSample(size_t idx, std::string samplePath)
+{
+    SampleCommand cmd;
+}
 /*
 void mck::Processing::ReceiveMessage(mck::Message &msg)
 {

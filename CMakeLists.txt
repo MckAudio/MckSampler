@@ -4,7 +4,7 @@ project(MCK_SAMPLER VERSION 0.0.1)
 
 add_subdirectory(deps/JUCE)
 
-add_subdirectory(deps/helper)
+add_subdirectory(deps/MckHelper)
 add_subdirectory(deps/MckJuce/Content)
 
 set_property(TARGET MckBinaryData PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -21,7 +21,7 @@ target_include_directories(MckSamplerApp
 PRIVATE
 ./deps/MckJuce/Source
 ./deps/concurrentqueue
-./deps/helper/include
+./deps/MckHelper/include
 ./deps/q/infra/include
 ./deps/q/q_lib/include)
 

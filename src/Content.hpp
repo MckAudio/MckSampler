@@ -45,9 +45,16 @@ public:
     void paint(juce::Graphics &g) override;
     void resized() override;
 
+    void openButtonClicked();
+    std::unique_ptr<juce::FileChooser> fileChooser;
+
+    size_t activePad { 0 };
+
 private:
     void sliderValueChanged(Slider *slider) override;
     void configChanged(const mck::sampler::Config &config) override;
+
+    juce::TextButton openButton;
 };
 
 class MixerComponent : public juce::Component,

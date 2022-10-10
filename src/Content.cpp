@@ -4,6 +4,10 @@
 
 ControlPageComponent::ControlPageComponent()
 {
+    openButton.setButtonText("Open Sample");
+    openButton.onClick = [this] { openButtonClicked(); };
+    addAndMakeVisible(openButton);
+
     mck::Processing::GetInstance()->addListener(this);
 }
 ControlPageComponent::~ControlPageComponent()
@@ -16,14 +20,31 @@ void ControlPageComponent::paint(juce::Graphics &g)
 }
 void ControlPageComponent::resized()
 {
+    auto area = getLocalBounds();
+    openButton.setBounds(area.reduced(8));
 }
 void ControlPageComponent::configChanged(const mck::sampler::Config &config)
 {
     std::printf("Active pad #%d\n", config.activePad + 1);
+    activePad = config.activePad;
 }
 
 void ControlPageComponent::sliderValueChanged(Slider *slider)
 {
+}
+
+void ControlPageComponent::openButtonClicked()
+{
+    fileChooser = std::make_unique<juce::FileChooser>("Select a sample...", juce::File{}, "*.wav");
+    auto chooserFlags = juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles;
+
+    fileChooser->launchAsync(chooserFlags, [this] (const FileChooser &fc) {
+        auto res = fc.getResult();
+        std::cout << res.getFullPathName() << std::endl;
+
+        mck::Processing::GetInstance()->SetSample(activePad, res.getFullPathName().toStdString());
+    });
+
 }
 
 MixerComponent::MixerComponent()

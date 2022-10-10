@@ -53,6 +53,8 @@ namespace mck
 
         void SetActivePad(size_t idx);
 
+        void SetSample(size_t idx, std::string samplePath);
+
         sampler::Config GetCurrentConfig()
         {
             return m_config[m_curConfig];

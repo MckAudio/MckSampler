@@ -1,5 +1,5 @@
 [submodule "src/helper"]
-	path = deps/helper
+	path = deps/MckHelper
 	url = ../MckHelper.git
 [submodule "src/q"]
 	path = deps/q

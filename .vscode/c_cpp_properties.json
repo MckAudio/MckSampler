@@ -7,7 +7,7 @@
                 "${workspaceFolder}/deps/JUCE/modules/**",
                 "${workspaceFolder}/deps/concurrentqueue/**",
                 "${workspaceFolder}/deps/MckJuce/Source/**",
-                "${workspaceFolder}/deps/helper/include/**",
+                "${workspaceFolder}/deps/MckHelper/include/**",
                 "${workspaceFolder}/deps/q/infra/include/**",
                 "${workspaceFolder}/deps/q/q_lib/include/**"
             ],
