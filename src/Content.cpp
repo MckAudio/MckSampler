@@ -1,11 +1,11 @@
 #include "Content.hpp"
 
-// ControlPageComponent
-
+//>  ControlPageComponent  //
 ControlPageComponent::ControlPageComponent()
 {
     openButton.setButtonText("Open Sample");
-    openButton.onClick = [this] { openButtonClicked(); };
+    openButton.onClick = [this]
+    { openButtonClicked(); };
     addAndMakeVisible(openButton);
 
     mck::Processing::GetInstance()->addListener(this);
@@ -38,14 +38,207 @@ void ControlPageComponent::openButtonClicked()
     fileChooser = std::make_unique<juce::FileChooser>("Select a sample...", juce::File{}, "*.wav");
     auto chooserFlags = juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles;
 
-    fileChooser->launchAsync(chooserFlags, [this] (const FileChooser &fc) {
+    fileChooser->launchAsync(chooserFlags, [this](const FileChooser &fc)
+                             {
         auto res = fc.getResult();
-        std::cout << res.getFullPathName() << std::endl;
-
-        mck::Processing::GetInstance()->SetSample(activePad, res.getFullPathName().toStdString());
-    });
-
+        std::cout << res.getFullPathName() << std::endl; });
 }
+
+//  ControlPageComponent <//
+
+//> SampleComponent  //
+
+SampleComponent::SampleComponent()
+{
+    packList.addListener(this);
+    catList.addListener(this);
+    sampleList.addListener(this);
+
+    curSampleLabel.setFont(juce::Font(fontSize, juce::Font::plain));
+    curSampleLabel.setJustificationType(juce::Justification::centred);
+    addAndMakeVisible(curSampleLabel);
+
+    addAndMakeVisible(packList);
+    addAndMakeVisible(catList);
+    addAndMakeVisible(sampleList);
+
+    previewButton.setButtonText("Preview");
+    previewButton.onClick = [this](){ playSample(); };
+    assignButton.setButtonText("Assign");
+    assignButton.onClick = [this](){ assignSample(); };
+
+    addAndMakeVisible(previewButton);
+    addAndMakeVisible(assignButton);
+
+    mck::Processing::GetInstance()->addListener(this);
+}
+
+SampleComponent::~SampleComponent()
+{
+    packList.removeListener(this);
+    catList.removeListener(this);
+    sampleList.removeListener(this);
+
+    mck::Processing::GetInstance()->removeListener(this);
+}
+
+void SampleComponent::paint(juce::Graphics &g)
+{
+}
+
+void SampleComponent::resized()
+{
+    auto area = getLocalBounds();
+    curSampleLabel.setBounds(area.removeFromTop(2 * margin + fontSize).reduced(margin));
+
+    auto w3 = area.getWidth() / 3;
+    area.removeFromBottom(80);
+
+    packList.setBounds(area.removeFromLeft(w3).reduced(margin));
+    catList.setBounds(area.removeFromLeft(w3).reduced(margin));
+    sampleList.setBounds(area.removeFromLeft(w3).reduced(margin));
+
+    auto bottomArea = getLocalBounds();
+    bottomArea.removeFromTop(bottomArea.getHeight() - btnSize);
+
+    assignButton.setBounds(bottomArea.removeFromRight(btnSize).reduced(margin));
+    previewButton.setBounds(bottomArea.removeFromRight(btnSize).reduced(margin));
+}
+
+void SampleComponent::update()
+{
+    // sampleConfig.pads[activePad].sampleName
+    curSampleLabel.setText("Sample for Pad #" + std::to_string(activePad + 1), juce::NotificationType::dontSendNotification);
+
+    std::vector<std::string> packs;
+    for (auto &sp : samplePacks)
+    {
+        packs.push_back(sp.name);
+    }
+
+    packList.setItems(packs);
+    updateCategories(packSelection);
+    updateSamples(packSelection, catSelection);
+}
+
+void SampleComponent::updateCategories(std::vector<int> &packSel)
+{
+    std::set<std::string> cats;
+
+    if (packSel.size() == 0)
+    {
+        for (auto &sp : samplePacks)
+        {
+            for (auto &c : sp.categories)
+            {
+                cats.emplace(c);
+            }
+        }
+    }
+    else
+    {
+        for (auto p : packSel)
+        {
+            for (auto &c : samplePacks[p].categories)
+            {
+                cats.emplace(c);
+            }
+        }
+    }
+    catNames.clear();
+    catNames.reserve(cats.size());
+    for (auto c : cats)
+    {
+        catNames.push_back(c);
+    }
+
+    catList.setItems(catNames);
+
+    updateSamples(packSel, catSelection);
+}
+
+void SampleComponent::updateSamples(std::vector<int> &packs, std::vector<int> &cats)
+{
+    std::vector<std::string> samples;
+    sampleMetas.clear();
+
+    for (int i = 0; i < packs.size(); i++)
+    {
+        auto &sp = samplePacks[packs[i]];
+        for (auto &c : cats)
+        {
+            auto res = std::find(sp.categories.begin(), sp.categories.end(), catNames[c]);
+            if (res != sp.categories.end())
+            {
+                auto idx = std::distance(sp.categories.begin(), res);
+                for (int j = 0; j < sp.samples.size(); j++)
+                {
+                    if (sp.samples[j].type == idx) {
+                        samples.push_back(sp.samples[j].name);
+                        sampleMetas.push_back(SampleMeta(j, packs[i]));
+                    }
+                }
+            }
+        }
+    }
+
+    sampleList.setItems(samples);
+}
+
+void SampleComponent::playSample()
+{
+    mck::SampleCommand cmd;
+    cmd.packIdx = sampleMetas[activeSampleMeta].packIdx;
+    cmd.sampleIdx = sampleMetas[activeSampleMeta].sampleIdx;
+    cmd.padIdx = activePad;
+    cmd.type = "play";
+    mck::Processing::GetInstance()->SetSample(cmd);
+}
+void SampleComponent::assignSample()
+{
+    mck::SampleCommand cmd;
+    cmd.packIdx = sampleMetas[activeSampleMeta].packIdx;
+    cmd.sampleIdx = sampleMetas[activeSampleMeta].sampleIdx;
+    cmd.padIdx = activePad;
+    cmd.type = "assign";
+    mck::Processing::GetInstance()->SetSample(cmd);
+}
+
+void SampleComponent::configChanged(const mck::sampler::Config &config)
+{
+    activePad = config.activePad;
+    sampleConfig = config;
+    update();
+}
+
+void SampleComponent::samplesChanged(const std::vector<mck::SamplePack> &samples)
+{
+    samplePacks = samples;
+    update();
+}
+void SampleComponent::selectionChanged(SampleListBox *listBox, std::vector<int> &selection)
+{
+    if (listBox == &packList)
+    {
+        packSelection = selection;
+        updateCategories(packSelection);
+    }
+    else if (listBox == &catList)
+    {
+        catSelection = selection;
+        updateSamples(packSelection, catSelection);
+    }
+    else if (listBox == &sampleList)
+    {
+        if (selection.size() > 0)
+        {
+            //selectSample(selection[0]);
+            activeSampleMeta = selection[0];
+        }
+    }
+}
+
+//  SampleComponent <//
 
 MixerComponent::MixerComponent()
 {

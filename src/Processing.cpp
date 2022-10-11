@@ -251,9 +251,28 @@ void mck::Processing::SetActivePad(size_t idx)
     SetConfiguration(config);
 }
 
-void mck::Processing::SetSample(size_t idx, std::string samplePath)
+void mck::Processing::SetSample(SampleCommand cmd)
 {
-    SampleCommand cmd;
+    std::printf("%s sample %d from pack %d\n", cmd.type.c_str(), cmd.sampleIdx, cmd.packIdx);
+
+    if (cmd.type == "load")
+    {
+        WaveInfoDetail info = m_sampleExplorer->LoadSample(cmd.packIdx, cmd.sampleIdx);
+        //m_gui->SendMessage("samples", "info", info);
+    }
+    else if (cmd.type == "play")
+    {
+        WaveInfoDetail info = m_sampleExplorer->PlaySample(cmd.packIdx, cmd.sampleIdx);
+        //m_gui->SendMessage("samples", "info", info);
+    }
+    else if (cmd.type == "stop")
+    {
+        m_sampleExplorer->StopSample();
+    }
+    else if (cmd.type == "assign")
+    {
+        AssignSample(cmd);
+    }
 }
 /*
 void mck::Processing::ReceiveMessage(mck::Message &msg)

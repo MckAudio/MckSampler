@@ -53,7 +53,7 @@ namespace mck
 
         void SetActivePad(size_t idx);
 
-        void SetSample(size_t idx, std::string samplePath);
+        void SetSample(SampleCommand cmd);
 
         sampler::Config GetCurrentConfig()
         {
@@ -68,12 +68,15 @@ namespace mck
             virtual ~Listener() = default;
 
             virtual void configChanged(const sampler::Config &config) = 0;
+
+            virtual void samplesChanged(const std::vector<SamplePack> &samples) {};
         };
 
         void addListener(Listener *newListener)
         {
             configListeners.add(newListener);
             newListener->configChanged(m_config[m_curConfig]);
+            newListener->samplesChanged(m_samplePacks);
         };
         void removeListener(Listener *listener) { configListeners.remove(listener); };
 

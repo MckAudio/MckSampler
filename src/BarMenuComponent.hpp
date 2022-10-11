@@ -42,7 +42,7 @@ class MenuComponent : public ControlComponentBase, public juce::Button::Listener
         {
             button.setToggleState(false, false);
         }
-        if (idx < 4) {
+        if (idx < numMenuItems) {
             buttons[idx].setToggleState(true, false);
         }
         activeContentType = idx;
@@ -62,7 +62,7 @@ class MenuComponent : public ControlComponentBase, public juce::Button::Listener
 
 
     private:
-    static const size_t numMenuItems { 4 };
+    static const size_t numMenuItems { 5 };
 
     ListenerList<Listener> menuListeners;
 
@@ -79,7 +79,7 @@ class MenuComponent : public ControlComponentBase, public juce::Button::Listener
         }
     }
 
-    juce::String items[numMenuItems] = {"Controls", "Settings", "Pads", "Mixer"};
+    juce::String items[numMenuItems] = {"Controls", "Samples", "Settings", "Pads", "Mixer"};
     juce::TextButton buttons[numMenuItems]; 
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MenuComponent)

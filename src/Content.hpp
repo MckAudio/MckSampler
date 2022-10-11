@@ -9,6 +9,7 @@ public:
     enum Type
     {
         Controls = 0,
+        Samples,
         Settings,
         Pads,
         Mixer,
@@ -48,13 +49,162 @@ public:
     void openButtonClicked();
     std::unique_ptr<juce::FileChooser> fileChooser;
 
-    size_t activePad { 0 };
+    size_t activePad{0};
 
 private:
     void sliderValueChanged(Slider *slider) override;
     void configChanged(const mck::sampler::Config &config) override;
 
     juce::TextButton openButton;
+};
+
+class SampleListBox : public juce::Component, public juce::ListBoxModel
+{
+public:
+    SampleListBox(bool multi)
+        : multipleSelection(multi)
+    {
+        listBox.setMultipleSelectionEnabled(multipleSelection);
+        listBox.setClickingTogglesRowSelection(multipleSelection);
+        addAndMakeVisible(listBox);
+    }
+
+    int getNumRows() override
+    {
+        return listItems.size();
+    }
+
+    void paintListBoxItem(int rowNumber, Graphics &g, int width, int height, bool rowIsSelected) override
+    {
+        g.setColour(rowIsSelected ? getLookAndFeel().findColour(juce::TextButton::buttonOnColourId) : getLookAndFeel().findColour(juce::ListBox::textColourId));
+        if (rowNumber < listItems.size())
+        {
+            g.drawText(listItems[rowNumber], 0, 0, width, height, juce::Justification::centred, true);
+        }
+    }
+
+    void selectedRowsChanged(int lastRowSelected) override
+    {
+        std::printf("Last row selected: %d\n");
+
+        if (multipleSelection)
+        {
+            auto sel = listBox.getSelectedRows();
+            listSelection.resize(sel.size());
+
+            std::printf("Selection: \n");
+            for (int i = 0; i < sel.size(); i++)
+            {
+                listSelection[i] = sel[i];
+                std::printf("%d: %s\n", sel[i], listItems[sel[i]].c_str());
+            }
+        }
+        else
+        {
+            listSelection.clear();
+            if (lastRowSelected >= 0)
+            {
+                listSelection.push_back(lastRowSelected);
+            }
+        }
+        selectionListeners.call([this](Listener &l)
+                                { l.selectionChanged(this, listSelection); });
+    }
+
+    void resized() override
+    {
+        listBox.setBounds(getLocalBounds());
+    }
+
+    void setItems(std::vector<std::string> &items)
+    {
+        listItems = items;
+        listBox.updateContent();
+    }
+
+    class JUCE_API Listener
+    {
+    public:
+        virtual ~Listener() = default;
+
+        virtual void selectionChanged(SampleListBox *listBox, std::vector<int> &selection) = 0;
+    };
+
+    void addListener(Listener *newListener)
+    {
+        selectionListeners.add(newListener);
+    }
+    void removeListener(Listener *listener)
+    {
+        selectionListeners.remove(listener);
+    }
+
+private:
+    const bool multipleSelection;
+    juce::ListBox listBox{{}, this};
+    std::vector<std::string> listItems;
+
+    std::vector<int> listSelection;
+
+    ListenerList<Listener> selectionListeners;
+};
+
+class SampleComponent : public juce::Component, public mck::Processing::Listener, public SampleListBox::Listener
+{
+public:
+    SampleComponent();
+    ~SampleComponent();
+
+    void paint(juce::Graphics &g) override;
+    void resized() override;
+
+    struct SampleMeta
+    {
+        unsigned sampleIdx{0};
+        unsigned packIdx{0};
+        SampleMeta(){};
+        SampleMeta(unsigned sampleIndex, unsigned packIndex) : sampleIdx{sampleIndex}, packIdx{packIndex} {};
+    };
+
+private:
+    void update();
+
+    void updateCategories(std::vector<int> &packs);
+
+    void updateSamples(std::vector<int> &packs, std::vector<int> &cats);
+
+    void playSample();
+    void assignSample();
+
+    void configChanged(const mck::sampler::Config &config) override;
+
+    void samplesChanged(const std::vector<mck::SamplePack> &samples) override;
+
+    void selectionChanged(SampleListBox *listBox, std::vector<int> &selection) override;
+
+    const int fontSize{16};
+    const int margin{8};
+    const int btnSize{80};
+
+    size_t activePad{0};
+
+    mck::sampler::Config sampleConfig;
+    std::vector<mck::SamplePack> samplePacks;
+
+    juce::Label curSampleLabel;
+    juce::TextButton previewButton;
+    juce::TextButton assignButton;
+
+    SampleListBox packList{true};
+    SampleListBox catList{true};
+    SampleListBox sampleList{false};
+
+    std::vector<int> packSelection;
+    std::vector<int> catSelection;
+    std::vector<std::string> catNames;
+
+    std::vector<SampleMeta> sampleMetas;
+    unsigned activeSampleMeta{0};
 };
 
 class MixerComponent : public juce::Component,

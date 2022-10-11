@@ -75,6 +75,10 @@ public:
             contentComponent = new ControlPageComponent();
             addAndMakeVisible(contentComponent);
             break;
+        case Content::Samples:
+            contentComponent = new SampleComponent();
+            addAndMakeVisible(contentComponent);
+            break;
         case Content::Mixer:
             contentComponent = new MixerComponent();
             addAndMakeVisible(contentComponent);

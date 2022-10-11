@@ -58,6 +58,7 @@ public:
             addLabels();
             break;
         case Content::Controls:
+        case Content::Samples:
             addButtons();
             break;
         default:
