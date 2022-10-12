@@ -120,11 +120,13 @@ namespace mck
     {
         std::string path;
         std::string name;
+        std::string id;
         unsigned type;
         unsigned index;
         SamplePackSample()
             : path(""),
               name(""),
+              id(""),
               type(0),
               index(0) {}
     };

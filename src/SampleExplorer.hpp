@@ -33,6 +33,11 @@ namespace mck
         WaveInfoDetail GetSample(unsigned packIdx, unsigned sampleIdx, std::vector<std::vector<float>> &buffer);
         std::string GetSamplePath(unsigned packIdx, unsigned sampleIdx, bool relativePath = true);
         std::string GetSampleName(unsigned packIdx, unsigned sampleIdx);
+        std::string GetSampleId(unsigned packIdx, unsigned sampleIdx);
+        std::string GetSampleType(unsigned packIdx, unsigned sampleIdx);
+        mck::SamplePackSample GetSampleMeta(unsigned packIdx, unsigned sampleIdx);
+        SamplePackSample GetSampleMeta(const std::string &id);
+
         bool ApplyEditCommand(SampleEdit &cmd, GuiWindow *gui);
         void StopSample();
         void ProcessAudio(float *outLeft, float *outRight, unsigned nframes);

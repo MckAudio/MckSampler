@@ -7,6 +7,7 @@ void mck::sampler::to_json(nlohmann::json &j, const mck::sampler::Sample &s)
     j["name"] = s.name;
     j["relativePath"] = s.relativePath;
     j["fullPath"] = s.fullPath;
+    j["id"] = s.id;
     j["numChannels"] = s.numChannels;
     j["numFrames"] = s.numFrames;
     j["sampleRate"] = s.sampleRate;
@@ -18,6 +19,7 @@ void mck::sampler::from_json(const nlohmann::json &j, mck::sampler::Sample &s)
     s.name = j.at("name").get<std::string>();
     s.relativePath = j.at("relativePath").get<std::string>();
     s.fullPath = j.at("fullPath").get<std::string>();
+    s.id = j.at("id").get<std::string>();
     s.numChannels = j.at("numChannels").get<unsigned>();
     s.numFrames = j.at("numFrames").get<unsigned>();
     s.sampleRate = j.at("sampleRate").get<unsigned>();
@@ -91,6 +93,8 @@ void mck::sampler::to_json(nlohmann::json &j, const mck::sampler::Pad &p)
     j["maxLengthMs"] = p.maxLengthMs;
     j["tone"] = p.tone;
     j["ctrl"] = p.ctrl;
+    j["sampleType"] = p.sampleType;
+    j["sampleId"] = p.sampleId;
     j["samplePath"] = p.samplePath;
     j["sampleName"] = p.sampleName;
     j["gain"] = p.gain;
@@ -109,6 +113,8 @@ void mck::sampler::from_json(const nlohmann::json &j, mck::sampler::Pad &p)
     p.lengthMs = j.at("lengthMs").get<unsigned>();
     p.tone = j.at("tone").get<unsigned>();
     p.ctrl = j.at("ctrl").get<unsigned>();
+    p.sampleType = j.at("sampleType").get<std::string>();
+    p.sampleId = j.at("sampleId").get<std::string>();
     p.samplePath = j.at("samplePath").get<std::string>();
     p.sampleName = j.at("sampleName").get<std::string>();
     p.gain = j.at("gain").get<double>();

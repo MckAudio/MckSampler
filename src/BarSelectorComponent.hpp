@@ -85,14 +85,6 @@ private:
         size_t i = 0;
         for (auto &b : buttons)
         {
-            if (i < conf.numPads && conf.pads[i].sampleName != "")
-            {
-                b.setButtonText(conf.pads[i].sampleName);
-            }
-            else
-            {
-                b.setButtonText("Pad #" + std::to_string(i + 1));
-            }
             b.setToggleable(true);
             b.addListener(this);
             addAndMakeVisible(b);
@@ -101,6 +93,7 @@ private:
         }
         drawLabels = false;
         drawButtons = true;
+        update();
         resized();
     }
 
@@ -113,14 +106,6 @@ private:
         for (auto &l : labels)
         {
             l.setFont(juce::Font(16, juce::Font::plain));
-            if (i < conf.numPads && conf.pads[i].sampleName != "")
-            {
-                l.setText(conf.pads[i].sampleName, juce::NotificationType::dontSendNotification);
-            }
-            else
-            {
-                l.setText("Pad #" + std::to_string(i + 1), juce::NotificationType::dontSendNotification);
-            }
             l.setJustificationType(juce::Justification::centred);
             addAndMakeVisible(l);
             i++;
@@ -135,25 +120,46 @@ private:
 
         for (size_t i = 0; i < 8; i++)
         {
-            //buttons[i].setToggleState(false, false);
+            // buttons[i].setToggleState(false, false);
             if (b == &buttons[i])
             {
-                //buttons[i].setToggleState(true, false);
+                // buttons[i].setToggleState(true, false);
                 mck::Processing::GetInstance()->SetActivePad(i);
+            }
+        }
+    }
+
+    void update()
+    {
+        std::string tmp;
+        for (size_t i = 0; i < std::min(processingConfig.numPads, static_cast<const unsigned>(8)); i++)
+        {
+            // Set Labels
+            tmp = "0" + std::to_string(i + 1);
+            auto sampleId = processingConfig.pads[i].sampleId;
+            if (i < processingConfig.numPads && sampleId != "")
+            {
+                tmp = tmp + " - " + processingConfig.pads[i].sampleType;
+            }
+            labels[i].setText(tmp, juce::NotificationType::dontSendNotification);
+
+            // Set Buttons
+            buttons[i].setButtonText(tmp);
+            if (i == processingConfig.activePad)
+            {
+                buttons[i].setToggleState(true, false);
+            }
+            else
+            {
+                buttons[i].setToggleState(false, false);
             }
         }
     }
 
     void configChanged(const mck::sampler::Config &config) override
     {
-        for (size_t i = 0; i < std::min(config.numPads, static_cast<const unsigned>(8)); i++)
-        {
-            if (i == config.activePad) {
-                buttons[i].setToggleState(true, false);
-            } else {
-                buttons[i].setToggleState(false, false);
-            }
-        }
+        processingConfig = config;
+        update();
     }
 
     juce::TextButton buttons[8];
@@ -161,6 +167,9 @@ private:
 
     bool drawLabels{false};
     bool drawButtons{false};
+
+    mck::sampler::Config processingConfig{};
+    std::vector<mck::SamplePack> samplePacks{};
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SelectorComponent)
 };

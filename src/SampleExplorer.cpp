@@ -108,7 +108,8 @@ void mck::SampleExplorer::RefreshSamples(std::vector<SamplePack> &packs)
     }
     // Sort by name
     std::sort(tmpPacks.begin(), tmpPacks.end(),
-              [](const std::pair<SamplePack, std::string> &a, const std::pair<SamplePack, std::string> &b) -> bool {
+              [](const std::pair<SamplePack, std::string> &a, const std::pair<SamplePack, std::string> &b) -> bool
+              {
                   return a.first.name < b.first.name;
               });
 
@@ -284,6 +285,74 @@ std::string mck::SampleExplorer::GetSampleName(unsigned packIdx, unsigned sample
         return "";
     }
     return m_packs[packIdx].samples[sampleIdx].name;
+}
+
+std::string mck::SampleExplorer::GetSampleId(unsigned packIdx, unsigned sampleIdx)
+{
+    if (m_isInitialized == false)
+    {
+        return "";
+    }
+    if (packIdx >= m_packs.size())
+    {
+        return "";
+    }
+    if (sampleIdx >= m_packs[packIdx].samples.size())
+    {
+        return "";
+    }
+    return m_packs[packIdx].samples[sampleIdx].id;
+}
+
+std::string mck::SampleExplorer::GetSampleType(unsigned packIdx, unsigned sampleIdx)
+{
+    if (m_isInitialized == false)
+    {
+        return "";
+    }
+    if (packIdx >= m_packs.size())
+    {
+        return "";
+    }
+    if (sampleIdx >= m_packs[packIdx].samples.size())
+    {
+        return "";
+    }
+    return m_packs[packIdx].categories[m_packs[packIdx].samples[sampleIdx].type];
+}
+
+mck::SamplePackSample mck::SampleExplorer::GetSampleMeta(unsigned packIdx, unsigned sampleIdx)
+{
+    if (m_isInitialized == false)
+    {
+        return mck::SamplePackSample();
+    }
+    if (packIdx >= m_packs.size())
+    {
+        return mck::SamplePackSample();
+    }
+    if (sampleIdx >= m_packs[packIdx].samples.size())
+    {
+        return mck::SamplePackSample();
+    }
+    return m_packs[packIdx].samples[sampleIdx];
+}
+mck::SamplePackSample mck::SampleExplorer::GetSampleMeta(const std::string &id)
+{
+    if (id != "")
+    {
+        for (auto &sp : m_packs)
+        {
+            for (auto &s : sp.samples)
+            {
+                if (s.id == id)
+                {
+                    return s;
+                }
+            }
+        }
+    }
+    return SamplePackSample();
 }
 
 bool mck::SampleExplorer::ApplyEditCommand(SampleEdit &cmd, GuiWindow *gui)
@@ -493,14 +562,15 @@ bool mck::SampleExplorer::ImportSample(std::string path, unsigned packIdx, unsig
     }
 
     std::vector<std::string> files;
-    //gui->ShowOpenFileDialog("Import one or more sample files", "audio/wav", files, true);
+    // gui->ShowOpenFileDialog("Import one or more sample files", "audio/wav", files, true);
 
     fs::path catPath(m_samplePath);
     catPath.append(m_packPaths[packIdx]).append(m_packs[packIdx].categories[categoryIdx]);
 
     unsigned sampleIndex = 1 + std::count_if(m_packs[packIdx].samples.begin(),
                                              m_packs[packIdx].samples.end(),
-                                             [&categoryIdx](const SamplePackSample &s) { return s.type == categoryIdx; });
+                                             [&categoryIdx](const SamplePackSample &s)
+                                             { return s.type == categoryIdx; });
 
     for (auto &f : files)
     {

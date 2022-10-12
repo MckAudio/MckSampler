@@ -52,6 +52,7 @@ void mck::to_json(nlohmann::json &j, const SamplePackSample &s)
 {
     j["path"] = s.path;
     j["name"] = s.name;
+    j["id"] = s.id;
     j["type"] = s.type;
     j["index"] = s.index;
 }
@@ -59,6 +60,7 @@ void mck::from_json(const nlohmann::json &j, SamplePackSample &s)
 {
     s.path = j.at("path").get<std::string>();
     s.name = j.at("name").get<std::string>();
+    s.id = j.at("id").get<std::string>();
     s.type = j.at("type").get<unsigned>();
     s.index = j.at("index").get<unsigned>();
 }

@@ -20,10 +20,11 @@ namespace mck
             std::string name;
             std::string relativePath;
             std::string fullPath;
+            std::string id;
             unsigned numChannels;
             unsigned numFrames;
             unsigned sampleRate;
-            Sample() : available(false), name(""), relativePath(""), fullPath(""), numChannels(0), numFrames(0), sampleRate(0) {}
+            Sample() : available(false), name(""), relativePath(""), fullPath(""), id(""), numChannels(0), numFrames(0), sampleRate(0) {}
         };
         void to_json(nlohmann::json &j, const Sample &s);
         void from_json(const nlohmann::json &j, Sample &s);
@@ -116,6 +117,8 @@ namespace mck
             unsigned maxLengthMs;
             unsigned tone;
             unsigned ctrl;
+            std::string sampleType;
+            std::string sampleId;
             std::string samplePath;
             std::string sampleName;
             double gain;
@@ -135,6 +138,8 @@ namespace mck
                   maxLengthMs(60000),
                   tone(255),
                   ctrl(255),
+                  sampleType(""),
+                  sampleId(""),
                   samplePath(""),
                   sampleName(""),
                   gain(0.0),

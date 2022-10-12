@@ -43,6 +43,11 @@ private:
             setVisible(true);
         }
 
+        ~MainWindow() {
+            setLookAndFeel(nullptr);
+            LookAndFeel::setDefaultLookAndFeel(nullptr);
+        }
+
         void closeButtonPressed() override
         {
             app.systemRequestedQuit();

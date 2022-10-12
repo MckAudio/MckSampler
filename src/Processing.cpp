@@ -828,6 +828,8 @@ bool mck::Processing::AssignSample(SampleCommand cmd)
         return false;
     }
     config.pads[cmd.padIdx].sampleName = m_sampleExplorer->GetSampleName(cmd.packIdx, cmd.sampleIdx);
+    config.pads[cmd.padIdx].sampleId = m_sampleExplorer->GetSampleId(cmd.packIdx, cmd.sampleIdx);
+    config.pads[cmd.padIdx].sampleType = m_sampleExplorer->GetSampleType(cmd.packIdx, cmd.sampleIdx);
 
     SetConfiguration(config);
 
@@ -896,7 +898,7 @@ void mck::Processing::SetConfiguration(sampler::Config &config, bool connect)
         {
             config.pads[i].maxLengthMs = m_samples[i].info[m_samples[i].curSample].lengthMs;
         }
-        config.pads[i].lengthMs = std::min(config.pads[i].lengthMs, config.pads[i].maxLengthMs);
+        config.pads[i].lengthMs = config.pads[i].lengthMs > 0 ? std::min(config.pads[i].lengthMs, config.pads[i].maxLengthMs) : config.pads[i].maxLengthMs;
         config.pads[i].lengthSamps = (unsigned)std::floor((double)config.pads[i].lengthMs * (double)m_sampleRate / 1000.0);
 
         config.pads[i].gain = std::min(6.0, std::max(-200.0, config.pads[i].gain));

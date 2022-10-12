@@ -83,6 +83,20 @@ public:
         }
     }
 
+    void setActiveRow(int idx)
+    {
+        if (idx >= 0 && idx < getNumRows())
+        {
+            if (idx != listBox.getSelectedRow()) {
+                listBox.selectRow(idx);
+            }
+        }
+        else
+        {
+            listBox.deselectAllRows();
+        }
+    }
+
     void selectedRowsChanged(int lastRowSelected) override
     {
         std::printf("Last row selected: %d\n");
@@ -107,8 +121,12 @@ public:
                 listSelection.push_back(lastRowSelected);
             }
         }
-        selectionListeners.call([this](Listener &l)
-                                { l.selectionChanged(this, listSelection); });
+        selectionListeners.call([this, &lastRowSelected](Listener &l)
+                                { if (multipleSelection) {
+                                    l.selectionChanged(this, listSelection);
+     } else {
+        l.selectionChanged(this, lastRowSelected);
+     } });
     }
 
     void resized() override
@@ -118,6 +136,8 @@ public:
 
     void setItems(std::vector<std::string> &items)
     {
+        listItems.clear();
+        listBox.updateContent();
         listItems = items;
         listBox.updateContent();
     }
@@ -128,6 +148,8 @@ public:
         virtual ~Listener() = default;
 
         virtual void selectionChanged(SampleListBox *listBox, std::vector<int> &selection) = 0;
+
+        virtual void selectionChanged(SampleListBox *listBox, int selection) = 0;
     };
 
     void addListener(Listener *newListener)
@@ -169,9 +191,10 @@ public:
 private:
     void update();
 
-    void updateCategories(std::vector<int> &packs);
+    void updateControls();
 
-    void updateSamples(std::vector<int> &packs, std::vector<int> &cats);
+    void updateCategories(int activePack);
+    void updateSamples(int activePack, int activeCat);
 
     void playSample();
     void assignSample();
@@ -180,7 +203,11 @@ private:
 
     void samplesChanged(const std::vector<mck::SamplePack> &samples) override;
 
-    void selectionChanged(SampleListBox *listBox, std::vector<int> &selection) override;
+    void selectionChanged(SampleListBox *listBox, std::vector<int> &selection) override {};
+
+    void selectionChanged(SampleListBox *listBox, int selection) override;
+
+    void showActiveSample();
 
     const int fontSize{16};
     const int margin{8};
@@ -192,19 +219,27 @@ private:
     std::vector<mck::SamplePack> samplePacks;
 
     juce::Label curSampleLabel;
+    juce::TextButton showSampleButton;
     juce::TextButton previewButton;
     juce::TextButton assignButton;
 
-    SampleListBox packList{true};
-    SampleListBox catList{true};
+    SampleListBox packList{false};
+    SampleListBox catList{false};
     SampleListBox sampleList{false};
 
-    std::vector<int> packSelection;
-    std::vector<int> catSelection;
+    int activePackIdx{-1};
+    int activeCatIdx{-1};
+    int activeSampleIdx{-1};
+
+    std::string activePackName{""};
+    std::string activeCatName{""};
+    std::string activeSampleName{""};
+
+    std::vector<std::string> packNames;
     std::vector<std::string> catNames;
 
     std::vector<SampleMeta> sampleMetas;
-    unsigned activeSampleMeta{0};
+    int activeSampleMeta{-1};
 };
 
 class MixerComponent : public juce::Component,
@@ -248,16 +283,20 @@ public:
     {
         auto conf = mck::Processing::GetInstance()->GetCurrentConfig();
         size_t i = 0;
+        std::string title1 = "";
+        std::string title2 = "";
         for (auto &p : pads)
         {
+            title1 = "0" + std::to_string(i+1);
             if (i < conf.numPads)
             {
-                p.setButtonText(conf.pads[i].sampleName);
+                if (conf.pads[i].sampleId != "") {
+                    title1 = title1 + " - " + conf.pads[i].sampleType;
+                    title2 = conf.pads[i].sampleName;
+                }
             }
-            else
-            {
-                p.setButtonText("Pad #" + std::to_string(i + 1));
-            }
+
+            p.setButtonText(title1 + "\n\n" + title2);
             p.addListener(this);
             addAndMakeVisible(p);
             i++;
