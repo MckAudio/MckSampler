@@ -6,7 +6,8 @@ ControlPageComponent::ControlPageComponent()
     openButton.setButtonText("Open Sample");
     openButton.onClick = [this]
     { openButtonClicked(); };
-    addAndMakeVisible(openButton);
+    
+    addAndMakeVisible(pad);
 
     mck::Processing::GetInstance()->addListener(this);
 }
@@ -21,7 +22,7 @@ void ControlPageComponent::paint(juce::Graphics &g)
 void ControlPageComponent::resized()
 {
     auto area = getLocalBounds();
-    openButton.setBounds(area.reduced(8));
+    pad.setBounds(area.reduced(8));
 }
 void ControlPageComponent::configChanged(const mck::sampler::Config &config)
 {

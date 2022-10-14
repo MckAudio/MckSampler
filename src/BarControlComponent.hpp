@@ -18,28 +18,20 @@ class ControlComponent : public ControlComponentBase
         g.setColour(getLookAndFeel().findColour(juce::ComboBox::outlineColourId));
         area.removeFromRight(area.getWidth() - 1);
         g.fillRect(area);
-
-        area = getLocalBounds();
-        area.removeFromTop(40);
-        area.setHeight(1);
-        g.fillRect(area);
-        area = getLocalBounds();
-        area.removeFromTop(area.getHeight()-80);
-        area.setHeight(1);
-        g.fillRect(area);
     }
 
     void resized() override
     {
         auto area = getLocalBounds();
-        area.removeFromTop(80);
+        area.removeFromTop(40);
         area.removeFromBottom(80);
-        levelMeter.setBounds(area.reduced(8));
+        levelMeter.setBounds(area.reduced(margin, 0));
     }
 
     private:
-    LevelMeterComponent levelMeter;
+    LevelMeterComponent levelMeter{2, 8.0f};
 
+    const int margin = 8;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ControlComponent)
 };

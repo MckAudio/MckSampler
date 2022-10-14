@@ -1,6 +1,7 @@
 #pragma once
 #include <JuceHeader.h>
 #include "Dial.hpp"
+#include "DrumPad.hpp"
 #include "Processing.hpp"
 
 class Content
@@ -56,6 +57,8 @@ private:
     void configChanged(const mck::sampler::Config &config) override;
 
     juce::TextButton openButton;
+
+    DrumPadComponent pad;
 };
 
 class SampleListBox : public juce::Component, public juce::ListBoxModel
