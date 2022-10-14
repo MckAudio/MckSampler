@@ -87,7 +87,8 @@ public:
     {
         if (idx >= 0 && idx < getNumRows())
         {
-            if (idx != listBox.getSelectedRow()) {
+            if (idx != listBox.getSelectedRow())
+            {
                 listBox.selectRow(idx);
             }
         }
@@ -97,7 +98,7 @@ public:
         }
     }
 
-    void selectedRowsChanged(int lastRowSelected) override
+    void listBoxItemClicked(int row, const MouseEvent&) override
     {
         std::printf("Last row selected: %d\n");
 
@@ -116,16 +117,16 @@ public:
         else
         {
             listSelection.clear();
-            if (lastRowSelected >= 0)
+            if (row >= 0)
             {
-                listSelection.push_back(lastRowSelected);
+                listSelection.push_back(row);
             }
         }
-        selectionListeners.call([this, &lastRowSelected](Listener &l)
+        selectionListeners.call([this, &row](Listener &l)
                                 { if (multipleSelection) {
                                     l.selectionChanged(this, listSelection);
      } else {
-        l.selectionChanged(this, lastRowSelected);
+        l.selectionChanged(this, row);
      } });
     }
 
@@ -174,12 +175,6 @@ private:
 class SampleComponent : public juce::Component, public mck::Processing::Listener, public SampleListBox::Listener
 {
 public:
-    SampleComponent();
-    ~SampleComponent();
-
-    void paint(juce::Graphics &g) override;
-    void resized() override;
-
     struct SampleMeta
     {
         unsigned sampleIdx{0};
@@ -187,6 +182,34 @@ public:
         SampleMeta(){};
         SampleMeta(unsigned sampleIndex, unsigned packIndex) : sampleIdx{sampleIndex}, packIdx{packIndex} {};
     };
+    struct State
+    {
+        bool init{false};
+
+        int activePackIdx{-1};
+        int activeCatIdx{-1};
+        int activeSampleIdx{-1};
+
+        std::string activePackName{""};
+        std::string activeCatName{""};
+        std::string activeSampleName{""};
+
+        std::vector<std::string> packNames;
+        std::vector<std::string> catNames;
+        std::vector<std::string> sampleNames;
+        std::vector<SampleMeta> sampleMetas;
+
+        bool autoPlay{false};
+    };
+
+    SampleComponent();
+    ~SampleComponent();
+
+    void paint(juce::Graphics &g) override;
+    void resized() override;
+
+    State getState();
+    void setState(State &newState);
 
 private:
     void update();
@@ -205,7 +228,7 @@ private:
 
     void samplesChanged(const std::vector<mck::SamplePack> &samples) override;
 
-    void selectionChanged(SampleListBox *listBox, std::vector<int> &selection) override {};
+    void selectionChanged(SampleListBox *listBox, std::vector<int> &selection) override{};
 
     void selectionChanged(SampleListBox *listBox, int selection) override;
 
@@ -216,8 +239,6 @@ private:
     const int btnSize{80};
 
     size_t activePad{0};
-
-    bool autoPlay{false};
 
     mck::sampler::Config sampleConfig;
     std::vector<mck::SamplePack> samplePacks;
@@ -236,20 +257,7 @@ private:
     SampleListBox catList{false};
     SampleListBox sampleList{false};
 
-    int activePackIdx{-1};
-    int activeCatIdx{-1};
-    int activeSampleIdx{-1};
-
-    std::string activePackName{""};
-    std::string activeCatName{""};
-    std::string activeSampleName{""};
-
-    std::vector<std::string> packNames;
-    std::vector<std::string> catNames;
-    std::vector<std::string> sampleNames;
-
-    std::vector<SampleMeta> sampleMetas;
-    int activeSampleMeta{-1};
+    State state;
 };
 
 class MixerComponent : public juce::Component,
@@ -297,10 +305,11 @@ public:
         std::string title2 = "";
         for (auto &p : pads)
         {
-            title1 = "0" + std::to_string(i+1);
+            title1 = "0" + std::to_string(i + 1);
             if (i < conf.numPads)
             {
-                if (conf.pads[i].sampleId != "") {
+                if (conf.pads[i].sampleId != "")
+                {
                     title1 = title1 + " - " + conf.pads[i].sampleType;
                     title2 = conf.pads[i].sampleName;
                 }

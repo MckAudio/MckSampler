@@ -125,17 +125,20 @@ bool mck::Processing::Init()
     m_audioOutR = jack_port_register(m_client, "audio_out_r", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
 
     m_bufferSize = jack_get_buffer_size(m_client);
-    if (m_bufferSize != 128) {
-        if (jack_set_buffer_size(m_client, 128) != 0) {
+    if (m_bufferSize != 128)
+    {
+        if (jack_set_buffer_size(m_client, 128) != 0)
+        {
             std::fprintf(stderr, "Failed to set JACK buffersize, error code %d\n", err);
             return false;
         }
         m_bufferSize = 128;
     }
 
-
     m_sampleRate = jack_get_sample_rate(m_client);
     m_transportRate = m_sampleRate;
+
+    m_levelCoeff = 1.0 / (300.0 * static_cast<double>(m_sampleRate) / 1000.0);
 
     // 2B - Init FX
     for (auto &sample : m_samples)
@@ -220,7 +223,6 @@ void mck::Processing::Close()
 
 void mck::Processing::Trigger(size_t idx, double strength)
 {
-    std::printf("Triggering PAD #%d\n", idx + 1);
     m_triggerQueue.try_enqueue(std::pair<unsigned, double>(idx, strength));
 }
 
@@ -267,12 +269,12 @@ void mck::Processing::SetSample(SampleCommand cmd)
     if (cmd.type == "load")
     {
         WaveInfoDetail info = m_sampleExplorer->LoadSample(cmd.packIdx, cmd.sampleIdx);
-        //m_gui->SendMessage("samples", "info", info);
+        // m_gui->SendMessage("samples", "info", info);
     }
     else if (cmd.type == "play")
     {
-        WaveInfoDetail info = m_sampleExplorer->PlaySample(cmd.packIdx, cmd.sampleIdx);
-        //m_gui->SendMessage("samples", "info", info);
+        WaveInfoDetail info = m_sampleExplorer->PlaySample(cmd.packIdx, cmd.sampleIdx, cmd.padIdx, m_config[m_curConfig].pads[cmd.padIdx]);
+        // m_gui->SendMessage("samples", "info", info);
     }
     else if (cmd.type == "stop")
     {
@@ -720,6 +722,11 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
         auto &s = m_samples[i];
         auto &p = m_config[m_curConfig].pads[i];
 
+        if (m_sampleExplorer->GetActivePad() == static_cast<int>(i))
+        {
+            m_sampleExplorer->ProcessAudio(s.dsp[0], s.dsp[1], nframes);
+        }
+
         for (unsigned j = 0; j < nframes; j++)
         {
             dly_l = (*s.delay[s.curDelay][0])();
@@ -750,7 +757,7 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
         }
     }
 
-    m_sampleExplorer->ProcessAudio(out_l, out_r, nframes);
+    CalcLevels(out_l, out_r, nframes);
 
     m_isProcessing = false;
     m_processCond.notify_all();
@@ -1000,4 +1007,19 @@ void mck::Processing::SetConfiguration(sampler::Config &config, bool connect)
 
     configListeners.call([this](Listener &l)
                          { l.configChanged(m_config[m_newConfig]); });
+}
+
+void mck::Processing::CalcLevels(jack_default_audio_sample_t *inL, jack_default_audio_sample_t *inR, unsigned nframes)
+{
+    double ll = m_levelLeft.load();
+    double lr = m_levelRight.load();
+
+    for (size_t i = 0; i < nframes; i++)
+    {
+        ll = (1.0-m_levelCoeff)*ll + m_levelCoeff*std::pow(static_cast<double>(inL[i]), 2.0);
+        lr = (1.0-m_levelCoeff)*lr + m_levelCoeff*std::pow(static_cast<double>(inR[i]), 2.0);
+    }
+
+    m_levelLeft = ll;
+    m_levelRight = lr;
 }

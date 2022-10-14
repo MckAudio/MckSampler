@@ -166,7 +166,7 @@ mck::WaveInfoDetail mck::SampleExplorer::LoadSample(unsigned packIdx, unsigned s
     return info;
 }
 
-mck::WaveInfoDetail mck::SampleExplorer::PlaySample(unsigned packIdx, unsigned sampleIdx)
+mck::WaveInfoDetail mck::SampleExplorer::PlaySample(unsigned packIdx, unsigned sampleIdx, unsigned padIdx, sampler::Pad &padData)
 {
     WaveInfoDetail ret;
     if (m_isInitialized == false)
@@ -195,6 +195,9 @@ mck::WaveInfoDetail mck::SampleExplorer::PlaySample(unsigned packIdx, unsigned s
     state.stop = false;
     state.idx = 0;
     state.len = m_waveInfo[newWave].lengthSamps;
+    state.pad = padIdx;
+    state.gainL = (100.0f/127.0f) * padData.gainLeftLin;
+    state.gainR = (100.0f/127.0f) * padData.gainRightLin;
 
     if (m_isProcessing.load())
     {
@@ -417,21 +420,22 @@ void mck::SampleExplorer::ProcessAudio(float *outLeft, float *outRight, unsigned
         }
         if (m_waveBuffer[m_curWave].size() == 1)
         {
+            // Compensate Mono Panning Law
+            float gainL = std::min(1.0f, m_state.gainL * std::sqrt(2.0f));
+            float gainR = std::min(1.0f, m_state.gainR * std::sqrt(2.0f));
+
             for (unsigned s = 0; s < std::min(samplesLeft, nframes); s++)
             {
-                outLeft[s] += m_waveBuffer[m_curWave][0][s + m_state.idx] * 0.707;
-                outRight[s] += m_waveBuffer[m_curWave][0][s + m_state.idx] * 0.707;
+                outLeft[s] += m_waveBuffer[m_curWave][0][s + m_state.idx] * gainL;
+                outRight[s] += m_waveBuffer[m_curWave][0][s + m_state.idx] * gainR;
             }
         }
         else
         {
             for (unsigned s = 0; s < std::min(samplesLeft, nframes); s++)
             {
-                outLeft[s] += m_waveBuffer[m_curWave][0][s + m_state.idx];
-            }
-            for (unsigned s = 0; s < std::min(samplesLeft, nframes); s++)
-            {
-                outRight[s] += m_waveBuffer[m_curWave][1][s + m_state.idx];
+                outLeft[s] += m_waveBuffer[m_curWave][0][s + m_state.idx] * m_state.gainL;
+                outRight[s] += m_waveBuffer[m_curWave][1][s + m_state.idx] * m_state.gainR;
             }
         }
         m_state.idx += nframes;

@@ -62,6 +62,10 @@ public:
 
     void setActiveContent(Content::Type contentType)
     {
+        auto sc = dynamic_cast<SampleComponent *>(contentComponent);
+        if (sc != nullptr) {
+            sampleComponentState = sc->getState();
+        }
         removeChildComponent(contentComponent);
         if (contentComponent != nullptr)
         {
@@ -77,6 +81,7 @@ public:
             break;
         case Content::Samples:
             contentComponent = new SampleComponent();
+            static_cast<SampleComponent *>(contentComponent)->setState(sampleComponentState);
             addAndMakeVisible(contentComponent);
             break;
         case Content::Mixer:
@@ -125,6 +130,8 @@ private:
 
     // MixerComponent mixerComponent;
     juce::Component *contentComponent{nullptr};
+
+    SampleComponent::State sampleComponentState{};
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
 };

@@ -6,6 +6,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <MckHelper/WaveHelper.hpp>
+#include "Config.hpp"
 
 namespace mck
 {
@@ -18,8 +19,11 @@ namespace mck
             bool active;
             bool stop;
             unsigned idx;
+            unsigned pad;
             unsigned len;
-            PlayState() : active(false), stop(false), idx(0), len(0) {}
+            float gainL;
+            float gainR;
+            PlayState() : active(false), stop(false), idx(0), pad(0), len(0), gainL(0.0f), gainR(0.0f) {}
         };
 
     public:
@@ -29,7 +33,7 @@ namespace mck
 
         void RefreshSamples(std::vector<SamplePack> &packs);
         WaveInfoDetail LoadSample(unsigned packIdx, unsigned sampleIdx);
-        WaveInfoDetail PlaySample(unsigned packIdx, unsigned sampleIdx);
+        WaveInfoDetail PlaySample(unsigned packIdx, unsigned sampleIdx, unsigned padIdx, sampler::Pad &padData);
         WaveInfoDetail GetSample(unsigned packIdx, unsigned sampleIdx, std::vector<std::vector<float>> &buffer);
         std::string GetSamplePath(unsigned packIdx, unsigned sampleIdx, bool relativePath = true);
         std::string GetSampleName(unsigned packIdx, unsigned sampleIdx);
@@ -37,6 +41,10 @@ namespace mck
         std::string GetSampleType(unsigned packIdx, unsigned sampleIdx);
         mck::SamplePackSample GetSampleMeta(unsigned packIdx, unsigned sampleIdx);
         SamplePackSample GetSampleMeta(const std::string &id);
+
+        int GetActivePad() {
+            return m_state.stop ? -1 : m_state.pad;
+        }
 
         bool ApplyEditCommand(SampleEdit &cmd, GuiWindow *gui);
         void StopSample();

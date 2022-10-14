@@ -14,12 +14,18 @@
 #include <concurrentqueue.h>
 
 #include <MckHelper/Transport.hpp>
+#include <MckHelper/DspHelper.hpp>
+
 #include "Types.hpp"
 #include "Config.hpp"
 #include "ConfigFile.hpp"
 
 namespace mck
 {
+    struct Meter {
+        double left{0.0};
+        double right{0.0};
+    };
 
     const unsigned SAMPLER_NUM_PADS = 8;
     const unsigned SAMPLER_VOICES_PER_PAD = 4;
@@ -55,6 +61,17 @@ namespace mck
 
         void SetSample(SampleCommand cmd);
 
+        Meter GetLevelLin() {
+            return {m_levelLeft.load(), m_levelRight.load()};
+        }
+
+        Meter GetLevelDb() {
+            return {
+                LinToDb(m_levelLeft.load()),
+                LinToDb(m_levelRight.load())
+            };
+        }
+
         sampler::Config GetCurrentConfig()
         {
             return m_config[m_curConfig];
@@ -85,6 +102,7 @@ namespace mck
         bool PrepareSamples();
         bool AssignSample(SampleCommand cmd);
         void SetConfiguration(sampler::Config &config, bool connect = false);
+        void CalcLevels(jack_default_audio_sample_t *inL, jack_default_audio_sample_t *inR, unsigned nframes);
 
         ListenerList<Listener> configListeners;
 
@@ -140,5 +158,10 @@ namespace mck
         std::vector<SamplePack> m_samplePacks;
 
         std::condition_variable m_processCond;
+
+        std::atomic<double> m_levelLeft{0.0};
+        std::atomic<double> m_levelRight{0.0};
+
+        double m_levelCoeff{1.0/24000.0};
     };
 } // namespace mck

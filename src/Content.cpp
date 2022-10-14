@@ -68,11 +68,11 @@ SampleComponent::SampleComponent()
     addAndMakeVisible(sampleList);
 
     autoPlayButton.setButtonText("Auto Play");
-    autoPlayButton.setVisible(false);
+    autoPlayButton.setEnabled(false);
     autoPlayButton.setToggleable(true);
     addAndMakeVisible(autoPlayButton);
     autoPlayButton.onClick = [this]()
-    { autoPlay = !autoPlay;
+    { state.autoPlay = !state.autoPlay;
         updateControls(); };
 
     prevSampleButton.setButtonText("<");
@@ -141,6 +141,25 @@ void SampleComponent::resized()
     nextSampleButton.setBounds(bottomArea.removeFromRight(btnSize).reduced(margin));
     prevSampleButton.setBounds(bottomArea.removeFromRight(btnSize).reduced(margin));
 }
+SampleComponent::State SampleComponent::getState()
+{
+    state.init = true;
+    return state;
+}
+void SampleComponent::setState(State &newState)
+{
+    if (newState.init)
+    {
+        state = newState;
+        packList.setItems(state.packNames);
+        catList.setItems(state.catNames);
+        sampleList.setItems(state.sampleNames);
+        packList.setActiveRow(state.activePackIdx);
+        catList.setActiveRow(state.activeCatIdx);
+        sampleList.setActiveRow(state.activeSampleIdx);
+        updateControls();
+    }
+}
 
 void SampleComponent::update()
 {
@@ -162,32 +181,32 @@ void SampleComponent::update()
     for (size_t i = 0; i < samplePacks.size(); i++)
     {
         names[i] = samplePacks[i].name;
-        activeIdx = names[i] == activePackName ? i : activeIdx;
+        activeIdx = names[i] == state.activePackName ? i : activeIdx;
     }
     if (activeIdx < 0)
     {
-        activePackName = "";
+        state.activePackName = "";
     }
-    activePackIdx = activeIdx;
+    state.activePackIdx = activeIdx;
 
-    if (names != packNames)
+    if (names != state.packNames)
     {
-        packNames = names;
-        packList.setItems(packNames);
+        state.packNames = names;
+        packList.setItems(state.packNames);
         packList.setActiveRow(activeIdx);
     }
 
-    updateCategories(activePackIdx);
+    updateCategories(state.activePackIdx);
 }
 
 void SampleComponent::updateControls()
 {
-    prevSampleButton.setEnabled(activeSampleIdx > 0 && activeSampleIdx < sampleNames.size());
-    nextSampleButton.setEnabled(activeSampleIdx >= 0 && activeSampleIdx < sampleNames.size() - 1);
-    assignButton.setEnabled(activeSampleIdx >= 0 && activeSampleIdx < sampleNames.size());
-    previewButton.setEnabled(activeSampleIdx >= 0 && activeSampleIdx < sampleNames.size());
-    autoPlayButton.setEnabled(activeSampleIdx >= 0 && activeSampleIdx < sampleNames.size());
-    autoPlayButton.setToggleState(autoPlay, false);
+    prevSampleButton.setEnabled(state.activeSampleIdx > 0 && state.activeSampleIdx < state.sampleNames.size());
+    nextSampleButton.setEnabled(state.activeSampleIdx >= 0 && state.activeSampleIdx < state.sampleNames.size() - 1);
+    assignButton.setEnabled(state.activeSampleIdx >= 0 && state.activeSampleIdx < state.sampleNames.size());
+    previewButton.setEnabled(state.activeSampleIdx >= 0 && state.activeSampleIdx < state.sampleNames.size());
+    autoPlayButton.setEnabled(state.activeSampleIdx >= 0 && state.activeSampleIdx < state.sampleNames.size());
+    autoPlayButton.setToggleState(state.autoPlay, false);
 }
 
 void SampleComponent::updateCategories(int activePack)
@@ -196,47 +215,47 @@ void SampleComponent::updateCategories(int activePack)
 
     if (activePack < 0 || activePack >= samplePacks.size())
     {
-        activePackName = "";
-        activePackIdx = -1;
+        state.activePackName = "";
+        state.activePackIdx = -1;
         catList.setItems(names);
         catList.setActiveRow(-1);
         return;
     }
 
-    activePackName = samplePacks[activePack].name;
-    activePackIdx = activePack;
+    state.activePackName = samplePacks[activePack].name;
+    state.activePackIdx = activePack;
 
     names.clear();
     names.insert(names.begin(), samplePacks[activePack].categories.begin(), samplePacks[activePack].categories.end());
 
-    if (names != catNames)
+    if (names != state.catNames)
     {
-        catNames = names;
+        state.catNames = names;
 
-        // activePackName = packNames[activePack]
+        // state.activePackName = state.packNames[activePack]
         int catIdx = -1;
-        auto it = std::find(catNames.begin(), catNames.end(), activeCatName);
-        if (it != catNames.end())
+        auto it = std::find(state.catNames.begin(), state.catNames.end(), state.activeCatName);
+        if (it != state.catNames.end())
         {
-            catIdx = std::distance(catNames.begin(), it);
+            catIdx = std::distance(state.catNames.begin(), it);
         }
 
-        catList.setItems(catNames);
+        catList.setItems(state.catNames);
         catList.setActiveRow(catIdx);
 
         if (catIdx > 0)
         {
-            activeCatName = catNames[catIdx];
-            activeCatIdx = catIdx;
+            state.activeCatName = state.catNames[catIdx];
+            state.activeCatIdx = catIdx;
         }
         else
         {
-            activeCatName = "";
-            activeCatIdx = -1;
+            state.activeCatName = "";
+            state.activeCatIdx = -1;
         }
     }
 
-    updateSamples(activePackIdx, activeCatIdx);
+    updateSamples(state.activePackIdx, state.activeCatIdx);
 }
 
 void SampleComponent::updateSamples(int activePack, int activeCat)
@@ -246,21 +265,21 @@ void SampleComponent::updateSamples(int activePack, int activeCat)
 
     if (activePack < 0 || activePack >= samplePacks.size())
     {
-        activePackIdx = -1;
-        activePackName = "";
+        state.activePackIdx = -1;
+        state.activePackName = "";
         return;
     }
     else if (activeCat < 0 || activeCat >= samplePacks[activePack].categories.size())
     {
-        activeCatIdx = -1;
-        activeCatName = "";
+        state.activeCatIdx = -1;
+        state.activeCatName = "";
         sampleList.setItems(samples);
         sampleList.setActiveRow(-1);
         return;
     }
 
-    activeCatIdx = activeCat;
-    activeCatName = samplePacks[activePack].categories[activeCat];
+    state.activeCatIdx = activeCat;
+    state.activeCatName = samplePacks[activePack].categories[activeCat];
 
     size_t sIdx = 0;
     for (auto &s : samplePacks[activePack].samples)
@@ -273,30 +292,30 @@ void SampleComponent::updateSamples(int activePack, int activeCat)
         sIdx++;
     }
 
-    if (samples != sampleNames)
+    if (samples != state.sampleNames)
     {
-        sampleNames = samples;
-        sampleMetas = metas;
+        state.sampleNames = samples;
+        state.sampleMetas = metas;
 
         int sampleIdx = -1;
-        auto it = std::find(sampleNames.begin(), sampleNames.end(), activeSampleName);
-        if (it != sampleNames.end())
+        auto it = std::find(state.sampleNames.begin(), state.sampleNames.end(), state.activeSampleName);
+        if (it != state.sampleNames.end())
         {
-            sampleIdx = std::distance(sampleNames.begin(), it);
+            sampleIdx = std::distance(state.sampleNames.begin(), it);
         }
 
-        sampleList.setItems(sampleNames);
+        sampleList.setItems(state.sampleNames);
         sampleList.setActiveRow(sampleIdx);
 
         if (sampleIdx > 0)
         {
-            activeSampleName = sampleNames[sampleIdx];
-            activeSampleIdx = sampleIdx;
+            state.activeSampleName = state.sampleNames[sampleIdx];
+            state.activeSampleIdx = sampleIdx;
         }
         else
         {
-            activeSampleName = "";
-            activeSampleIdx = -1;
+            state.activeSampleName = "";
+            state.activeSampleIdx = -1;
         }
     }
 
@@ -305,31 +324,35 @@ void SampleComponent::updateSamples(int activePack, int activeCat)
 
 void SampleComponent::previousSample()
 {
-    if (activeSampleIdx > 0)
+    if (state.activeSampleIdx > 0)
     {
-        sampleList.setActiveRow(activeSampleIdx-1);
-        if (autoPlay) {
+        state.activeSampleIdx -= 1;
+        sampleList.setActiveRow(state.activeSampleIdx);
+        if (state.autoPlay)
+        {
             playSample();
         }
     }
 }
 void SampleComponent::nextSample()
 {
-    if (activeSampleIdx >= 0 && activeSampleIdx < sampleNames.size() - 1)
+    if (state.activeSampleIdx >= 0 && state.activeSampleIdx < state.sampleNames.size() - 1)
     {
-        sampleList.setActiveRow(activeSampleIdx+1);
-        if (autoPlay) {
+        state.activeSampleIdx += 1;
+        sampleList.setActiveRow(state.activeSampleIdx);
+        if (state.autoPlay)
+        {
             playSample();
         }
     }
 }
 void SampleComponent::playSample()
 {
-    if (activeSampleMeta >= 0)
+    if (state.activeSampleIdx >= 0)
     {
         mck::SampleCommand cmd;
-        cmd.packIdx = sampleMetas[activeSampleMeta].packIdx;
-        cmd.sampleIdx = sampleMetas[activeSampleMeta].sampleIdx;
+        cmd.packIdx = state.sampleMetas[state.activeSampleIdx].packIdx;
+        cmd.sampleIdx = state.sampleMetas[state.activeSampleIdx].sampleIdx;
         cmd.padIdx = activePad;
         cmd.type = "play";
         mck::Processing::GetInstance()->SetSample(cmd);
@@ -337,11 +360,11 @@ void SampleComponent::playSample()
 }
 void SampleComponent::assignSample()
 {
-    if (activeSampleMeta >= 0)
+    if (state.activeSampleIdx >= 0)
     {
         mck::SampleCommand cmd;
-        cmd.packIdx = sampleMetas[activeSampleMeta].packIdx;
-        cmd.sampleIdx = sampleMetas[activeSampleMeta].sampleIdx;
+        cmd.packIdx = state.sampleMetas[state.activeSampleIdx].packIdx;
+        cmd.sampleIdx = state.sampleMetas[state.activeSampleIdx].sampleIdx;
         cmd.padIdx = activePad;
         cmd.type = "assign";
         mck::Processing::GetInstance()->SetSample(cmd);
@@ -369,15 +392,15 @@ void SampleComponent::selectionChanged(SampleListBox *listBox, int selection)
     }
     else if (listBox == &catList)
     {
-        updateSamples(activePackIdx, selection);
+        updateSamples(state.activePackIdx, selection);
     }
     else if (listBox == &sampleList)
     {
-        activeSampleIdx = selection;
-        activeSampleMeta = selection;
+        state.activeSampleIdx = selection;
         updateControls();
 
-        if (autoPlay) {
+        if (state.autoPlay)
+        {
             playSample();
         }
     }
@@ -396,13 +419,15 @@ void SampleComponent::showActiveSample()
             {
                 if (s.id == sampleId)
                 {
-                    activePackIdx = spIdx;
-                    updateCategories(activePackIdx);
-                    activeCatIdx = s.type;
-                    updateSamples(activePackIdx, activeCatIdx);
-                    packList.setActiveRow(activePackIdx);
-                    catList.setActiveRow(activeCatIdx);
-                    sampleList.setActiveRow(s.index - 1);
+                    state.activePackIdx = spIdx;
+                    updateCategories(state.activePackIdx);
+                    state.activeCatIdx = s.type;
+                    updateSamples(state.activePackIdx, state.activeCatIdx);
+                    state.activeSampleIdx = s.index - 1;
+                    packList.setActiveRow(state.activePackIdx);
+                    catList.setActiveRow(state.activeCatIdx);
+                    sampleList.setActiveRow(state.activeSampleIdx);
+                    updateControls();
                     return;
                 }
             }
