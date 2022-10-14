@@ -196,6 +196,8 @@ private:
     void updateCategories(int activePack);
     void updateSamples(int activePack, int activeCat);
 
+    void previousSample();
+    void nextSample();
     void playSample();
     void assignSample();
 
@@ -215,11 +217,18 @@ private:
 
     size_t activePad{0};
 
+    bool autoPlay{false};
+
     mck::sampler::Config sampleConfig;
     std::vector<mck::SamplePack> samplePacks;
 
     juce::Label curSampleLabel;
     juce::TextButton showSampleButton;
+
+    juce::TextButton autoPlayButton;
+
+    juce::TextButton prevSampleButton;
+    juce::TextButton nextSampleButton;
     juce::TextButton previewButton;
     juce::TextButton assignButton;
 
@@ -237,6 +246,7 @@ private:
 
     std::vector<std::string> packNames;
     std::vector<std::string> catNames;
+    std::vector<std::string> sampleNames;
 
     std::vector<SampleMeta> sampleMetas;
     int activeSampleMeta{-1};

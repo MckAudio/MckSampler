@@ -67,7 +67,23 @@ SampleComponent::SampleComponent()
     addAndMakeVisible(catList);
     addAndMakeVisible(sampleList);
 
-    previewButton.setButtonText("Preview");
+    autoPlayButton.setButtonText("Auto Play");
+    autoPlayButton.setVisible(false);
+    autoPlayButton.setToggleable(true);
+    addAndMakeVisible(autoPlayButton);
+    autoPlayButton.onClick = [this]()
+    { autoPlay = !autoPlay;
+        updateControls(); };
+
+    prevSampleButton.setButtonText("<");
+    prevSampleButton.setEnabled(false);
+    prevSampleButton.onClick = [this]()
+    { previousSample(); };
+    nextSampleButton.setButtonText(">");
+    nextSampleButton.setEnabled(false);
+    nextSampleButton.onClick = [this]()
+    { nextSample(); };
+    previewButton.setButtonText("Play");
     previewButton.setEnabled(false);
     previewButton.onClick = [this]()
     { playSample(); };
@@ -76,6 +92,8 @@ SampleComponent::SampleComponent()
     assignButton.onClick = [this]()
     { assignSample(); };
 
+    addAndMakeVisible(prevSampleButton);
+    addAndMakeVisible(nextSampleButton);
     addAndMakeVisible(previewButton);
     addAndMakeVisible(assignButton);
 
@@ -115,8 +133,13 @@ void SampleComponent::resized()
     auto bottomArea = getLocalBounds();
     bottomArea.removeFromTop(bottomArea.getHeight() - btnSize);
 
+    auto btmLeftArea = bottomArea;
+    autoPlayButton.setBounds(btmLeftArea.removeFromLeft(btnSize).reduced(margin));
+
     assignButton.setBounds(bottomArea.removeFromRight(btnSize).reduced(margin));
     previewButton.setBounds(bottomArea.removeFromRight(btnSize).reduced(margin));
+    nextSampleButton.setBounds(bottomArea.removeFromRight(btnSize).reduced(margin));
+    prevSampleButton.setBounds(bottomArea.removeFromRight(btnSize).reduced(margin));
 }
 
 void SampleComponent::update()
@@ -147,7 +170,8 @@ void SampleComponent::update()
     }
     activePackIdx = activeIdx;
 
-    if (names != packNames) {
+    if (names != packNames)
+    {
         packNames = names;
         packList.setItems(packNames);
         packList.setActiveRow(activeIdx);
@@ -158,8 +182,12 @@ void SampleComponent::update()
 
 void SampleComponent::updateControls()
 {
-    assignButton.setEnabled(activeSampleMeta >= 0 && activeSampleMeta < sampleMetas.size());
-    previewButton.setEnabled(activeSampleMeta >= 0 && activeSampleMeta < sampleMetas.size());
+    prevSampleButton.setEnabled(activeSampleIdx > 0 && activeSampleIdx < sampleNames.size());
+    nextSampleButton.setEnabled(activeSampleIdx >= 0 && activeSampleIdx < sampleNames.size() - 1);
+    assignButton.setEnabled(activeSampleIdx >= 0 && activeSampleIdx < sampleNames.size());
+    previewButton.setEnabled(activeSampleIdx >= 0 && activeSampleIdx < sampleNames.size());
+    autoPlayButton.setEnabled(activeSampleIdx >= 0 && activeSampleIdx < sampleNames.size());
+    autoPlayButton.setToggleState(autoPlay, false);
 }
 
 void SampleComponent::updateCategories(int activePack)
@@ -195,11 +223,14 @@ void SampleComponent::updateCategories(int activePack)
 
         catList.setItems(catNames);
         catList.setActiveRow(catIdx);
-        
-        if (catIdx > 0) {
+
+        if (catIdx > 0)
+        {
             activeCatName = catNames[catIdx];
             activeCatIdx = catIdx;
-        } else {
+        }
+        else
+        {
             activeCatName = "";
             activeCatIdx = -1;
         }
@@ -211,6 +242,7 @@ void SampleComponent::updateCategories(int activePack)
 void SampleComponent::updateSamples(int activePack, int activeCat)
 {
     std::vector<std::string> samples;
+    std::vector<SampleMeta> metas;
 
     if (activePack < 0 || activePack >= samplePacks.size())
     {
@@ -227,7 +259,8 @@ void SampleComponent::updateSamples(int activePack, int activeCat)
         return;
     }
 
-    sampleMetas.clear();
+    activeCatIdx = activeCat;
+    activeCatName = samplePacks[activePack].categories[activeCat];
 
     size_t sIdx = 0;
     for (auto &s : samplePacks[activePack].samples)
@@ -235,20 +268,61 @@ void SampleComponent::updateSamples(int activePack, int activeCat)
         if (s.type == activeCat)
         {
             samples.push_back(s.name);
-            sampleMetas.push_back(SampleMeta(sIdx, activePack));
+            metas.push_back(SampleMeta(sIdx, activePack));
         }
         sIdx++;
     }
 
-    sampleList.setItems(samples);
+    if (samples != sampleNames)
+    {
+        sampleNames = samples;
+        sampleMetas = metas;
 
-    activeCatIdx = activeCat;
-    activeCatName = samplePacks[activePack].categories[activeCat];
-    catList.setActiveRow(activeCatIdx);
+        int sampleIdx = -1;
+        auto it = std::find(sampleNames.begin(), sampleNames.end(), activeSampleName);
+        if (it != sampleNames.end())
+        {
+            sampleIdx = std::distance(sampleNames.begin(), it);
+        }
+
+        sampleList.setItems(sampleNames);
+        sampleList.setActiveRow(sampleIdx);
+
+        if (sampleIdx > 0)
+        {
+            activeSampleName = sampleNames[sampleIdx];
+            activeSampleIdx = sampleIdx;
+        }
+        else
+        {
+            activeSampleName = "";
+            activeSampleIdx = -1;
+        }
+    }
 
     updateControls();
 }
 
+void SampleComponent::previousSample()
+{
+    if (activeSampleIdx > 0)
+    {
+        sampleList.setActiveRow(activeSampleIdx-1);
+        if (autoPlay) {
+            playSample();
+        }
+    }
+}
+void SampleComponent::nextSample()
+{
+    if (activeSampleIdx >= 0 && activeSampleIdx < sampleNames.size() - 1)
+    {
+        sampleList.setActiveRow(activeSampleIdx+1);
+        if (autoPlay) {
+            playSample();
+        }
+    }
+}
 void SampleComponent::playSample()
 {
     if (activeSampleMeta >= 0)
@@ -299,8 +373,13 @@ void SampleComponent::selectionChanged(SampleListBox *listBox, int selection)
     }
     else if (listBox == &sampleList)
     {
+        activeSampleIdx = selection;
         activeSampleMeta = selection;
         updateControls();
+
+        if (autoPlay) {
+            playSample();
+        }
     }
 }
 
@@ -318,8 +397,9 @@ void SampleComponent::showActiveSample()
                 if (s.id == sampleId)
                 {
                     activePackIdx = spIdx;
-                    activeCatIdx = s.type;
                     updateCategories(activePackIdx);
+                    activeCatIdx = s.type;
+                    updateSamples(activePackIdx, activeCatIdx);
                     packList.setActiveRow(activePackIdx);
                     catList.setActiveRow(activeCatIdx);
                     sampleList.setActiveRow(s.index - 1);

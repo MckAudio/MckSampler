@@ -125,6 +125,15 @@ bool mck::Processing::Init()
     m_audioOutR = jack_port_register(m_client, "audio_out_r", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
 
     m_bufferSize = jack_get_buffer_size(m_client);
+    if (m_bufferSize != 128) {
+        if (jack_set_buffer_size(m_client, 128) != 0) {
+            std::fprintf(stderr, "Failed to set JACK buffersize, error code %d\n", err);
+            return false;
+        }
+        m_bufferSize = 128;
+    }
+
+
     m_sampleRate = jack_get_sample_rate(m_client);
     m_transportRate = m_sampleRate;
 
