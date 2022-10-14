@@ -2,8 +2,11 @@ cmake_minimum_required(VERSION 3.15)
 
 project(MCK_SAMPLER VERSION 0.0.1)
 
-add_subdirectory(deps/JUCE)
+find_library(JACK NAMES jack PATHS /usr/lib /usr/lib64 /usr/lib64/pipewire-0.3/jack)
 
+message(STATUS "Found jack: ${JACK}")
+
+add_subdirectory(deps/JUCE)
 add_subdirectory(deps/MckHelper)
 add_subdirectory(deps/MckJuce/Content)
 
@@ -65,6 +68,7 @@ target_link_libraries(MckSamplerApp
     nlohmann_json
     MckHelper
     MckBinaryData
+    ${JACK}
     juce::juce_core
     juce::juce_data_structures
     juce::juce_events
