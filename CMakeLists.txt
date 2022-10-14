@@ -62,6 +62,7 @@ target_compile_definitions(MckSamplerApp
 
 target_link_libraries(MckSamplerApp
     PRIVATE
+    nlohmann_json
     MckHelper
     MckBinaryData
     juce::juce_core
