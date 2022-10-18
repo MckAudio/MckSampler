@@ -5,7 +5,7 @@
 ## Description
 
 MckSampler is a software drum machine that is tailored to be used with multitouch capable devices like convertibles or tablets. 
-MckSampler allows the user to trigger drum samples in WAV format with 16 different pads. 
+MckSampler allows the user to trigger drum samples in WAV format with 8 different pads. 
 The samples can also be triggered with MIDI note messages or through the integrated sequencer.
 
 MckSampler creates its configuration in the folder ```$HOME/.mck/sampler/config.json```.
@@ -46,31 +46,10 @@ sudo pacman -S gtk3 webkit2gtk
 ## Getting started
 
 ```
-make dependencies
-
-sudo make install
-```
-
-## Debugging and GUI Hot Reload
-
-```
-# Build application in debug mode, GUI will be loaded from local port 9002
-make debug
-
-# Build GUI in debug mode, listen to file changes and serve the page on port 9002
-cd gui && npm run dev
-
-# Run application with enabled debuggign tools
-WEBKIT_INSPECTOR_SERVER=127.0.0.1:1234 ./bin/debug/mck-sampler
-
-# Open webkit enabled browser like epiphany (GNOME Web)
-epiphany inspector://127.0.0.1:1234
-```
-
-or just
-
-```
-make run-debug
+mkdir build
+cd build
+cmake ..
+cmake --build . -j4
 ```
 
 ## Features (including planned stuff)
