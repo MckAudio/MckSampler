@@ -2,19 +2,22 @@
 #include <JuceHeader.h>
 #include "Content.hpp"
 #include "Processing.hpp"
+#include "DrumPad.hpp"
 
-class PadComponent : public ControlComponentBase, public juce::Button::Listener
+class PadComponent : public ControlComponentBase, public DrumPadComponent::Listener
 {
-    public:
-    PadComponent() {
-        for(auto&b : buttons)
+public:
+    PadComponent()
+    {
+        for (auto &b : buttons)
         {
+            b.setMode(true);
             b.addListener(this);
             addAndMakeVisible(b);
         }
     }
 
-    void paint(juce::Graphics& g) override
+    void paint(juce::Graphics &g) override
     {
         auto area = getLocalBounds();
         auto h = area.getHeight();
@@ -23,37 +26,39 @@ class PadComponent : public ControlComponentBase, public juce::Button::Listener
         area.removeFromBottom(h - 1);
         g.fillRect(area);
 
-
         for (size_t i = 1; i < numPads; i++)
         {
-            g.fillRect(i*itemWidth, margin, 1, h - 2*margin);
+            g.fillRect(i * itemWidth, margin, 1, h - 2 * margin);
         }
     }
 
-    void resized() override {
+    void resized() override
+    {
         auto area = getLocalBounds();
 
         for (size_t i = 0; i < numPads; i++)
         {
-            buttons[i].setBounds(i*itemWidth + margin, margin, buttonSize, buttonSize);
+            buttons[i].setBounds(i * itemWidth + margin, margin, buttonSize, buttonSize);
         }
     }
 
-    private:
-        void buttonClicked (Button *b) override {
-            for (size_t i = 0; i < 8; i++)
+private:
+    void padDown(DrumPadComponent *d, double strength) override
+    {
+        for (size_t i = 0; i < numPads; i++)
+        {
+            if (d == buttons + i)
             {
-                if (b == buttons + i)
-                {
-                    mck::Processing::GetInstance()->Trigger(i, 1.0);
-                }
+                mck::Processing::GetInstance()->Trigger(i, strength);
             }
         }
+    }
+
     static const size_t numPads{8};
     static const int margin{8};
     static const int buttonSize{64};
     static const int itemWidth{buttonSize + 2 * margin};
-    juce::TextButton buttons[numPads];
+    DrumPadComponent buttons[numPads];
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PadComponent)
 };

@@ -6,7 +6,7 @@ ControlPageComponent::ControlPageComponent()
     openButton.setButtonText("Open Sample");
     openButton.onClick = [this]
     { openButtonClicked(); };
-    
+
     addAndMakeVisible(pad);
 
     mck::Processing::GetInstance()->addListener(this);
@@ -563,13 +563,17 @@ void MixerComponent::sliderValueChanged(Slider *slider)
     }
 }
 
-void PadsComponent::buttonClicked(Button *b)
+void PadsComponent::padDown(DrumPadComponent *d, double strength)
 {
     for (size_t i = 0; i < numPads; i++)
     {
-        if (b == pads + i)
+        if (d == pads + i)
         {
-            mck::Processing::GetInstance()->Trigger(i, 1.0);
+            mck::Processing::GetInstance()->Trigger(i, strength);
         }
     }
+}
+
+void PadsComponent::padUp(DrumPadComponent *d, double strength)
+{
 }

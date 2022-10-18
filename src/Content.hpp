@@ -297,7 +297,7 @@ private:
         "Pan", "Pitch", "Reverb", "Level"};
 };
 
-class PadsComponent : public juce::Component, public juce::Button::Listener
+class PadsComponent : public juce::Component, public DrumPadComponent::Listener
 {
 public:
     PadsComponent()
@@ -318,7 +318,7 @@ public:
                 }
             }
 
-            p.setButtonText(title1 + "\n\n" + title2);
+            p.setPadText(title1 + "\n\n" + title2);
             p.addListener(this);
             addAndMakeVisible(p);
             i++;
@@ -342,12 +342,15 @@ public:
     }
 
 private:
-    void buttonClicked(Button *b) override;
+    void padDown(DrumPadComponent *d, double strength) override;
+
+    void padUp(DrumPadComponent *d, double strength) override;
+
 
     const static size_t numPads{8};
     const static size_t numRows{2};
     const static size_t numCols{4};
     const static int margin{8};
 
-    juce::TextButton pads[numPads];
+    DrumPadComponent pads[numPads];
 };
