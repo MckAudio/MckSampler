@@ -9,10 +9,10 @@
 	url = ../TypeGenerator.git
 [submodule "JUCE"]
 	path = deps/JUCE
-	url = https://github.com/juce-framework/JUCE
+	url = ../JUCE.git
 [submodule "deps/MckJuce"]
 	path = deps/MckJuce
-	url = git@github.com:MckAudio/MckJuce.git
+	url = ../MckJuce.git
 [submodule "deps/concurrentqueue"]
 	path = deps/concurrentqueue
 	url = https://github.com/cameron314/concurrentqueue.git
