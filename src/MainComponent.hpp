@@ -105,7 +105,6 @@ public:
 
     void menuItemChanged(int idx) override
     {
-        std::cout << "Menu item: " << idx << std::endl;
         if (idx >= Content::Type::Controls && idx < Content::Type::Length)
         {
             setActiveContent(static_cast<Content::Type>(idx));

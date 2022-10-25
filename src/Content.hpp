@@ -56,9 +56,14 @@ private:
     void sliderValueChanged(Slider *slider) override;
     void configChanged(const mck::sampler::Config &config) override;
 
-    juce::TextButton openButton;
+    Dial thresholdDial;
+    Dial ratioDial;
+    TextButton activeButton;
 
-    DrumPadComponent pad;
+    const int sliderSize{80};
+    const int margin{8};
+
+    mck::sampler::Pad padConfig;
 };
 
 class SampleListBox : public juce::Component, public juce::ListBoxModel

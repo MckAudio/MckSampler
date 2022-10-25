@@ -140,6 +140,11 @@ bool mck::Processing::Init()
 
     m_levelCoeff = 1.0 / (300.0 * static_cast<double>(m_sampleRate) / 1000.0);
 
+    juce::dsp::ProcessSpec spec;
+    spec.sampleRate = m_sampleRate;
+    spec.maximumBlockSize = m_bufferSize;
+    spec.numChannels = 2;
+
     // 2B - Init FX
     for (auto &sample : m_samples)
     {
@@ -155,6 +160,10 @@ bool mck::Processing::Init()
         sample.lp[1] = new q::one_pole_lowpass(1000_Hz, m_sampleRate);
         sample.dsp[0] = new float[m_bufferSize];
         sample.dsp[1] = new float[m_bufferSize];
+
+        sample.compressor.prepare(spec);
+        sample.compressor.setAttack(10.0f);
+        sample.compressor.setRelease(200.0f);
     }
 
     // 3A - Scan Sample Packs
@@ -247,6 +256,21 @@ void mck::Processing::SetPan(size_t idx, double pan)
         return;
     }
     config.pads[idx].pan = pan;
+    SetConfiguration(config);
+}
+
+
+void mck::Processing::SetCompression(size_t idx, bool active, double threshold, double ratio)
+{
+    auto config = m_config[m_curConfig];
+
+    if (idx >= config.numPads)
+    {
+        return;
+    }
+    config.pads[idx].comp.active = active;
+    config.pads[idx].comp.threshold = threshold;
+    config.pads[idx].comp.ratio = ratio;
     SetConfiguration(config);
 }
 
@@ -743,8 +767,11 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
 
             if (p.comp.active)
             {
-                s.dsp[0][j] *= (float((*s.comp[0])(env_l)) * p.comp.makeupLin);
-                s.dsp[1][j] *= (float((*s.comp[1])(env_r)) * p.comp.makeupLin);
+                //s.dsp[0][j] *= (float((*s.comp[0])(env_l)) * p.comp.makeupLin);
+                //s.dsp[1][j] *= (float((*s.comp[1])(env_r)) * p.comp.makeupLin);
+
+                s.dsp[0][j] *= s.compressor.processSample(0, s.dsp[0][j]) * p.comp.makeupLin;
+                s.dsp[1][j] *= s.compressor.processSample(1, s.dsp[1][j]) * p.comp.makeupLin;
             }
 
             // Mix Buffers to master out
@@ -967,6 +994,9 @@ void mck::Processing::SetConfiguration(sampler::Config &config, bool connect)
             m_samples[i].comp[0]->ratio(1.0f / config.pads[i].comp.ratio);
             m_samples[i].comp[1]->threshold(q::decibel(config.pads[i].comp.threshold, q::decibel::direct));
             m_samples[i].comp[1]->ratio(1.0f / config.pads[i].comp.ratio);
+
+            m_samples[i].compressor.setThreshold(config.pads[i].comp.threshold);
+            m_samples[i].compressor.setRatio(1.0f / config.pads[i].comp.ratio);
         }
     }
 

@@ -3,11 +3,23 @@
 //>  ControlPageComponent  //
 ControlPageComponent::ControlPageComponent()
 {
-    openButton.setButtonText("Open Sample");
-    openButton.onClick = [this]
-    { openButtonClicked(); };
+    activeButton.setButtonText("Comp");
+    activeButton.setToggleable(true);
+    activeButton.onClick = [this]
+    {
+        mck::Processing::GetInstance()->SetCompression(activePad, !padConfig.comp.active, padConfig.comp.threshold, padConfig.comp.ratio);
+    };
 
-    addAndMakeVisible(pad);
+    thresholdDial.setTextValueSuffix("dB");
+    thresholdDial.setRange(-60.0, 6.0, 0.1);
+    thresholdDial.setSkewFactor(2.0);
+
+    ratioDial.setRange(1.0, 100.0, 0.1);
+    ratioDial.setSkewFactor(0.5);
+
+    addAndMakeVisible(activeButton);
+    addAndMakeVisible(thresholdDial);
+    addAndMakeVisible(ratioDial);
 
     mck::Processing::GetInstance()->addListener(this);
 }
@@ -22,16 +34,32 @@ void ControlPageComponent::paint(juce::Graphics &g)
 void ControlPageComponent::resized()
 {
     auto area = getLocalBounds();
-    pad.setBounds(area.reduced(8));
+
+    area.setWidth(sliderSize);
+
+    activeButton.setBounds(area.removeFromTop(sliderSize).reduced(margin));
+    thresholdDial.setBounds(area.removeFromTop(sliderSize).reduced(margin));
+    ratioDial.setBounds(area.removeFromTop(sliderSize).reduced(margin));
 }
 void ControlPageComponent::configChanged(const mck::sampler::Config &config)
 {
-    std::printf("Active pad #%d\n", config.activePad + 1);
     activePad = config.activePad;
+    padConfig = config.pads[activePad];
+    activeButton.setToggleState(padConfig.comp.active, false);
+    thresholdDial.setValue(padConfig.comp.threshold, NotificationType::dontSendNotification);
+    ratioDial.setValue(padConfig.comp.ratio, NotificationType::dontSendNotification);
 }
 
 void ControlPageComponent::sliderValueChanged(Slider *slider)
 {
+    if (slider == &thresholdDial)
+    {
+        mck::Processing::GetInstance()->SetCompression(activePad, padConfig.comp.active, slider->getValue(), padConfig.comp.ratio);
+    }
+    else if (slider == &ratioDial)
+    {
+        mck::Processing::GetInstance()->SetCompression(activePad, padConfig.comp.active, padConfig.comp.threshold, slider->getValue());
+    }
 }
 
 void ControlPageComponent::openButtonClicked()

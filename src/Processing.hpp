@@ -57,6 +57,8 @@ namespace mck
 
         void SetPan(size_t idx, double pan);
 
+        void SetCompression(size_t idx, bool active, double threshold, double ratio);
+        
         void SetActivePad(size_t idx);
 
         void SetSample(SampleCommand cmd);

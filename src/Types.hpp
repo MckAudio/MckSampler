@@ -10,6 +10,8 @@
 #include <q/fx/dynamic.hpp>
 #include <q/fx/envelope.hpp>
 
+#include <juce_dsp/juce_dsp.h>
+
 namespace mck
 {
     struct AudioSample
@@ -27,6 +29,8 @@ namespace mck
         // Compressor
         cycfi::q::fast_rms_envelope_follower *env[2];
         cycfi::q::compressor *comp[2];
+
+        juce::dsp::Compressor<float> compressor;
         // Buffer
         float *dsp[2];
         /*
