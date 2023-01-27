@@ -45,7 +45,7 @@ target_sources(MckSamplerApp
     src/Dial.hpp
     src/DrumPad.hpp
     src/LevelMeter.hpp
-    src/Main.cpp
+    src/main.cpp
     src/MainComponent.hpp
     src/Processing.cpp
     src/Processing.hpp

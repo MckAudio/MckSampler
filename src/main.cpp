@@ -1,87 +1,66 @@
-#include <cstdio>   // fprintf
-#include <unistd.h> // sleep
-#include <stdlib.h>
-#include <signal.h>
-#include <string>
-#include <string.h>
-#include <iostream>
-
-// GUI
-#include <GuiWindow.hpp>
-
-// OWN Header
-#include "Config.hpp"
-#include <MckHelper/JackHelper.hpp>
-#include <MckHelper/Transport.hpp>
+#include <JuceHeader.h>
+#include "MainComponent.hpp"
+#include "MckLookAndFeel.hpp"
 #include "Processing.hpp"
 
-// APP
-std::atomic<bool> m_done = false;
-
-// GUI
-mck::GuiWindow m_gui;
-
-// PROCESSING
-mck::Processing m_processing;
-
-void CloseApplication(bool saveConnections = true)
+class Application : public juce::JUCEApplication
 {
-    m_done = true;
-    m_processing.Close();
-    m_gui.Close();
-    exit(0);
-}
+public:
+    Application() = default;
 
-static void SignalHandler(int sig)
-{
-    std::fprintf(stdout, "Signal %d received, exiting...\n", sig);
-    CloseApplication();
-}
+    const juce::String getApplicationName() override { return "MckSampler"; }
+    const juce::String getApplicationVersion() override { return "0.0.1"; }
 
-int main(int argc, char **argv)
-{
-    // Get Arguments
-    if (argc >= 2)
+    void initialise(const juce::String &) override
     {
-        std::string command(argv[1]);
-        if (command == "--help" || command == "-h")
+        mainWindow.reset(new MainWindow(getApplicationName(), new MainComponent(), *this));
+
+        mck::Processing::GetInstance()->Init();
+    }
+
+    void shutdown() override {
+        mck::Processing::GetInstance()->Close();
+    }
+
+private:
+    class MainWindow : public juce::DocumentWindow
+    {
+    public:
+        MainWindow(const juce::String &name, juce::Component *c, JUCEApplication &a)
+            : DocumentWindow(name,
+                             getLookAndFeel().findColour(DocumentWindow::backgroundColourId),
+                             juce::DocumentWindow::minimiseButton | juce::DocumentWindow::closeButton),
+              app(a)
         {
-            printf("MckSampler by Matt McK\nUsage:\n\tmck-sampler [OPTION]\nOptions:\n");
-            printf("\t--help, -h\tShow this help\n");
-            exit(0);
+            setLookAndFeel(&mckLookAndFeel);
+            LookAndFeel::setDefaultLookAndFeel(&mckLookAndFeel);
+            
+            setUsingNativeTitleBar(false);
+            setResizable(false, false);
+            setSize(800, 480);
+            setContentOwned(c, true);
+            centreWithSize(getWidth(), getHeight());
+            setVisible(true);
         }
-    }
 
-    // Init Processing
-    bool ret = m_processing.Init();
-    if (ret == false)
-    {
-        return EXIT_FAILURE;
-    }
+        ~MainWindow() {
+            setLookAndFeel(nullptr);
+            LookAndFeel::setDefaultLookAndFeel(nullptr);
+        }
 
-    m_processing.SetGuiPtr(&m_gui);
-    m_gui.SetBasePtr((mck::GuiBase *)&m_processing);
+        void closeButtonPressed() override
+        {
+            app.systemRequestedQuit();
+        }
 
-    signal(SIGQUIT, SignalHandler);
-    signal(SIGTERM, SignalHandler);
-    signal(SIGHUP, SignalHandler);
-    signal(SIGINT, SignalHandler);
+    private:
+        JUCEApplication &app;
+        MckLookAndFeel mckLookAndFeel;
 
-    mck::GuiSettings guiSettings;
-    guiSettings.height = 480;
-    guiSettings.width = 800;
-    guiSettings.title = "MckSampler";
-#ifdef DEBUG
-    guiSettings.path = "./www";
-    guiSettings.port = 3000;
-    m_gui.ShowDebug(guiSettings);
-#else
-    guiSettings.path = "/usr/share/mck-sampler/gui";
-    guiSettings.port = 9002;
-    m_gui.Show(guiSettings);
-#endif
+        JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainWindow)
+    };
 
-    CloseApplication();
+    std::unique_ptr<MainWindow> mainWindow;
+};
 
-    return EXIT_SUCCESS;
-}
+START_JUCE_APPLICATION(Application)
