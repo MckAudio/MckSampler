@@ -47,8 +47,9 @@ namespace mck
         static Processing *GetInstance();
 
         int ProcessAudioMidi(jack_nframes_t nframes);
+        void Process(float *outL, float *outR, unsigned nSamples);
 
-        bool Init();
+        bool Init(unsigned sampleRate, unsigned blockSize);
         void Close();
 
         void Trigger(size_t idx, double strength);

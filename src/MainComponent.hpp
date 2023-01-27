@@ -6,35 +6,15 @@
 #include "BarSelectorComponent.hpp"
 #include "Content.hpp"
 
-class MainComponent : public juce::Component, public MenuComponent::Listener
+class MainComponent : public juce::AudioAppComponent, public MenuComponent::Listener
 {
 public:
-    MainComponent()
-    {
-        setSize(defaultWidth, defaultHeight);
+    MainComponent();
+    ~MainComponent();
 
-        menuComponent.addListener(this);
-
-        addAndMakeVisible(ctrlComponent);
-        addAndMakeVisible(menuComponent);
-        addAndMakeVisible(padComponent);
-        addAndMakeVisible(selComponent);
-
-        // addAndMakeVisible(mixerComponent);
-
-        setActiveContent(Content::Mixer);
-
-        resized();
-    }
-
-    ~MainComponent()
-    {
-        if (contentComponent != nullptr)
-        {
-            delete contentComponent;
-            contentComponent = nullptr;
-        }
-    }
+    void prepareToPlay(int samplePerBlockExpected, double sampleRate) override;
+    void getNextAudioBlock(const juce::AudioSourceChannelInfo &bufferToFill) override;
+    void releaseResources() override;
 
     void paint(juce::Graphics &g) override
     {

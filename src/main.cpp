@@ -15,7 +15,7 @@ public:
     {
         mainWindow.reset(new MainWindow(getApplicationName(), new MainComponent(), *this));
 
-        mck::Processing::GetInstance()->Init();
+        //mck::Processing::GetInstance()->Init();
     }
 
     void shutdown() override {
@@ -35,7 +35,7 @@ private:
             setLookAndFeel(&mckLookAndFeel);
             LookAndFeel::setDefaultLookAndFeel(&mckLookAndFeel);
             
-            setUsingNativeTitleBar(false);
+            setUsingNativeTitleBar(true);
             setResizable(false, false);
             setSize(800, 480);
             setContentOwned(c, true);

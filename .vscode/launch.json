@@ -4,8 +4,20 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+    {
+        "name": "macOS",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "${workspaceFolder}/build/MckSamplerApp_artefacts/Debug/MckSampler.app/Contents/MacOS/MckSampler",
+        "args": [],
+        "stopAtEntry": false,
+        "cwd": "${fileDirname}",
+        "environment": [],
+        "externalConsole": false,
+        "MIMode": "lldb"
+    },
         {
-            "name": "(gdb) Starten",
+            "name": "Linux",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/MckSamplerApp_artefacts/Debug/MckSampler",
