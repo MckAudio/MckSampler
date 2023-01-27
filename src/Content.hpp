@@ -58,7 +58,12 @@ private:
 
     Dial thresholdDial;
     Dial ratioDial;
-    TextButton activeButton;
+    TextButton compButton;
+
+    Dial delayDial;
+    Dial mixDial;
+    Dial feedbackDial;
+    TextButton delayButton;
 
     const int sliderSize{80};
     const int margin{8};

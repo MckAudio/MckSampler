@@ -60,6 +60,8 @@ namespace mck
 
         void SetCompression(size_t idx, bool active, double threshold, double ratio);
         
+        void SetDelay(size_t idx, bool active, double timeMs, double mix, double feedback);
+
         void SetActivePad(size_t idx);
 
         void SetSample(SampleCommand cmd);

@@ -21,14 +21,13 @@ juce_add_gui_app(MckSamplerApp
 juce_generate_juce_header(MckSamplerApp)
 
 target_include_directories(MckSamplerApp
-PRIVATE
-/usr/local/include
-/opt/homebrew/include
-./deps/MckJuce/Source
-./deps/concurrentqueue
-./deps/MckHelper/include
-./deps/q/infra/include
-./deps/q/q_lib/include)
+    PRIVATE
+    /usr/local/include
+    /opt/homebrew/include
+    ./deps/MckJuce/Source
+    ./deps/concurrentqueue
+    ./deps/MckHelper/include
+)
 
 target_sources(MckSamplerApp
     PRIVATE
@@ -44,12 +43,14 @@ target_sources(MckSamplerApp
     src/ConfigFile.hpp
     src/Content.cpp
     src/Content.hpp
+    src/DelayModule.cpp
     src/Dial.hpp
     src/DrumPad.hpp
     src/LevelMeter.hpp
     src/main.cpp
     src/MainComponent.cpp
     src/MainComponent.hpp
+    src/OnePoleFilter.cpp
     src/Processing.cpp
     src/Processing.hpp
     src/SampleExplorer.cpp

@@ -3,9 +3,10 @@
 //>  ControlPageComponent  //
 ControlPageComponent::ControlPageComponent()
 {
-    activeButton.setButtonText("Comp");
-    activeButton.setToggleable(true);
-    activeButton.onClick = [this]
+    // Compression
+    compButton.setButtonText("Comp");
+    compButton.setToggleable(true);
+    compButton.onClick = [this]
     {
         mck::Processing::GetInstance()->SetCompression(activePad, !padConfig.comp.active, padConfig.comp.threshold, padConfig.comp.ratio);
     };
@@ -13,13 +14,40 @@ ControlPageComponent::ControlPageComponent()
     thresholdDial.setTextValueSuffix("dB");
     thresholdDial.setRange(-60.0, 6.0, 0.1);
     thresholdDial.setSkewFactor(2.0);
+    thresholdDial.addListener(this);
 
     ratioDial.setRange(1.0, 100.0, 0.1);
     ratioDial.setSkewFactor(0.5);
+    ratioDial.addListener(this);
 
-    addAndMakeVisible(activeButton);
+    addAndMakeVisible(compButton);
     addAndMakeVisible(thresholdDial);
     addAndMakeVisible(ratioDial);
+
+    // Delay
+    delayButton.setButtonText("Delay");
+    delayButton.setToggleable(true);
+    delayButton.onClick = [this]
+    {
+        mck::Processing::GetInstance()->SetDelay(activePad, !padConfig.delay.active, padConfig.delay.timeMs, padConfig.delay.mix, padConfig.delay.feedback);
+    };
+    delayDial.setTextValueSuffix("ms");
+    delayDial.setRange(10.0, 1000.0, 1.0);
+    delayDial.setSkewFactor(0.5);
+    delayDial.addListener(this);
+
+    feedbackDial.setTextValueSuffix("%");
+    feedbackDial.setRange(0.0, 100.0, 1.0);
+    feedbackDial.addListener(this);
+
+    mixDial.setTextValueSuffix("%");
+    mixDial.setRange(0.0, 100.0, 1.0);
+    mixDial.addListener(this);
+
+    addAndMakeVisible(delayButton);
+    addAndMakeVisible(delayDial);
+    addAndMakeVisible(feedbackDial);
+    addAndMakeVisible(mixDial);
 
     mck::Processing::GetInstance()->addListener(this);
 }
@@ -35,19 +63,32 @@ void ControlPageComponent::resized()
 {
     auto area = getLocalBounds();
 
-    area.setWidth(sliderSize);
+    auto areaC = area.removeFromLeft(sliderSize);
+    compButton.setBounds(areaC.removeFromTop(sliderSize).reduced(margin));
+    thresholdDial.setBounds(areaC.removeFromTop(sliderSize).reduced(margin));
+    ratioDial.setBounds(areaC.removeFromTop(sliderSize).reduced(margin));
 
-    activeButton.setBounds(area.removeFromTop(sliderSize).reduced(margin));
-    thresholdDial.setBounds(area.removeFromTop(sliderSize).reduced(margin));
-    ratioDial.setBounds(area.removeFromTop(sliderSize).reduced(margin));
+    auto areaD = area.removeFromLeft(sliderSize);
+    delayButton.setBounds(areaD.removeFromTop(sliderSize).reduced(margin));
+    delayDial.setBounds(areaD.removeFromTop(sliderSize).reduced(margin));
+    feedbackDial.setBounds(areaD.removeFromTop(sliderSize).reduced(margin));
+    mixDial.setBounds(areaD.removeFromTop(sliderSize).reduced(margin));
 }
 void ControlPageComponent::configChanged(const mck::sampler::Config &config)
 {
     activePad = config.activePad;
     padConfig = config.pads[activePad];
-    activeButton.setToggleState(padConfig.comp.active, false);
+
+    // Compressor
+    compButton.setToggleState(padConfig.comp.active, false);
     thresholdDial.setValue(padConfig.comp.threshold, NotificationType::dontSendNotification);
     ratioDial.setValue(padConfig.comp.ratio, NotificationType::dontSendNotification);
+
+    // Delay
+    delayButton.setToggleState(padConfig.delay.active, false);
+    delayDial.setValue(padConfig.delay.timeMs, NotificationType::dontSendNotification);
+    feedbackDial.setValue(padConfig.delay.feedback, NotificationType::dontSendNotification);
+    mixDial.setValue(padConfig.delay.mix, NotificationType::dontSendNotification);
 }
 
 void ControlPageComponent::sliderValueChanged(Slider *slider)
@@ -59,6 +100,18 @@ void ControlPageComponent::sliderValueChanged(Slider *slider)
     else if (slider == &ratioDial)
     {
         mck::Processing::GetInstance()->SetCompression(activePad, padConfig.comp.active, padConfig.comp.threshold, slider->getValue());
+    }
+    else if (slider == &delayDial)
+    {
+        mck::Processing::GetInstance()->SetDelay(activePad, padConfig.delay.active, slider->getValue(), padConfig.delay.mix, padConfig.delay.feedback);
+    }
+    else if (slider == &feedbackDial)
+    {
+        mck::Processing::GetInstance()->SetDelay(activePad, padConfig.delay.active, padConfig.delay.timeMs, padConfig.delay.mix, slider->getValue());
+    }
+    else if (slider == &mixDial)
+    {
+        mck::Processing::GetInstance()->SetDelay(activePad, padConfig.delay.active, padConfig.delay.timeMs, slider->getValue(), padConfig.delay.feedback);
     }
 }
 

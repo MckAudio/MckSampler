@@ -54,6 +54,7 @@ void mck::sampler::to_json(nlohmann::json &j, const Delay &d)
     j["timeMs"] = d.timeMs;
     j["gain"] = d.gain;
     j["feedback"] = d.feedback;
+    j["mix"] = d.mix;
 }
 void mck::sampler::from_json(const nlohmann::json &j, Delay &d)
 {
@@ -61,7 +62,8 @@ void mck::sampler::from_json(const nlohmann::json &j, Delay &d)
     d.type = std::min((char)DLY_ANALOG, std::max((char)DLY_DIGITAL, j.at("type").get<char>()));
     d.timeMs = std::max((unsigned)10, std::min((unsigned)1000, j.at("timeMs").get<unsigned>()));
     d.gain = j.at("gain").get<double>();
-    d.feedback = std::min(1.0, std::max(0.0, j.at("feedback").get<double>()));
+    d.feedback = j.at("feedback").get<double>();
+    d.mix = j.at("mix").get<double>();
 }
 
 

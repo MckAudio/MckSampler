@@ -17,14 +17,6 @@ namespace fs = std::filesystem;
 #include <sndfile.h>
 #include <samplerate.h>
 
-// FX
-#include <q/support/literals.hpp>
-#include <q/fx/delay.hpp>
-#include <q/fx/lowpass.hpp>
-
-namespace q = cycfi::q;
-using namespace q::literals;
-
 static int JackProcess(jack_nframes_t nframes, void *arg)
 {
     auto proc = (mck::Processing *)arg;
@@ -81,23 +73,26 @@ mck::Processing *mck::Processing::GetInstance()
 
 bool mck::Processing::Init(unsigned sampleRate, unsigned blockSize)
 {
-    #ifdef USE_JACK
+#ifdef USE_JACK
     if (m_isInitialized)
     {
         std::fprintf(stderr, "Processing is already initialized\n");
         return false;
     }
-    #else
+#else
     if (m_isInitialized)
     {
-        if (sampleRate == m_sampleRate && blockSize == m_bufferSize) {
+        if (sampleRate == m_sampleRate && blockSize == m_bufferSize)
+        {
             std::fprintf(stderr, "Processing is already initialized\n");
             return false;
-        } else {
+        }
+        else
+        {
             Close();
         }
     }
-    #endif
+#endif
 
     m_curConfig = 0;
     m_newConfig = 1;
@@ -170,19 +165,10 @@ bool mck::Processing::Init(unsigned sampleRate, unsigned blockSize)
     // 2B - Init FX
     for (auto &sample : m_samples)
     {
-        sample.delay[0][0] = new q::delay(m_sampleRate);
-        sample.delay[0][1] = new q::delay(m_sampleRate);
-        sample.delay[1][0] = new q::delay(m_sampleRate);
-        sample.delay[1][1] = new q::delay(m_sampleRate);
-        sample.env[0] = new q::fast_rms_envelope_follower(70_ms, m_sampleRate);
-        sample.env[1] = new q::fast_rms_envelope_follower(70_ms, m_sampleRate);
-        sample.comp[0] = new q::compressor(-10_dB, 0.5);
-        sample.comp[1] = new q::compressor(-10_dB, 0.5);
-        sample.lp[0] = new q::one_pole_lowpass(1000_Hz, m_sampleRate);
-        sample.lp[1] = new q::one_pole_lowpass(1000_Hz, m_sampleRate);
         sample.dsp[0] = new float[m_bufferSize];
         sample.dsp[1] = new float[m_bufferSize];
-
+        sample.delay[0].prepareToPlay(m_sampleRate, m_bufferSize);
+        sample.delay[1].prepareToPlay(m_sampleRate, m_bufferSize);
         sample.compressor.prepare(spec);
         sample.compressor.setAttack(10.0f);
         sample.compressor.setRelease(200.0f);
@@ -283,7 +269,6 @@ void mck::Processing::SetPan(size_t idx, double pan)
     SetConfiguration(config);
 }
 
-
 void mck::Processing::SetCompression(size_t idx, bool active, double threshold, double ratio)
 {
     auto config = m_config[m_curConfig];
@@ -295,6 +280,21 @@ void mck::Processing::SetCompression(size_t idx, bool active, double threshold, 
     config.pads[idx].comp.active = active;
     config.pads[idx].comp.threshold = threshold;
     config.pads[idx].comp.ratio = ratio;
+    SetConfiguration(config);
+}
+
+void mck::Processing::SetDelay(size_t idx, bool active, double timeMs, double mix, double feedback)
+{
+    auto config = m_config[m_curConfig];
+
+    if (idx >= config.numPads)
+    {
+        return;
+    }
+    config.pads[idx].delay.active = active;
+    config.pads[idx].delay.timeMs = timeMs;
+    config.pads[idx].delay.mix = mix;
+    config.pads[idx].delay.feedback = feedback;
     SetConfiguration(config);
 }
 
@@ -462,7 +462,6 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
 
     return 0;
 }
-
 
 void mck::Processing::Process(float *outL, float *outR, unsigned nSamples)
 {
@@ -727,10 +726,12 @@ void mck::Processing::Process(float *outL, float *outR, unsigned nSamples)
         }
     }
 
+    /*
     float dly_l = 0.0f;
     float dly_r = 0.0f;
     q::decibel env_l(-60_dB);
     q::decibel env_r(-60_dB);
+    */
 
     for (unsigned i = 0; i < m_samples.size(); i++)
     {
@@ -744,6 +745,7 @@ void mck::Processing::Process(float *outL, float *outR, unsigned nSamples)
 
         for (unsigned j = 0; j < nSamples; j++)
         {
+            /*
             dly_l = (*s.delay[s.curDelay][0])();
             dly_r = (*s.delay[s.curDelay][1])();
 
@@ -755,16 +757,18 @@ void mck::Processing::Process(float *outL, float *outR, unsigned nSamples)
 
             env_l = (*s.env[0])(s.dsp[0][j]);
             env_r = (*s.env[1])(s.dsp[1][j]);
+            */
 
             if (p.comp.active)
             {
-                //s.dsp[0][j] *= (float((*s.comp[0])(env_l)) * p.comp.makeupLin);
-                //s.dsp[1][j] *= (float((*s.comp[1])(env_r)) * p.comp.makeupLin);
-
                 s.dsp[0][j] *= s.compressor.processSample(0, s.dsp[0][j]) * p.comp.makeupLin;
                 s.dsp[1][j] *= s.compressor.processSample(1, s.dsp[1][j]) * p.comp.makeupLin;
             }
 
+            outL[j] += s.delay[0].processSample(s.dsp[0][j]);
+            outR[j] += s.delay[1].processSample(s.dsp[1][j]);
+
+            /*
             // Mix Buffers to master out
             outL[j] += (s.dsp[0][j] + (dly_l * p.delay.gainLin)); // * p.gainLeftLin));
             outR[j] += (s.dsp[1][j] + (dly_r * p.delay.gainLin)); // * p.gainRightLin));
@@ -772,6 +776,7 @@ void mck::Processing::Process(float *outL, float *outR, unsigned nSamples)
             // Delay
             s.delay[s.curDelay][0]->push(s.dsp[0][j] * (float)p.delay.active + p.delay.feedback * dly_l);
             s.delay[s.curDelay][1]->push(s.dsp[1][j] * (float)p.delay.active + p.delay.feedback * dly_r);
+            */
         }
     }
 
@@ -943,8 +948,11 @@ void mck::Processing::SetConfiguration(sampler::Config &config, bool connect)
         config.pads[i].delay.gain = std::min(6.0, std::max(-200.0, config.pads[i].delay.gain));
         config.pads[i].delay.gainLin = DbToLin(config.pads[i].delay.gain);
         config.pads[i].delay.timeSamps = (unsigned)std::floor((double)config.pads[i].delay.timeMs * (double)m_sampleRate / 1000.0);
+        config.pads[i].delay.mixCoeff = std::min(100.0, std::max(0.0, config.pads[i].delay.mix)) / 100.0;
+        config.pads[i].delay.feedbackCoeff = std::min(100.0, std::max(0.0, config.pads[i].delay.feedback)) / 100.0;
         // Update Compressor
         config.pads[i].comp.makeupLin = DbToLin(config.pads[i].comp.makeup);
+
     }
 
     if (m_isProcessing.load())
@@ -964,29 +972,22 @@ void mck::Processing::SetConfiguration(sampler::Config &config, bool connect)
 
         bool updateDsp = (i >= m_config[m_curConfig].pads.size());
 
-        if (updateDsp || (config.pads[i].delay.timeSamps != m_config[m_curConfig].pads[i].delay.timeSamps))
-        {
-            m_samples[i].newDelay = 1 - m_samples[i].curDelay;
-            delete m_samples[i].delay[m_samples[i].newDelay][0];
-            delete m_samples[i].delay[m_samples[i].newDelay][1];
-            m_samples[i].delay[m_samples[i].newDelay][0] = new q::delay(config.pads[i].delay.timeSamps);
-            m_samples[i].delay[m_samples[i].newDelay][1] = new q::delay(config.pads[i].delay.timeSamps);
+        if (config.pads[i].delay.active) {
+            m_samples[i].delay[0].setMix(config.pads[i].delay.mixCoeff);
+            m_samples[i].delay[0].setDelayInMs(config.pads[i].delay.timeMs);
+            m_samples[i].delay[0].setFeedback(config.pads[i].delay.feedbackCoeff);
+            m_samples[i].delay[1].setMix(config.pads[i].delay.mixCoeff);
+            m_samples[i].delay[1].setDelayInMs(config.pads[i].delay.timeMs);
+            m_samples[i].delay[1].setFeedback(config.pads[i].delay.feedbackCoeff);
+        } else {
+            m_samples[i].delay[0].setMix(0.0);
+            m_samples[i].delay[1].setMix(0.0);
         }
-        /*
-        if (updateDsp || (config.pads[i].comp.attackMs != m_config[m_curConfig].pads[i].comp.attackMs) || (config.pads[i].comp.releaseMs != m_config[m_curConfig].pads[i].comp.releaseMs))
-        {
-            m_samples[i].env[0]->hold(config.pads[i].comp.attackMs, m_sampleRate);
-            m_samples[i].env[1]->threshold(config.pads[i].comp.releaseMs, m_sampleRate);
-        }*/
+
         if (updateDsp || (config.pads[i].comp.threshold != m_config[m_curConfig].pads[i].comp.threshold) || (config.pads[i].comp.ratio != m_config[m_curConfig].pads[i].comp.ratio))
         {
-            m_samples[i].comp[0]->threshold(q::decibel(config.pads[i].comp.threshold, q::decibel::direct));
-            m_samples[i].comp[0]->ratio(1.0f / config.pads[i].comp.ratio);
-            m_samples[i].comp[1]->threshold(q::decibel(config.pads[i].comp.threshold, q::decibel::direct));
-            m_samples[i].comp[1]->ratio(1.0f / config.pads[i].comp.ratio);
-
             m_samples[i].compressor.setThreshold(config.pads[i].comp.threshold);
-            m_samples[i].compressor.setRatio(1.0f / config.pads[i].comp.ratio);
+            m_samples[i].compressor.setRatio(config.pads[i].comp.ratio);
         }
     }
 
@@ -1001,6 +1002,7 @@ void mck::Processing::SetConfiguration(sampler::Config &config, bool connect)
     m_configFile.SetConfig(config);
     m_configFile.WriteFile(m_configPath);
 
+#ifdef USE_JACK
     if (connect)
     {
         // Connect inputs and outputs
@@ -1024,6 +1026,7 @@ void mck::Processing::SetConfiguration(sampler::Config &config, bool connect)
             }
         }
     }
+#endif
 
     configListeners.call([this](Listener &l)
                          { l.configChanged(m_config[m_newConfig]); });
@@ -1036,8 +1039,8 @@ void mck::Processing::CalcLevels(jack_default_audio_sample_t *inL, jack_default_
 
     for (size_t i = 0; i < nframes; i++)
     {
-        ll = (1.0-m_levelCoeff)*ll + m_levelCoeff*std::pow(static_cast<double>(inL[i]), 2.0);
-        lr = (1.0-m_levelCoeff)*lr + m_levelCoeff*std::pow(static_cast<double>(inR[i]), 2.0);
+        ll = (1.0 - m_levelCoeff) * ll + m_levelCoeff * std::pow(static_cast<double>(inL[i]), 2.0);
+        lr = (1.0 - m_levelCoeff) * lr + m_levelCoeff * std::pow(static_cast<double>(inR[i]), 2.0);
     }
 
     m_levelLeft = ll;

@@ -1,9 +1,6 @@
 [submodule "src/helper"]
 	path = deps/MckHelper
 	url = ../MckHelper.git
-[submodule "src/q"]
-	path = deps/q
-	url = ../q.git
 [submodule "deps/TypeGenerator"]
 	path = deps/TypeGenerator
 	url = ../TypeGenerator.git

@@ -71,6 +71,9 @@ namespace mck
             double gain;
             double gainLin; // priv
             double feedback;
+            double feedbackCoeff;
+            double mix;
+            double mixCoeff; // priv
             Delay()
                 : active(false),
                   type(DLY_DIGITAL),
@@ -78,7 +81,10 @@ namespace mck
                   timeSamps(0),
                   gain(-6.0),
                   gainLin(0.0),
-                  feedback(0.5)
+                  feedback(50.0),
+                  feedbackCoeff(0.5),
+                  mix(0.0),
+                  mixCoeff(0.0)
             {
             }
         };
