@@ -22,6 +22,8 @@ juce_generate_juce_header(MckSamplerApp)
 
 target_include_directories(MckSamplerApp
 PRIVATE
+/usr/local/include
+/opt/homebrew/include
 ./deps/MckJuce/Source
 ./deps/concurrentqueue
 ./deps/MckHelper/include

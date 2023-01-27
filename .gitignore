@@ -4,3 +4,5 @@ src/types/cpp
 src/types/hpp
 src/types/ts
 .vscode/*.log
+.DS_Store
+log.txt

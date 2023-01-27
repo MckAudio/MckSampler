@@ -16,6 +16,25 @@
             "cStandard": "gnu17",
             "cppStandard": "gnu++17",
             "intelliSenseMode": "gcc-x64"
+        },
+        {
+            "name": "MacOS",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/deps/JUCE/modules/**",
+                "${workspaceFolder}/deps/concurrentqueue/**",
+                "${workspaceFolder}/deps/MckJuce/Source/**",
+                "${workspaceFolder}/deps/MckHelper/include/**",
+                "${workspaceFolder}/deps/q/infra/include/**",
+                "${workspaceFolder}/deps/q/q_lib/include/**",
+                "/usr/local/include",
+                "/opt/homebrew/include"
+            ],
+            "defines": ["RPI_MODE"],
+            "compilerPath": "/usr/bin/g++",
+            "cStandard": "gnu17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "macos-clang-arm64"
         }
     ],
     "version": 4

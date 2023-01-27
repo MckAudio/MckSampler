@@ -43,6 +43,11 @@ sudo pacman -S libsamplerate libsndfile jack2
 sudo pacman -S gtk3 webkit2gtk
 ```
 
+### MacOS
+```
+brew install libsndfile libsamplerate
+```
+
 ## Getting started
 
 ```
