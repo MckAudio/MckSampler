@@ -23,10 +23,19 @@ git submodule update --init --recursive
 ```
 
 ### Debian / Ubuntu
-```
-sudo apt install build-essential node npm git
-sudo apt install libsamplerate0-dev libsndfile1-dev libjack-jackd2-dev
-sudo apt install libgtk-3-dev libwebkit2gtk-4.0-dev
+```bash
+sudo apt install build-essential git cmake
+sudo apt install libsamplerate0-dev libsndfile1-dev libjack-jackd2-dev libasound2-dev
+# sudo apt install libx11-dev libxcursor-dev libxinerama-dev libxrandr-dev
+
+# JUCE dependencies
+sudo apt install libasound2-dev libjack-jackd2-dev \
+    ladspa-sdk \
+    libcurl4-openssl-dev  \
+    libfreetype6-dev \
+    libx11-dev libxcomposite-dev libxcursor-dev libxcursor-dev libxext-dev libxinerama-dev libxrandr-dev libxrender-dev \
+    libwebkit2gtk-4.0-dev \
+    libglu1-mesa-dev mesa-common-dev
 ```
 
 ### Fedora
