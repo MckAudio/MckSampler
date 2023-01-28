@@ -91,7 +91,7 @@ namespace mck
 
             virtual void configChanged(const sampler::Config &config) = 0;
 
-            virtual void samplesChanged(const std::vector<SamplePack> &samples) {};
+            virtual void samplesChanged(const std::vector<SamplePack> &samples) {}
         };
 
         void addListener(Listener *newListener)
@@ -100,7 +100,7 @@ namespace mck
             newListener->configChanged(m_config[m_curConfig]);
             newListener->samplesChanged(m_samplePacks);
         };
-        void removeListener(Listener *listener) { configListeners.remove(listener); };
+        void removeListener(Listener *listener) { configListeners.remove(listener); }
 
     private:
         void TransportThread();
@@ -118,8 +118,8 @@ namespace mck
 
         // DATA Members
         sampler::Config m_config[2];
-        char m_curConfig;
-        char m_newConfig;
+        size_t m_curConfig;
+        size_t m_newConfig;
         std::atomic<bool> m_updateConfig;
         ConfigFile m_configFile;
         std::string m_configPath;

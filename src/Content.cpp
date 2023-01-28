@@ -56,7 +56,7 @@ ControlPageComponent::~ControlPageComponent()
     mck::Processing::GetInstance()->removeListener(this);
 }
 
-void ControlPageComponent::paint(juce::Graphics &g)
+void ControlPageComponent::paint(juce::Graphics &/*g*/)
 {
 }
 void ControlPageComponent::resized()
@@ -80,12 +80,12 @@ void ControlPageComponent::configChanged(const mck::sampler::Config &config)
     padConfig = config.pads[activePad];
 
     // Compressor
-    compButton.setToggleState(padConfig.comp.active, false);
+    compButton.setToggleState(padConfig.comp.active, NotificationType::dontSendNotification);
     thresholdDial.setValue(padConfig.comp.threshold, NotificationType::dontSendNotification);
     ratioDial.setValue(padConfig.comp.ratio, NotificationType::dontSendNotification);
 
     // Delay
-    delayButton.setToggleState(padConfig.delay.active, false);
+    delayButton.setToggleState(padConfig.delay.active, NotificationType::dontSendNotification);
     delayDial.setValue(padConfig.delay.timeMs, NotificationType::dontSendNotification);
     feedbackDial.setValue(padConfig.delay.feedback, NotificationType::dontSendNotification);
     mixDial.setValue(padConfig.delay.mix, NotificationType::dontSendNotification);
@@ -120,7 +120,7 @@ void ControlPageComponent::openButtonClicked()
     fileChooser = std::make_unique<juce::FileChooser>("Select a sample...", juce::File{}, "*.wav");
     auto chooserFlags = juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles;
 
-    fileChooser->launchAsync(chooserFlags, [this](const FileChooser &fc)
+    fileChooser->launchAsync(chooserFlags, [](const FileChooser &fc)
                              {
         auto res = fc.getResult();
         std::cout << res.getFullPathName() << std::endl; });
@@ -191,7 +191,7 @@ SampleComponent::~SampleComponent()
     mck::Processing::GetInstance()->removeListener(this);
 }
 
-void SampleComponent::paint(juce::Graphics &g)
+void SampleComponent::paint(juce::Graphics &/*g*/)
 {
 }
 

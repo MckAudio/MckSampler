@@ -176,7 +176,7 @@ mck::WaveInfoDetail mck::SampleExplorer::PlaySample(unsigned packIdx, unsigned s
 
     StopSample();
 
-    char newWave = 1 - m_curWave;
+    size_t newWave = 1 - m_curWave;
 
     if (packIdx != m_waveInfo[newWave].packIdx || sampleIdx != m_waveInfo[newWave].sampleIdx || m_waveInfo[newWave].valid == false)
     {
@@ -196,8 +196,8 @@ mck::WaveInfoDetail mck::SampleExplorer::PlaySample(unsigned packIdx, unsigned s
     state.idx = 0;
     state.len = m_waveInfo[newWave].lengthSamps;
     state.pad = padIdx;
-    state.gainL = (100.0f/127.0f) * padData.gainLeftLin;
-    state.gainR = (100.0f/127.0f) * padData.gainRightLin;
+    state.gainL = (100.0/127.0) * padData.gainLeftLin;
+    state.gainR = (100.0/127.0) * padData.gainRightLin;
 
     if (m_isProcessing.load())
     {
@@ -421,8 +421,8 @@ void mck::SampleExplorer::ProcessAudio(float *outLeft, float *outRight, unsigned
         if (m_waveBuffer[m_curWave].size() == 1)
         {
             // Compensate Mono Panning Law
-            float gainL = std::min(1.0f, m_state.gainL * std::sqrt(2.0f));
-            float gainR = std::min(1.0f, m_state.gainR * std::sqrt(2.0f));
+            float gainL = std::fmin(1.0, m_state.gainL * std::sqrt(2.0));
+            float gainR = std::fmin(1.0, m_state.gainR * std::sqrt(2.0));
 
             for (unsigned s = 0; s < std::min(samplesLeft, nframes); s++)
             {

@@ -836,7 +836,7 @@ bool mck::Processing::PrepareSamples()
             m_config[m_curConfig].pads[i].available = false;
             continue;
         }
-        char newSample = 1 - m_samples[i].curSample;
+        size_t newSample = 1 - m_samples[i].curSample;
         m_samples[i].info[newSample] = helper::ImportWaveFile(samplePath.string(), m_sampleRate, m_samples[i].buffer[newSample]);
         if (m_samples[i].info[newSample].valid == false)
         {
@@ -918,7 +918,7 @@ void mck::Processing::SetConfiguration(sampler::Config &config, bool connect)
 
         if (updateWave)
         {
-            char newSample = 1 - m_samples[i].curSample;
+            size_t newSample = 1 - m_samples[i].curSample;
             WaveInfo info = helper::ImportWaveFile(samplePath.string(), m_sampleRate, m_samples[i].buffer[newSample]);
             if (info.valid)
             {
@@ -986,8 +986,8 @@ void mck::Processing::SetConfiguration(sampler::Config &config, bool connect)
 
         if (updateDsp || (config.pads[i].comp.threshold != m_config[m_curConfig].pads[i].comp.threshold) || (config.pads[i].comp.ratio != m_config[m_curConfig].pads[i].comp.ratio))
         {
-            m_samples[i].compressor.setThreshold(config.pads[i].comp.threshold);
-            m_samples[i].compressor.setRatio(config.pads[i].comp.ratio);
+            m_samples[i].compressor.setThreshold(static_cast<float>(config.pads[i].comp.threshold));
+            m_samples[i].compressor.setRatio(static_cast<float>(config.pads[i].comp.ratio));
         }
     }
 

@@ -26,17 +26,14 @@ public:
         area.removeFromBottom(h - 1);
         g.fillRect(area);
 
-        for (size_t i = 1; i < numPads; i++)
+        for (int i = 1; i < static_cast<int>(numPads); i++)
         {
             g.fillRect(i * itemWidth, margin, 1, h - 2 * margin);
         }
     }
 
     void resized() override
-    {
-        auto area = getLocalBounds();
-
-        for (size_t i = 0; i < numPads; i++)
+    {for (int i = 0; i < static_cast<int>(numPads); i++)
         {
             buttons[i].setBounds(i * itemWidth + margin, margin, buttonSize, buttonSize);
         }

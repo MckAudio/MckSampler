@@ -157,7 +157,7 @@ namespace mck
                   patterns()
             {
                 patterns.resize(nPatterns);
-            };
+            }
         };
         void to_json(nlohmann::json &j, const Pad &p);
         void from_json(const nlohmann::json &j, Pad &p);
@@ -178,7 +178,7 @@ namespace mck
             Config() : tempo(110.0), activePad(0), numPads(0), numSamples(0), midiChan(0), reconnect(true)
             {
                 pads.resize(numPads);
-            };
+            }
         };
         void to_json(nlohmann::json &j, const Config &c);
         void from_json(const nlohmann::json &j, Config &c);

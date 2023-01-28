@@ -21,8 +21,8 @@ namespace mck
             unsigned idx;
             unsigned pad;
             unsigned len;
-            float gainL;
-            float gainR;
+            double gainL;
+            double gainR;
             PlayState() : active(false), stop(false), idx(0), pad(0), len(0), gainL(0.0f), gainR(0.0f) {}
         };
 
@@ -65,10 +65,10 @@ namespace mck
         std::vector<std::string> m_packPaths;
         WaveInfoDetail m_waveInfo[2];
         std::vector<std::vector<float>> m_waveBuffer[2];
-        char m_curWave;
+        size_t m_curWave;
         PlayState m_state;
 
         std::atomic<bool> m_isProcessing;
         std::condition_variable m_processCond;
     };
-};
+}

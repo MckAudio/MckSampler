@@ -10,7 +10,7 @@ class MainComponent : public juce::AudioAppComponent, public MenuComponent::List
 {
 public:
     MainComponent();
-    ~MainComponent();
+    ~MainComponent() override;
 
     void prepareToPlay(int samplePerBlockExpected, double sampleRate) override;
     void getNextAudioBlock(const juce::AudioSourceChannelInfo &bufferToFill) override;
@@ -72,7 +72,8 @@ public:
             contentComponent = new PadsComponent();
             addAndMakeVisible(contentComponent);
             break;
-
+        case Content::Settings:
+        case Content::Length:
         default:
             break;
         }
@@ -83,7 +84,7 @@ public:
         resized();
     }
 
-    void menuItemChanged(int idx) override
+    void menuItemChanged(size_t idx) override
     {
         if (idx >= Content::Type::Controls && idx < Content::Type::Length)
         {

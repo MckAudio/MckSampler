@@ -14,9 +14,9 @@ namespace mck
     {
         // Sample
         bool update;
-        char curSample;
-        char curDelay;
-        char newDelay;
+        size_t curSample;
+        size_t curDelay;
+        size_t newDelay;
         WaveInfo info[2];
         std::vector<std::vector<float>> buffer[2];
         MckDsp::DelayModule delay[2];

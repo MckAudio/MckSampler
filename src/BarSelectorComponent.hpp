@@ -10,7 +10,7 @@ public:
     {
         mck::Processing::GetInstance()->addListener(this);
     }
-    ~SelectorComponent()
+    ~SelectorComponent() override
     {
         mck::Processing::GetInstance()->removeListener(this);
     }
@@ -24,7 +24,7 @@ public:
         area.removeFromTop(h - 1);
         g.fillRect(area);
 
-        for (size_t i = 1; i < numPads; i++)
+        for (int i = 1; i < static_cast<int>(numPads); i++)
         {
             g.fillRect(i * itemWidth, margin, 1, h - 2 * margin);
         }
@@ -61,6 +61,7 @@ public:
         case Content::Samples:
             addButtons();
             break;
+        case Content::Length:
         default:
             removeAllChildren();
             drawButtons = false;
@@ -147,11 +148,11 @@ private:
             buttons[i].setButtonText(tmp);
             if (i == processingConfig.activePad)
             {
-                buttons[i].setToggleState(true, false);
+                buttons[i].setToggleState(true, NotificationType::dontSendNotification);
             }
             else
             {
-                buttons[i].setToggleState(false, false);
+                buttons[i].setToggleState(false, NotificationType::dontSendNotification);
             }
         }
     }

@@ -40,10 +40,10 @@ class MenuComponent : public ControlComponentBase, public juce::Button::Listener
     {
         for (auto &button : buttons)
         {
-            button.setToggleState(false, false);
+            button.setToggleState(false, NotificationType::dontSendNotification);
         }
         if (idx < numMenuItems) {
-            buttons[idx].setToggleState(true, false);
+            buttons[idx].setToggleState(true, NotificationType::dontSendNotification);
         }
         activeContentType = idx;
     }
@@ -53,12 +53,12 @@ class MenuComponent : public ControlComponentBase, public juce::Button::Listener
         public:
         virtual ~Listener() = default;
 
-        virtual void menuItemChanged(int idx) = 0;
+        virtual void menuItemChanged(size_t idx) = 0;
     };
 
-    void addListener(Listener* newListener) {menuListeners.add(newListener); };
+    void addListener(Listener* newListener) {menuListeners.add(newListener); }
 
-    void removeListener(Listener* listener) {menuListeners.remove(listener); };
+    void removeListener(Listener* listener) {menuListeners.remove(listener); }
 
 
     private:
@@ -69,7 +69,6 @@ class MenuComponent : public ControlComponentBase, public juce::Button::Listener
 
     void buttonClicked (juce::Button *b) override
     {
-        auto bIdx = 0;
         for (size_t i = 0; i < numMenuItems; i++)
         {
             //button.setToggleState(false, false);
