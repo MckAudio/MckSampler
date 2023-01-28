@@ -170,8 +170,8 @@ bool mck::Processing::Init(unsigned sampleRate, unsigned blockSize)
         sample.delay[0].prepareToPlay(m_sampleRate, m_bufferSize);
         sample.delay[1].prepareToPlay(m_sampleRate, m_bufferSize);
         sample.compressor.prepare(spec);
-        sample.compressor.setAttack(10.0f);
-        sample.compressor.setRelease(200.0f);
+        sample.compressor.setAttack(50.0f);
+        sample.compressor.setRelease(500.0f);
     }
 
     // 3A - Scan Sample Packs
@@ -761,8 +761,8 @@ void mck::Processing::Process(float *outL, float *outR, unsigned nSamples)
 
             if (p.comp.active)
             {
-                s.dsp[0][j] *= s.compressor.processSample(0, s.dsp[0][j]) * p.comp.makeupLin;
-                s.dsp[1][j] *= s.compressor.processSample(1, s.dsp[1][j]) * p.comp.makeupLin;
+                s.dsp[0][j] = s.compressor.processSample(0, s.dsp[0][j]);// * p.comp.makeupLin;
+                s.dsp[1][j] = s.compressor.processSample(1, s.dsp[1][j]);// * p.comp.makeupLin;
             }
 
             outL[j] += s.delay[0].processSample(s.dsp[0][j]);
