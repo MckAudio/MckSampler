@@ -8,8 +8,7 @@
                 "${workspaceFolder}/deps/concurrentqueue/**",
                 "${workspaceFolder}/deps/MckJuce/Source/**",
                 "${workspaceFolder}/deps/MckHelper/include/**",
-                "${workspaceFolder}/deps/q/infra/include/**",
-                "${workspaceFolder}/deps/q/q_lib/include/**"
+                "${workspaceFolder}/deps/DaisySP/**"
             ],
             "defines": ["RPI_MODE"],
             "compilerPath": "/usr/bin/gcc",
@@ -25,8 +24,7 @@
                 "${workspaceFolder}/deps/concurrentqueue/**",
                 "${workspaceFolder}/deps/MckJuce/Source/**",
                 "${workspaceFolder}/deps/MckHelper/include/**",
-                "${workspaceFolder}/deps/q/infra/include/**",
-                "${workspaceFolder}/deps/q/q_lib/include/**",
+                "${workspaceFolder}/deps/DaisySP/**",
                 "/usr/local/include",
                 "/opt/homebrew/include"
             ],

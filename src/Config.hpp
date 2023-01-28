@@ -114,6 +114,22 @@ namespace mck
         void to_json(nlohmann::json &j, const Compressor &c);
         void from_json(const nlohmann::json &j, Compressor &c);
 
+        struct Reverb
+        {
+            double mix;
+            double feedback;
+            double filter;
+            double filterHz; // private
+            Reverb()
+                : mix(0.0),
+                feedback(0.5),
+                filter(1.0)
+                {
+                }
+        };
+        void to_json(nlohmann::json &j, const Reverb &r);
+        void from_json(const nlohmann::json &j, Reverb &r);
+
         struct Pad
         {
             bool available;
@@ -134,6 +150,7 @@ namespace mck
             double pitch;
             Delay delay;
             Compressor comp;
+            Reverb reverb;
             unsigned nPatterns;
             std::vector<Pattern> patterns;
             Pad()
@@ -153,6 +170,7 @@ namespace mck
                   pitch(1.0),
                   delay(),
                   comp(),
+                  reverb(),
                   nPatterns(1),
                   patterns()
             {

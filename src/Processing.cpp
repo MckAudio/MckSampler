@@ -165,13 +165,17 @@ bool mck::Processing::Init(unsigned sampleRate, unsigned blockSize)
     // 2B - Init FX
     for (auto &sample : m_samples)
     {
-        sample.dsp[0] = new float[m_bufferSize];
-        sample.dsp[1] = new float[m_bufferSize];
+        sample.dsp[0] = new double[m_bufferSize];
+        sample.dsp[1] = new double[m_bufferSize];
         sample.delay[0].prepareToPlay(m_sampleRate, m_bufferSize);
         sample.delay[1].prepareToPlay(m_sampleRate, m_bufferSize);
         sample.compressor.prepare(spec);
         sample.compressor.setAttack(50.0f);
         sample.compressor.setRelease(500.0f);
+        sample.reverb.init(m_sampleRate, static_cast<size_t>(m_bufferSize), 2);
+        sample.reverb.setMix(0.0);
+        sample.reverb.setFeedback(0.5);
+        sample.reverb.setCutoff(10000.0);
     }
 
     // 3A - Scan Sample Packs
@@ -632,8 +636,8 @@ void mck::Processing::Process(float *outL, float *outR, unsigned nSamples)
             s.curSample = 1 - s.curSample;
         }
 
-        memset(s.dsp[0], 0, m_bufferSize * sizeof(float));
-        memset(s.dsp[1], 0, m_bufferSize * sizeof(float));
+        memset(s.dsp[0], 0, m_bufferSize * sizeof(double));
+        memset(s.dsp[1], 0, m_bufferSize * sizeof(double));
     }
 
     // Voices
@@ -764,10 +768,8 @@ void mck::Processing::Process(float *outL, float *outR, unsigned nSamples)
                 s.dsp[0][j] = s.compressor.processSample(0, s.dsp[0][j]);// * p.comp.makeupLin;
                 s.dsp[1][j] = s.compressor.processSample(1, s.dsp[1][j]);// * p.comp.makeupLin;
             }
-
-            outL[j] += s.delay[0].processSample(s.dsp[0][j]);
-            outR[j] += s.delay[1].processSample(s.dsp[1][j]);
-
+            //s.dsp[0][j] = s.delay[0].processSample(s.dsp[0][j]);
+            //s.dsp[1][j] = s.delay[1].processSample(s.dsp[1][j]);
             /*
             // Mix Buffers to master out
             outL[j] += (s.dsp[0][j] + (dly_l * p.delay.gainLin)); // * p.gainLeftLin));
@@ -777,6 +779,17 @@ void mck::Processing::Process(float *outL, float *outR, unsigned nSamples)
             s.delay[s.curDelay][0]->push(s.dsp[0][j] * (float)p.delay.active + p.delay.feedback * dly_l);
             s.delay[s.curDelay][1]->push(s.dsp[1][j] * (float)p.delay.active + p.delay.feedback * dly_r);
             */
+        }
+        s.delay[0].processBlock(const_cast<const double *>(s.dsp[0]), s.dsp[0]);
+        s.delay[1].processBlock(const_cast<const double *>(s.dsp[1]), s.dsp[1]);
+        s.reverb.processBlock(const_cast<const double **>(s.dsp), s.dsp);
+
+        for (size_t j = 0; j < nSamples; j++)
+        {
+
+            outL[j] += s.dsp[0][j];
+            outR[j] += s.dsp[1][j];
+
         }
     }
 

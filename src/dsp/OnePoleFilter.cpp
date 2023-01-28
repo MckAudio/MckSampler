@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <algorithm>
 
-namespace MckDsp
+namespace mck::dsp
 {
 
     void OnePoleFilter::prepareToPlay(double sampleRate, int samplesPerBlock)

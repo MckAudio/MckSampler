@@ -614,6 +614,8 @@ void MixerComponent::configChanged(const mck::sampler::Config &config)
             case Content::Level:
                 dials[d].setValue(config.pads[i].gain, juce::NotificationType::dontSendNotification);
                 break;
+            case Content::Reverb:
+                break;
             default:
                 break;
             }

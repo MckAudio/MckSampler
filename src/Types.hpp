@@ -6,8 +6,8 @@
 #include <MckHelper/WaveHelper.hpp>
 #include <juce_dsp/juce_dsp.h>
 
-#include "DelayModule.hpp"
-
+#include "dsp/DelayModule.hpp"
+#include "dsp/ReverbModule.hpp"
 namespace mck
 {
     struct AudioSample
@@ -19,11 +19,11 @@ namespace mck
         size_t newDelay;
         WaveInfo info[2];
         std::vector<std::vector<float>> buffer[2];
-        MckDsp::DelayModule delay[2];
-
+        mck::dsp::DelayModule delay[2];
         juce::dsp::Compressor<float> compressor;
+        mck::dsp::ReverbModule reverb;
         // Buffer
-        float *dsp[2];
+        double *dsp[2];
         /*
         float **pitchBuffer;
         float **outBuffer;

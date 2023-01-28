@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-namespace MckDsp
+namespace mck::dsp
 {
     DelayModule::DelayModule()
     {
@@ -12,7 +12,7 @@ namespace MckDsp
     {
     }
 
-    void DelayModule::prepareToPlay(double sampleRate, int samplesPerBlock)
+    void DelayModule::prepareToPlay(double sampleRate, int samplesPerBlock, int channelCount)
     {
         m_lpFilter.prepareToPlay(sampleRate, samplesPerBlock);
         m_hpFilter.prepareToPlay(sampleRate, samplesPerBlock);

@@ -62,7 +62,7 @@ class MenuComponent : public ControlComponentBase, public juce::Button::Listener
 
 
     private:
-    static const size_t numMenuItems { 5 };
+    static const size_t numMenuItems { 6 };
 
     ListenerList<Listener> menuListeners;
 
@@ -78,7 +78,7 @@ class MenuComponent : public ControlComponentBase, public juce::Button::Listener
         }
     }
 
-    juce::String items[numMenuItems] = {"Controls", "Samples", "Settings", "Pads", "Mixer"};
+    juce::String items[numMenuItems] = {"Controls", "Samples", "Settings", "Pads", "Mixer", "Webview"};
     juce::TextButton buttons[numMenuItems]; 
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MenuComponent)

@@ -394,7 +394,7 @@ bool mck::SampleExplorer::ApplyEditCommand(SampleEdit &cmd, GuiWindow *gui)
     return true;
 }
 
-void mck::SampleExplorer::ProcessAudio(float *outLeft, float *outRight, unsigned nframes)
+void mck::SampleExplorer::ProcessAudio(double *outLeft, double *outRight, unsigned nframes)
 {
     if (m_isInitialized == false)
     {

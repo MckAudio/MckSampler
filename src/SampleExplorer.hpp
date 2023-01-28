@@ -48,7 +48,7 @@ namespace mck
 
         bool ApplyEditCommand(SampleEdit &cmd, GuiWindow *gui);
         void StopSample();
-        void ProcessAudio(float *outLeft, float *outRight, unsigned nframes);
+        void ProcessAudio(double *outLeft, double *outRight, unsigned nframes);
 
     private:
         bool WritePack(std::string path, SamplePack &pack);

@@ -66,7 +66,6 @@ void mck::sampler::from_json(const nlohmann::json &j, Delay &d)
     d.mix = j.at("mix").get<double>();
 }
 
-
 void mck::sampler::to_json(nlohmann::json &j, const Compressor &c)
 {
     j["active"] = c.active;
@@ -78,13 +77,26 @@ void mck::sampler::to_json(nlohmann::json &j, const Compressor &c)
 }
 void mck::sampler::from_json(const nlohmann::json &j, Compressor &c)
 {
-    
+
     c.active = j.at("active").get<bool>();
     c.attackMs = std::max((unsigned)1, std::min((unsigned)500, j.at("attackMs").get<unsigned>()));
     c.releaseMs = std::max((unsigned)1, std::min((unsigned)1000, j.at("releaseMs").get<unsigned>()));
     c.threshold = std::max(-60.0, std::min(0.0, j.at("threshold").get<double>()));
     c.ratio = std::max(1.0, std::min(10.0, j.at("ratio").get<double>()));
     c.makeup = std::max(0.0, std::min(20.0, j.at("makeup").get<double>()));
+}
+
+void mck::sampler::to_json(nlohmann::json &j, const mck::sampler::Reverb &r)
+{
+    j["mix"] = r.mix;
+    j["feedback"] = r.feedback;
+    j["filter"] = r.filter;
+}
+void mck::sampler::from_json(const nlohmann::json &j, mck::sampler::Reverb &r)
+{
+    r.mix = j.at("mix").get<double>();
+    r.feedback = j.at("feedback").get<double>();
+    r.filter = j.at("filter").get<double>();
 }
 
 void mck::sampler::to_json(nlohmann::json &j, const mck::sampler::Pad &p)
@@ -122,32 +134,18 @@ void mck::sampler::from_json(const nlohmann::json &j, mck::sampler::Pad &p)
     p.gain = j.at("gain").get<double>();
     p.pan = j.at("pan").get<double>();
     p.pitch = j.at("pitch").get<double>();
+    p.delay = j.at("delay").get<Delay>();
+    p.comp = j.at("comp").get<Compressor>();
     try
     {
-        p.delay = j.at("delay").get<Delay>();
+        p.reverb = j.at("reverb").get<Reverb>();
     }
-    catch (std::exception &e)
+    catch (...)
     {
-        p.delay = Delay();
+        p.reverb = Reverb();
     }
-    try
-    {
-        p.comp = j.at("comp").get<Compressor>();
-    }
-    catch (std::exception &e)
-    {
-        p.comp = Compressor();
-    }
-    try
-    {
-        p.nPatterns = j.at("nPatterns").get<unsigned>();
-        p.patterns = j.at("patterns").get<std::vector<Pattern>>();
-    }
-    catch (std::exception &e)
-    {
-        p.nPatterns = 1;
-        p.patterns.resize(p.nPatterns);
-    }
+    p.nPatterns = j.at("nPatterns").get<unsigned>();
+    p.patterns = j.at("patterns").get<std::vector<Pattern>>();
 }
 
 void mck::sampler::to_json(nlohmann::json &j, const mck::sampler::Config &c)
@@ -168,9 +166,12 @@ void mck::sampler::to_json(nlohmann::json &j, const mck::sampler::Config &c)
 void mck::sampler::from_json(const nlohmann::json &j, mck::sampler::Config &c)
 {
     c.tempo = j.at("tempo").get<double>();
-    try {
+    try
+    {
         c.activePad = j.at("activePad").get<unsigned>();
-    } catch (std::exception &e) {
+    }
+    catch (std::exception &e)
+    {
         c.activePad = 0;
     }
     c.numPads = j.at("numPads").get<unsigned>();
@@ -214,9 +215,8 @@ bool mck::sampler::ScanSampleFolder(std::string path, std::vector<Sample> &sampl
     }
 
     // Sort List
-    std::sort(sampleList.begin(), sampleList.end(), [](Sample &a, Sample &b) {
-        return a.relativePath < b.relativePath;
-    });
+    std::sort(sampleList.begin(), sampleList.end(), [](Sample &a, Sample &b)
+              { return a.relativePath < b.relativePath; });
     return true;
 }
 
