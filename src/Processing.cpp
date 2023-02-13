@@ -165,8 +165,6 @@ bool mck::Processing::Init(unsigned sampleRate, unsigned blockSize)
     // 2B - Init FX
     for (auto &sample : m_samples)
     {
-        sample.dsp[0] = new double[m_bufferSize];
-        sample.dsp[1] = new double[m_bufferSize];
         sample.delay[0].prepareToPlay(m_sampleRate, m_bufferSize);
         sample.delay[1].prepareToPlay(m_sampleRate, m_bufferSize);
         sample.compressor.prepare(spec);
@@ -176,6 +174,8 @@ bool mck::Processing::Init(unsigned sampleRate, unsigned blockSize)
         sample.reverb.setMix(0.0);
         sample.reverb.setFeedback(0.5);
         sample.reverb.setCutoff(10000.0);
+        sample.dsp[0] = new double[m_bufferSize];
+        sample.dsp[1] = new double[m_bufferSize];
     }
 
     // 3A - Scan Sample Packs

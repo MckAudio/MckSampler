@@ -8,13 +8,27 @@ namespace mck::dsp
     }
     ReverbModule::~ReverbModule()
     {
+        if (m_isInitialized) {
+            m_isInitialized = false;
+            for (size_t i = 0; i < m_channelCount; i++)
+            {
+                delete[] m_buffer[i];
+                m_buffer[i] = nullptr;
+            }
+            delete[] m_buffer;
+            m_buffer = nullptr;
+
+            delete[] m_tmp;
+            m_tmp = nullptr;
+        }
     }
 
     void ReverbModule::init(double sampleRate, size_t bufferSize, size_t channelCount)
     {
         m_reverb.Init(sampleRate);
         //resizeBuffer(bufferSize, channelCount);
-        m_tmp.resize(channelCount, 0.0f);
+        m_tmp = new float[channelCount];
+        memset(m_tmp, 0, 2 * sizeof(float));
         m_bufferSize = bufferSize;
         m_channelCount = channelCount;
         m_sampleRate = sampleRate;
@@ -26,12 +40,17 @@ namespace mck::dsp
         double invMix = 1.0 - m_mix;
         if (m_channelCount >= 2)
         {
+            for (size_t i = 0; i < m_channelCount; i++)
+            {
+                memcpy(writePtr[i], readPtr[i], m_bufferSize * sizeof(double));
+            }
+            /*
             for (size_t i = 0; i < m_bufferSize; i++)
             {
                 m_reverb.Process(readPtr[0][i], readPtr[1][i], &(m_tmp[0]), &(m_tmp[1]));
                 writePtr[0][i] = m_mix * m_tmp[0] + invMix * readPtr[0][i];
                 writePtr[1][i] = m_mix * m_tmp[1] + invMix * readPtr[1][i];
-            }
+            }*/
         }
     }
     void ReverbModule::setMix(double mix)
@@ -55,17 +74,19 @@ namespace mck::dsp
     {
         if (channelCount != m_channelCount)
         {
-            m_buffer.resize(channelCount);
-            for (auto &buf : m_buffer)
+            m_buffer = new double*[channelCount];
+            for (size_t i = 0; i < channelCount; i++)
             {
-                buf.resize(m_bufferSize, 0.0);
+                m_buffer[i] = new double[m_bufferSize]; 
+                memset(m_buffer + i, 0, bufferSize * sizeof(double));
             }
         }
         else if (bufferSize != m_bufferSize)
         {
-            for (auto &buf : m_buffer)
+            for (size_t i = 0; i < channelCount; i++)
             {
-                buf.resize(m_bufferSize, 0.0);
+                m_buffer[i] = new double[m_bufferSize];
+                memset(m_buffer + i, 0, bufferSize * sizeof(double));
             }
         }
 

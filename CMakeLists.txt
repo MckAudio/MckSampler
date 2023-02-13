@@ -2,8 +2,10 @@ cmake_minimum_required(VERSION 3.15)
 
 project(MCK_SAMPLER VERSION 0.0.1)
 
+set(CMAKE_CXX_STANDARD 17)
+
 if (APPLE)
-	set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "Minimum OS X deployment version" FORCE)
+	set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15" CACHE STRING "Minimum OS X deployment version" FORCE)
 endif()
 
 find_library(JACK NAMES jack PATHS /usr/lib /usr/lib64 /usr/lib64/pipewire-0.3/jack)
@@ -85,7 +87,7 @@ target_link_libraries(MckSamplerApp
     nlohmann_json
     MckHelper
     MckBinaryData
-    DasySP
+    DaisySP
     ${JACK}
     juce::juce_audio_basics
     juce::juce_audio_devices

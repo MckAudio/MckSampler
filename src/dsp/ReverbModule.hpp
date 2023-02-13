@@ -1,6 +1,6 @@
 #pragma once
 #include <vector>
-#include <reverbsc.h>
+#include <Effects/reverbsc.h>
 
 namespace mck
 {
@@ -23,8 +23,8 @@ namespace mck
             private:
             void resizeBuffer(size_t bufferSize, size_t channelCount);
 
-            std::vector<std::vector<double>> m_buffer;
-            std::vector<float> m_tmp;
+            double **m_buffer;
+            float *m_tmp;
 
             bool m_isInitialized { false };
             double m_sampleRate { 0 };

@@ -49,6 +49,7 @@ namespace mck
                 delete delay[1];
                 delay[1] = nullptr;
             }*/
+            
             if (dsp[0] != nullptr)
             {
                 delete dsp[0];
