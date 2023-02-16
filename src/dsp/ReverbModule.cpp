@@ -1,5 +1,6 @@
 #include "ReverbModule.hpp"
 #include <algorithm>
+#include <cstring>
 
 namespace mck::dsp
 {
