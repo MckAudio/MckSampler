@@ -170,10 +170,10 @@ bool mck::Processing::Init(unsigned sampleRate, unsigned blockSize)
         sample.compressor.prepare(spec);
         sample.compressor.setAttack(50.0f);
         sample.compressor.setRelease(500.0f);
-        sample.reverb.init(m_sampleRate, static_cast<size_t>(m_bufferSize), 2);
+        /*sample.reverb.init(m_sampleRate, static_cast<size_t>(m_bufferSize), 2);
         sample.reverb.setMix(0.0);
         sample.reverb.setFeedback(0.5);
-        sample.reverb.setCutoff(10000.0);
+        sample.reverb.setCutoff(10000.0);*/
         sample.dsp[0] = new double[m_bufferSize];
         sample.dsp[1] = new double[m_bufferSize];
     }
@@ -782,7 +782,7 @@ void mck::Processing::Process(float *outL, float *outR, unsigned nSamples)
         }
         s.delay[0].processBlock(const_cast<const double *>(s.dsp[0]), s.dsp[0]);
         s.delay[1].processBlock(const_cast<const double *>(s.dsp[1]), s.dsp[1]);
-        s.reverb.processBlock(const_cast<const double **>(s.dsp), s.dsp);
+        //s.reverb.processBlock(const_cast<const double **>(s.dsp), s.dsp);
 
         for (size_t j = 0; j < nSamples; j++)
         {

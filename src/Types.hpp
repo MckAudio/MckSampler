@@ -21,7 +21,7 @@ namespace mck
         std::vector<std::vector<float>> buffer[2];
         mck::dsp::DelayModule delay[2];
         juce::dsp::Compressor<float> compressor;
-        mck::dsp::ReverbModule reverb;
+        //mck::dsp::ReverbModule reverb;
         // Buffer
         double *dsp[2];
         /*
