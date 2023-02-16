@@ -72,6 +72,11 @@ public:
             contentComponent = new PadsComponent();
             addAndMakeVisible(contentComponent);
             break;
+        case Content::Webview:
+            contentComponent = new WebBrowserComponent();
+            static_cast<WebBrowserComponent *>(contentComponent)->goToURL("http://localhost:5173");
+            addAndMakeVisible(contentComponent);
+            break;
         case Content::Settings:
         case Content::Length:
         default:

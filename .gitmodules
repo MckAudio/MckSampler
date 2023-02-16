@@ -16,3 +16,6 @@
 [submodule "deps/DaisySP"]
 	path = deps/DaisySP
 	url = ../DaisySP.git
+[submodule "gui/src/mck"]
+	path = gui/src/mck
+	url = ../MckSvelte.git

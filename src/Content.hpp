@@ -14,6 +14,7 @@ public:
         Settings,
         Pads,
         Mixer,
+        Webview,
         Length
     };
 

@@ -28,7 +28,7 @@ private:
     public:
         MainWindow(const juce::String &name, juce::Component *c, JUCEApplication &a)
             : DocumentWindow(name,
-                             getLookAndFeel().findColour(DocumentWindow::backgroundColourId),
+                             juce::Colours::black,
                              juce::DocumentWindow::minimiseButton | juce::DocumentWindow::closeButton),
               app(a)
         {
