@@ -5,7 +5,7 @@
     export let style: "dark" | "light" | "custom" = "light";
     export let activeContent = -1;
 
-    let pages = ["Controls", "Settings", "Pads", "Mixer", "Sequence"];
+    let pages = ["Controls", "Settings", "Pads", "Mixer", "Sequence", "Samples"];
     $: console.log(style);
 </script>
 

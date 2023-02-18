@@ -1,0 +1,38 @@
+meta:
+  author: Matt McK
+classes:
+  SamplePackSample:
+    type: class
+    members:
+      path:
+        type: string
+      name:
+        type: string
+      type:
+        type: unsigned
+        default: 0
+      index:
+        type: unsigned
+        default: 0
+  SamplePack:
+    type: class
+    members:
+      name:
+        type: string
+      picture:
+        type: string
+      sampleRate:
+        type: unsigned
+      numBits:
+        type: unsigned
+      numChannels:
+        type: unsigned
+      categories:
+        type: array
+        items:
+          type: string
+      samples:
+        type: array
+        items:
+          type: link
+          name: SamplePackSample

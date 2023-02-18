@@ -1,12 +1,40 @@
 <script lang="ts">
     import Toggle from "../../../src/mck/controls/Toggle.svelte";
     import TextInput from "../../../src/mck/controls/TextInput.svelte";
+    import { onMount } from "svelte";
 
     export let style: "dark" | "light" | "custom" = "dark";
 
     let jackTransport = false;
 
     let someContent = "Hey ho";
+
+    let fullscreen = false;
+
+    function toggleFullscreen(val) {
+        let elem = document.documentElement;
+
+        if (val) {
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+            }
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            }
+        }
+
+        fullscreen = val;
+    }
+
+    onMount(() => {
+        fullscreen = document.webkitFullscreenElement !== null;
+    })
+
 </script>
 
 <div class="main {style}">
@@ -18,6 +46,9 @@
             style = val ? "dark" : "light";
         }}
     />
+    <div />
+    <div class="label">Fullscreen:</div>
+    <Toggle {style} active={fullscreen} Handler={toggleFullscreen}/>
     <div />
     <div class="label">Jack Transport:</div>
     <Toggle {style} bind:active={jackTransport} />

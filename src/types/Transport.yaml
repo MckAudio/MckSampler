@@ -10,6 +10,8 @@ classes:
       tempo:
         type: float
         default: 120.0
+      pulse:
+        type: unsigned
       pulseIdx:
         type: unsigned
       nPulses:

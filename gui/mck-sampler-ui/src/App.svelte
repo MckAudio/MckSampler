@@ -1,6 +1,6 @@
 <script lang="ts">
   import Settings from "./pages/Settings.svelte";
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import ContentSelector from "./ContentSelector.svelte";
   import EnginePads from "./EnginePads.svelte";
   import EngineSelector from "./EngineSelector.svelte";
@@ -11,8 +11,10 @@
   import type { BackendMessage } from "./tools/Types";
   import { TransportState } from "./types/Transport";
   import { SamplerConfig } from "./types/Sampler";
-    import Sequencer from "./pages/Sequencer.svelte";
-    import TransportBar from "./TransportBar.svelte";
+  import Sequencer from "./pages/Sequencer.svelte";
+  import TransportBar from "./TransportBar.svelte";
+    import Samples from "./pages/Samples.svelte";
+    import type { SamplePack } from "./types/Samples";
 
   export let style: "dark" | "light" | "custom" = "dark";
 
@@ -20,6 +22,12 @@
   let idx = 0;
   let config = new SamplerConfig();
   let transport = new TransportState();
+  let samples: Array<SamplePack> = [];
+  let mainElem: HTMLElement;
+
+  let w = 0;
+  let target = [800, 480];
+  let h = 0;
 
   function ReceiveBackendMessage(event: CustomEvent) {
     let msg = event.detail as BackendMessage;
@@ -28,7 +36,26 @@
       config = msg.data as SamplerConfig;
     } else if (msg.section === "transport" && msg.msgType === "realtime") {
       transport = msg.data as TransportState;
+    } else if (msg.section === "samples" && msg.msgType === "packs") {
+      samples = msg.data as Array<SamplePack>;
     }
+  }
+
+  $: {
+    let c = w/h;
+    let tc = target[0]/target[1];
+    let z = 1.0;
+
+    if (c > tc) {
+      z = h/target[1];
+    } else {
+      z = w/target[0];
+    }
+    if (mainElem) {
+      mainElem.style.zoom = `${z*100.0}%`;
+    }
+    console.log(w, h, z);
+
   }
 
   onMount(() => {
@@ -38,19 +65,27 @@
       msgType: "get",
       data: "",
     });
+    SendToBackend({
+      section: "samples",
+      msgType: "get",
+      data: "",
+    });
+  });
+  onDestroy(() => {
+    document.removeEventListener("backendMessage", ReceiveBackendMessage);
   });
 </script>
 
-{#if config !== undefined}
-  <div class="main {style}">
+<div bind:clientHeight={h} bind:clientWidth={w} class="scaler">
+  <div bind:this={mainElem} id="mainview" class="main {style}">
     <div class="side left">
       <ContentSelector bind:activeContent {style} />
     </div>
     <div class="side right">
-      <TransportBar {style} {transport}/>
+      <TransportBar {style} {transport} />
     </div>
     <div class="header">
-      {#if activeContent === 0 || activeContent === 4}
+      {#if activeContent === 0 || activeContent === 4 || activeContent === 5}
         <EngineSelector {style} bind:idx />
       {/if}
     </div>
@@ -70,16 +105,27 @@
         <Mixer {style} {config} />
       {:else if activeContent === 4}
         <Sequencer {style} {config} {transport} {idx} />
+      {:else if activeContent === 5}
+        <Samples {style} {config} {samples} {idx} />
       {/if}
     </div>
   </div>
-{/if}
+</div>
 
 <style>
   :root {
     padding: 0px;
     margin: 0px;
     font-family: "mck-lato", "Lato";
+  }
+
+  .scaler {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    justify-items: center;
+    align-items: center;
+    overflow: hidden;
   }
 
   .main {
