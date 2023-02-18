@@ -76,7 +76,8 @@ int main(int argc, char **argv)
     guiSettings.port = 3000;
     m_gui.ShowDebug(guiSettings);
 #else
-    guiSettings.path = "/usr/share/mck-sampler/gui";
+    //guiSettings.path = "/usr/share/mck-sampler/gui";
+    guiSettings.path = "/home/matt/Development/MckSamplerRpi/gui/mck-sampler-ui/dist";
     guiSettings.port = 9002;
     m_gui.Show(guiSettings);
 #endif

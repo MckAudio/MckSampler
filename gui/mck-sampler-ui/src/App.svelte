@@ -9,15 +9,17 @@
   import Pads from "./pages/Pads.svelte";
   import { SendToBackend } from "./tools/Backend.svelte";
   import type { BackendMessage } from "./tools/Types";
-  import type { TransportState } from "./types/Transport";
+  import { TransportState } from "./types/Transport";
   import { SamplerConfig } from "./types/Sampler";
     import Sequencer from "./pages/Sequencer.svelte";
+    import TransportBar from "./TransportBar.svelte";
 
   export let style: "dark" | "light" | "custom" = "dark";
 
   let activeContent = 0;
   let idx = 0;
   let config = new SamplerConfig();
+  let transport = new TransportState();
 
   function ReceiveBackendMessage(event: CustomEvent) {
     let msg = event.detail as BackendMessage;
@@ -25,7 +27,7 @@
     if (msg.section === "data" && msg.msgType === "full") {
       config = msg.data as SamplerConfig;
     } else if (msg.section === "transport" && msg.msgType === "realtime") {
-      let rt = msg.data as TransportState;
+      transport = msg.data as TransportState;
     }
   }
 
@@ -44,7 +46,9 @@
     <div class="side left">
       <ContentSelector bind:activeContent {style} />
     </div>
-    <div class="side right" />
+    <div class="side right">
+      <TransportBar {style} {transport}/>
+    </div>
     <div class="header">
       {#if activeContent === 0 || activeContent === 4}
         <EngineSelector {style} bind:idx />
@@ -65,7 +69,7 @@
       {:else if activeContent === 3}
         <Mixer {style} {config} />
       {:else if activeContent === 4}
-        <Sequencer {style} {config} {idx} />
+        <Sequencer {style} {config} {transport} {idx} />
       {/if}
     </div>
   </div>

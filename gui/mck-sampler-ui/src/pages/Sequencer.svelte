@@ -3,15 +3,27 @@
     import { onDestroy, onMount } from "svelte/internal";
     import TogglePad from "../../../src/mck/controls/TogglePad.svelte";
     import { SamplerConfig } from "../types/Sampler";
+    import { TransportState } from "..//types/Transport";
 
     export let style: "dark" | "light" | "custom" = "dark";
     export let config = new SamplerConfig();
+    export let transport = new TransportState();
     export let idx = -1;
 
     let arr = Array.from({ length: 16 }, (_, i) => [i + 1, false]);
     let selA = -1;
     let padInterval = -1;
 
+    let stepIdx = -1;
+
+    $: console.log(transport, stepIdx);
+    $: if (transport !== undefined) {
+        let pulsesPer16th = transport.nPulses / 4.0;
+        stepIdx = Math.floor(
+            transport.beat * 4.0 +
+                ((transport.pulse / pulsesPer16th) % transport.nPulses)
+        );
+    }
     onMount(() => {
         //padInterval = window.setInterval(() => {selA = (selA + 1) % 16}, 300);
     });
@@ -28,7 +40,7 @@
             <TogglePad
                 {style}
                 label={i+1}
-                selected={i === selA}
+                selected={i === stepIdx}
                 emphasize={i % 4 === 0}
                 active={step.active}
                 Handler={(v) => {
