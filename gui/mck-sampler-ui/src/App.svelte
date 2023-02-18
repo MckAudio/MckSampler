@@ -11,6 +11,7 @@
   import type { BackendMessage } from "./tools/Types";
   import type { TransportState } from "./types/Transport";
   import { SamplerConfig } from "./types/Sampler";
+    import Sequencer from "./pages/Sequencer.svelte";
 
   export let style: "dark" | "light" | "custom" = "dark";
 
@@ -63,6 +64,8 @@
         <Pads {style} />
       {:else if activeContent === 3}
         <Mixer {style} {config} />
+      {:else if activeContent === 4}
+        <Sequencer {style} {config} />
       {/if}
     </div>
   </div>

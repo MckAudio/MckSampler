@@ -55,18 +55,55 @@
                 }
             },
         },
+        {
+            name: "Feedback",
+            key: "feedback",
+            sub: "delay",
+            unit: "%",
+            dec: 0,
+            default: 10.0,
+            formatValue: (val) => {
+                return val * 100.0; 
+            },
+            extractValue: (val) => {
+                return val / 100.0;
+            }
+        },
+        {
+            name: "Time",
+            key: "timeMs",
+            sub: "delay",
+            unit: "ms",
+            dec: 0,
+            default: 100.0,
+            formatValue: (val) => {
+                return Math.pow(10.0, (val * 2.0 + 1.0));
+            },
+            extractValue: (val) => {
+                return Math.log10(val / 10.0) * 0.5;
+            }
+        }
     ];
 </script>
 
 {#if data !== undefined && idx >= 0}
     <div class="main">
         {#each controls as ctrl}
+        {#if ctrl.sub}
+            <Dial
+                {style}
+                value={data[ctrl.sub][ctrl.key]}
+                settings={ctrl}
+                Handler={(v) => ChangeData(["pads", idx, ctrl.sub, ctrl.key], v)}
+            />
+            {:else}
             <Dial
                 {style}
                 value={data[ctrl.key]}
                 settings={ctrl}
                 Handler={(v) => ChangeData(["pads", idx, ctrl.key], v)}
             />
+            {/if}
         {/each}
     </div>
 {/if}
@@ -75,7 +112,7 @@
     .main {
         margin: 8px;
         display: grid;
-        grid-template-columns: repeat(4, auto) 1fr;
+        grid-template-columns: repeat(8, auto) 1fr;
         gap: 16px;
     }
 </style>

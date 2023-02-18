@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { SamplerConfig } from "../types/Sampler";
     import Dial from "../../../src/mck/controls/Dial.svelte";
+    import Toggle from "../../../src/mck/controls/Toggle.svelte";
     import type { DialSettings } from "../../../src/mck/controls/Types";
     import {
         DbToLog,
@@ -8,7 +9,7 @@
         LogToDb,
         PanToLin,
     } from "../../../src/mck/utils/Tools.svelte";
-import { ChangeData } from "../tools/Backend.svelte";
+    import { ChangeData } from "../tools/Backend.svelte";
 
     export let style: "dark" | "light" | "custom" = "dark";
     export let config: SamplerConfig = undefined;
@@ -31,7 +32,7 @@ import { ChangeData } from "../tools/Backend.svelte";
             default: 0.0,
             formatValue: (val) => LogToDb(val, -60.0, 6.0),
             extractValue: (val) => DbToLog(val, -60.0, 6.0),
-        },
+        }
     ];
 
     let rows = [0, 1, 2, 3];
@@ -40,16 +41,27 @@ import { ChangeData } from "../tools/Backend.svelte";
 
     $: console.log("CONFIG", config);
     $: numPads = Math.min(config.numPads, 8);
-    $: pads = Array.from({length: numPads}, (v, i) => config.pads[i]);
-
+    $: pads = Array.from({ length: numPads }, (v, i) => config.pads[i]);
 </script>
 
 {#if config !== undefined}
     <div class="main">
         {#each controls as ctrl}
             {#each pads as pad, i}
-                <Dial {style} settings={ctrl} value={pad[ctrl.key]} Handler={v => ChangeData(["pads", i, ctrl.key], v)} />
+                <Dial
+                    {style}
+                    settings={ctrl}
+                    value={pad[ctrl.key]}
+                    Handler={(v) => ChangeData(["pads", i, ctrl.key], v)}
+                />
             {/each}
+        {/each}
+        {#each pads as pad, i}
+            <Toggle
+                {style}
+                active={pad.delay.active}
+                Handler={(v) => ChangeData(["pads", i, "delay", "active"], v)}
+            />
         {/each}
     </div>
 {/if}
@@ -61,6 +73,7 @@ import { ChangeData } from "../tools/Backend.svelte";
         display: grid;
         grid-template-columns: repeat(8, 1fr);
         grid-template-rows: repeat(4, 1fr);
+        grid-auto-flow: row;
         gap: 7px 15px;
     }
 </style>

@@ -77,7 +77,7 @@ namespace mck
                   timeSamps(0),
                   gain(-6.0),
                   gainLin(0.0),
-                  feedback(0.5)
+                  feedback(50.0)
             {
             }
         };

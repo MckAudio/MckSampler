@@ -664,8 +664,8 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
             out_r[j] += (s.dsp[1][j] + (dly_r * p.delay.gainLin)); // * p.gainRightLin));
 
             // Delay
-            s.delay[s.curDelay][0]->push(s.dsp[0][j] * (float)p.delay.active + p.delay.feedback * dly_l);
-            s.delay[s.curDelay][1]->push(s.dsp[1][j] * (float)p.delay.active + p.delay.feedback * dly_r);
+            s.delay[s.curDelay][0]->push(s.dsp[0][j] * (float)p.delay.active + p.delay.feedback / 100.0 * dly_l);
+            s.delay[s.curDelay][1]->push(s.dsp[1][j] * (float)p.delay.active + p.delay.feedback / 100.0 * dly_r);
         }
     }
 
