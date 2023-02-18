@@ -46,7 +46,7 @@
     </div>
     <div class="side right" />
     <div class="header">
-      {#if activeContent === 0}
+      {#if activeContent === 0 || activeContent === 4}
         <EngineSelector {style} bind:idx />
       {/if}
     </div>
@@ -65,7 +65,7 @@
       {:else if activeContent === 3}
         <Mixer {style} {config} />
       {:else if activeContent === 4}
-        <Sequencer {style} {config} />
+        <Sequencer {style} {config} {idx} />
       {/if}
     </div>
   </div>

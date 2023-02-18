@@ -1,10 +1,12 @@
 <script lang="ts">
+    import { ChangeData } from "../tools/Backend.svelte";
     import { onDestroy, onMount } from "svelte/internal";
     import TogglePad from "../../../src/mck/controls/TogglePad.svelte";
     import { SamplerConfig } from "../types/Sampler";
 
     export let style: "dark" | "light" | "custom" = "dark";
     export let config = new SamplerConfig();
+    export let idx = -1;
 
     let arr = Array.from({ length: 16 }, (_, i) => [i + 1, false]);
     let selA = -1;
@@ -20,18 +22,21 @@
 </script>
 
 <main class="main">
-    {#each arr as a, i}
-        <TogglePad
-            {style}
-            label={a[0].toString()}
-            selected={i === selA}
-            emphasize={i%4 === 0}
-            active={a[1]}
-            Handler={(v) => {
-                a[1] = v;
-            }}
-        />
-    {/each}
+    <div class="blank"/>
+    {#if idx >= 0 && idx < config.pads.length}
+        {#each config.pads[idx].patterns[0].steps as step, i}
+            <TogglePad
+                {style}
+                label={i+1}
+                selected={i === selA}
+                emphasize={i % 4 === 0}
+                active={step.active}
+                Handler={(v) => {
+                    ChangeData(["pads", idx, "patterns", 0, "steps", i, "active"], v);
+                }}
+            />
+        {/each}
+    {/if}
 </main>
 
 <style>
@@ -42,8 +47,11 @@
 
         display: grid;
         grid-template-columns: repeat(8, 1fr);
-        grid-template-rows: auto auto 1fr;
+        grid-template-rows: 1fr 2fr 2fr 1fr;
         gap: 16px;
         user-select: none;
+    }
+    .blank {
+        grid-column: 1/-1;
     }
 </style>
