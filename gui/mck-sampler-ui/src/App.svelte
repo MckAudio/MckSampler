@@ -23,6 +23,7 @@
   let config = new SamplerConfig();
   let transport = new TransportState();
   let samples: Array<SamplePack> = [];
+  let currentSample = undefined;
   let mainElem: HTMLElement;
 
   let w = 0;
@@ -38,7 +39,13 @@
       transport = msg.data as TransportState;
     } else if (msg.section === "samples" && msg.msgType === "packs") {
       samples = msg.data as Array<SamplePack>;
+    } else if (msg.section === "samples" && msg.msgType === "info") {
+      currentSample = msg.data;
+      console.log(msg.section, msg.msgType, msg.data);
+    } else {
+      console.log(msg.section, msg.msgType, msg.data);
     }
+
   }
 
   $: {
@@ -106,7 +113,7 @@
       {:else if activeContent === 4}
         <Sequencer {style} {config} {transport} {idx} />
       {:else if activeContent === 5}
-        <Samples {style} {config} {samples} {idx} />
+        <Samples {style} {config} {samples} {currentSample} {idx} />
       {/if}
     </div>
   </div>

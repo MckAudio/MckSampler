@@ -2,6 +2,7 @@
     import Toggle from "../../../src/mck/controls/Toggle.svelte";
     import TextInput from "../../../src/mck/controls/TextInput.svelte";
     import { onMount } from "svelte";
+    import { autoPlaySample } from "../tools/stores";
 
     export let style: "dark" | "light" | "custom" = "dark";
 
@@ -52,6 +53,9 @@
     <div />
     <div class="label">Jack Transport:</div>
     <Toggle {style} bind:active={jackTransport} />
+    <div/>
+    <div class="label">Auto Play:</div>
+    <Toggle {style} active={$autoPlaySample} Handler={val => {autoPlaySample.set(val);}}/>
     <div/>
     <div class="label">Text Input:</div>
     <TextInput {style} content={someContent} name="text input"/>
