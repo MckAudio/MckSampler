@@ -12,7 +12,7 @@
 #include <concurrentqueue.h>
 
 #include <GuiWindow.hpp>
-#include "helper/Transport.hpp"
+#include <MckHelper/Transport.hpp>
 #include "Types.hpp"
 #include "Config.hpp"
 #include "ConfigFile.hpp"
@@ -35,6 +35,7 @@ namespace mck
 
         bool Init();
         void Close();
+        void PrepareBuffers(unsigned bufferSize, unsigned sampleRate, bool clear = true);
 
         void ReceiveMessage(mck::Message &msg);
 

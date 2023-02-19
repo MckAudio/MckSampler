@@ -7,6 +7,8 @@
     import { SampleSelector } from "../tools/Types";
     import WaveForm from "../../../src/mck/dsp/WaveForm.svelte";
     import { autoPlaySample } from "../tools/stores";
+    import TogglePad from "../../../src/mck/controls/TogglePad.svelte";
+    import Toggle from "../../../src/mck/controls/Toggle.svelte";
 
     export let style: "dark" | "light" | "custom" = "dark";
     export let config = new SamplerConfig();
@@ -20,6 +22,7 @@
     let sampleNames: Array<SamplePackSample> = [];
     let sampleSel: Array<SampleSelector> = [];
     let activeSampleSel = new SampleSelector();
+    let activeSampleIdx = -1;
 
     function pathJoin(p1: string, p2: string): string {
         return p1 + p2.substring(1);
@@ -111,8 +114,34 @@
         sampleSel = samps;
         console.log(sampleSel);
 
-        if (sampleSel.findIndex((v) => v.path === activeSampleSel.path) < 0) {
+        activeSampleIdx = sampleSel.findIndex(
+            (v) => v.path === activeSampleSel.path
+        );
+        if (activeSampleIdx < 0) {
             activeSampleSel = new SampleSelector();
+        }
+    }
+
+    function NextSample() {
+        if (activeSampleIdx >= 0 && activeSampleIdx < sampleSel.length - 1) {
+            activeSampleIdx += 1;
+            if ($autoPlaySample) {
+                PlaySample(activeSampleIdx);
+            } else {
+                SelectSample(activeSampleIdx);
+            }
+            document.getElementById(`sample${activeSampleIdx}`).scrollIntoView({behavior: 'smooth', block: 'nearest'});
+        }
+    }
+    function PrevSample() {
+        if (activeSampleIdx > 0 && activeSampleIdx < sampleSel.length) {
+            activeSampleIdx -= 1;
+            if ($autoPlaySample) {
+                PlaySample(activeSampleIdx);
+            } else {
+                SelectSample(activeSampleIdx);
+            }
+            document.getElementById(`sample${activeSampleIdx}`).scrollIntoView({behavior: 'smooth', block: 'nearest'});
         }
     }
 
@@ -129,11 +158,13 @@
             }),
         });
         activeSampleSel = sampleSel[_idx];
+        activeSampleIdx = _idx;
     }
     function PlaySample(_idx?: number) {
         let _sample = activeSampleSel;
         if (_idx !== undefined) {
             _sample = sampleSel[_idx];
+            activeSampleIdx = _idx;
         }
         SendToBackend({
             section: "samples",
@@ -214,7 +245,7 @@
     <div class="title">Pack</div>
     <div class="title">Category</div>
     <div class="title">Samples</div>
-    <div class="title">Controls</div>
+    <div class="title">Info</div>
     <div class="list packs">
         {#each samples as pack, i}
             <div
@@ -252,6 +283,7 @@
     <div class="list samples">
         {#each sampleSel as sample, i}
             <div
+                id="sample{i}"
                 class="item {config.pads[idx].samplePath === sample.path
                     ? 'highlight'
                     : ''} {activeSampleSel.path === sample.path
@@ -270,17 +302,45 @@
         {/each}
     </div>
     <div class="info">
-        {#if activeSampleSel.path !== ""}
-            <SelectorPad label="Preview" Handler={() => PlaySample()} />
-            <SelectorPad label="Stop" Handler={() => StopSample()} />
-            <SelectorPad label="Assign" Handler={() => AssignSample()} />
+        {#if currentSample !== undefined && currentSample.relPath === activeSampleSel.path}
+            <i>Name:</i>
+            <span>{currentSample.name}</span>
+            <i>Length:</i>
+            <span>{(Math.round(currentSample.lengthMs / 100.0) / 10.0).toFixed(1)} s</span>
+            <i>Rate:</i>
+            <span>{currentSample.sampleRate} Hz</span>
         {/if}
     </div>
-    {#if currentSample !== undefined && currentSample.relPath === activeSampleSel.path}
-        <div class="wave">
-            <WaveForm data={currentSample.waveForm} />
-        </div>
-    {/if}
+    <div class="title">Controls</div>
+    <div class="controls">
+        <i>Auto Play:</i>
+        <Toggle {style} active={$autoPlaySample} Handler={val => {autoPlaySample.set(val);}}/>
+        {#if activeSampleSel.path !== ""}
+            <SelectorPad label="Preview" Handler={() => PlaySample()} />
+            <SelectorPad
+                selected={config.pads[idx].samplePath === activeSampleSel.path}
+                label="Assign"
+                Handler={() => AssignSample()}
+            />
+            <SelectorPad
+                label="< Prev"
+                disabled={activeSampleIdx <= 0 ||
+                    activeSampleIdx >= sampleSel.length}
+                Handler={PrevSample}
+            />
+            <SelectorPad
+                label="Next >"
+                disabled={activeSampleIdx < 0 ||
+                    activeSampleIdx >= sampleSel.length - 1}
+                Handler={NextSample}
+            />
+        {/if}
+    </div>
+    <div class="wave">
+        {#if currentSample !== undefined && currentSample.relPath === activeSampleSel.path}
+            <WaveForm {style} data={currentSample.waveForm} />
+        {/if}
+    </div>
 </div>
 
 <style>
@@ -288,28 +348,47 @@
         height: 100%;
         width: 100%;
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        grid-template-rows: auto 1fr auto;
+        grid-template-columns: 2fr 2fr 4fr 3fr;
+        grid-template-rows: auto 1fr auto auto 50px;
         overflow: hidden;
     }
     .wave {
-        height: 50px;
+        border-top: 1px solid #3a3a3a;
         width: 100%;
         grid-column: 1/-1;
-        border-top: 1px solid #555;
     }
     .info {
         display: grid;
         padding: 8px;
-        grid-auto-rows: 32px;
+        grid-auto-rows: min-content;
+        grid-template-columns: 1fr 2fr;
+        row-gap: 4px;
+        column-gap: 8px;
+    }
+    .info i {
+        color: #a0a0a0;
+        text-align: right;
+    }
+    .info span {
+        color: #f0f0f0;
+    }
+    .controls {
+        display: grid;
+        padding: 8px;
+        grid-template-rows: repeat(3, 32px);
         grid-template-columns: 1fr 1fr;
         grid-gap: 8px;
+    }
+    .controls i {
+        line-height: 32px;
+        color: #a0a0a0;
+        text-align: right;
     }
     .title {
         color: #f0f0f0;
         text-align: center;
         font-style: italic;
-        border-bottom: 1px solid #505050;
+        border-bottom: 1px solid #3a3a3a;
         padding-bottom: 4px;
     }
     .list {
@@ -319,6 +398,7 @@
         grid-auto-rows: 32px;
         gap: 8px;
         overflow-y: auto;
+        grid-row: span 3;
     }
     .item {
         color: #f0f0f0;
@@ -331,7 +411,7 @@
         -webkit-user-select: none;
     }
     .item:nth-child(2n) {
-        background-color: #353535;
+        background-color: #3a3a3a;
     }
     .item.active {
         color: #ff9900;

@@ -8,7 +8,7 @@
             "name": "(gdb) Starten",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/debug/mck-sampler",
+            "program": "${workspaceFolder}/bdeb/mck-sampler",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

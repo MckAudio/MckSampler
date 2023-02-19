@@ -5,7 +5,7 @@
 #include <atomic>
 #include <mutex>
 #include <condition_variable>
-#include "helper/WaveHelper.hpp"
+#include <MckHelper/WaveHelper.hpp>
 
 namespace mck
 {

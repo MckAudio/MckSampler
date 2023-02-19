@@ -1,0 +1,23 @@
+meta:
+  author: Matt McK
+classes:
+  Ports:
+    type: class
+    members:
+      inputs:
+        type: array
+        items:
+          type: string
+      outputs:
+        type: array
+        items:
+          type: string
+  ConnectCmd:
+    type: class
+    members:
+      channel:
+        type: unsigned
+        default: 0
+      port:
+        type: string
+        default: ""

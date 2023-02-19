@@ -11,8 +11,8 @@
 
 // OWN Header
 #include "Config.hpp"
-#include "helper/JackHelper.hpp"
-#include "helper/Transport.hpp"
+#include <MckHelper/JackHelper.hpp>
+#include <MckHelper/Transport.hpp>
 #include "Processing.hpp"
 
 // APP

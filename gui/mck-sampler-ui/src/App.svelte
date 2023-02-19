@@ -15,6 +15,7 @@
   import TransportBar from "./TransportBar.svelte";
     import Samples from "./pages/Samples.svelte";
     import type { SamplePack } from "./types/Samples";
+    import { Ports } from "./types/System";
 
   export let style: "dark" | "light" | "custom" = "dark";
 
@@ -23,6 +24,7 @@
   let config = new SamplerConfig();
   let transport = new TransportState();
   let samples: Array<SamplePack> = [];
+  let ports = new Ports();
   let currentSample = undefined;
   let mainElem: HTMLElement;
 
@@ -37,15 +39,16 @@
       config = msg.data as SamplerConfig;
     } else if (msg.section === "transport" && msg.msgType === "realtime") {
       transport = msg.data as TransportState;
+      return;
     } else if (msg.section === "samples" && msg.msgType === "packs") {
       samples = msg.data as Array<SamplePack>;
     } else if (msg.section === "samples" && msg.msgType === "info") {
       currentSample = msg.data;
-      console.log(msg.section, msg.msgType, msg.data);
-    } else {
-      console.log(msg.section, msg.msgType, msg.data);
+    } else if (msg.section === "system" && msg.msgType === "ports") {
+      ports = msg.data as Ports;
     }
 
+    console.log(msg.section, msg.msgType, msg.data);
   }
 
   $: {
@@ -105,7 +108,7 @@
       {#if activeContent === 0}
         <Controls {style} {idx} data={config.pads[idx]} />
       {:else if activeContent === 1}
-        <Settings bind:style />
+        <Settings bind:style {ports} {config}/>
       {:else if activeContent === 2}
         <Pads {style} />
       {:else if activeContent === 3}
@@ -182,6 +185,7 @@
     grid-row: -2/-1;
     grid-column: 2/-2;
     overflow: hidden;
+    z-index: 3;
   }
   .content {
     grid-row: 2/-2;

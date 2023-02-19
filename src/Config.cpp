@@ -1,5 +1,5 @@
 #include "Config.hpp"
-#include "helper/DspHelper.hpp"
+#include <MckHelper/DspHelper.hpp>
 
 void mck::sampler::to_json(nlohmann::json &j, const mck::sampler::Sample &s)
 {

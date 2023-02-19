@@ -41,7 +41,6 @@
 		) {
 			data = _event.detail.data;
 			dataReady = true;
-			console.log("MSG", JSON.stringify(_event.detail));
 		} else if (
 			_event.detail.section === "transport" &&
 			_event.detail.msgType === "realtime"

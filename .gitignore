@@ -1,4 +1,7 @@
 bin
+build
+brel
+bdeb
 samplepad
 www/build
 www/dist

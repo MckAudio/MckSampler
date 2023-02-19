@@ -16,7 +16,6 @@
 
     let stepIdx = -1;
 
-    $: console.log(transport, stepIdx);
     $: if (transport !== undefined) {
         let pulsesPer16th = transport.nPulses / 4.0;
         stepIdx = Math.floor(

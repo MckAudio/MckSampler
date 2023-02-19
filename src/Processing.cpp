@@ -1,7 +1,7 @@
 #include "Processing.hpp"
-#include "helper/DspHelper.hpp"
-#include "helper/JackHelper.hpp"
-#include "helper/WaveHelper.hpp"
+#include <MckHelper/DspHelper.hpp>
+#include <MckHelper/JackHelper.hpp>
+#include <MckHelper/WaveHelper.hpp>
 #include "SampleExplorer.hpp"
 
 // System
@@ -21,6 +21,9 @@ namespace fs = std::filesystem;
 #include <q/support/literals.hpp>
 #include <q/fx/delay.hpp>
 #include <q/fx/lowpass.hpp>
+
+// TYPES
+#include <System.hpp>
 
 namespace q = cycfi::q;
 using namespace q::literals;
@@ -114,25 +117,18 @@ bool mck::Processing::Init()
     m_audioOutR = jack_port_register(m_client, "audio_out_r", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
 
     m_bufferSize = jack_get_buffer_size(m_client);
+    if (m_bufferSize != 128)
+    {
+        jack_set_buffer_size(m_client, 128);
+    }
+    m_bufferSize = jack_get_buffer_size(m_client);
+    m_bufferSize = jack_get_buffer_size(m_client);
+
     m_sampleRate = jack_get_sample_rate(m_client);
     m_transportRate = m_sampleRate;
 
     // 2B - Init FX
-    for (auto &sample : m_samples)
-    {
-        sample.delay[0][0] = new q::delay(m_sampleRate);
-        sample.delay[0][1] = new q::delay(m_sampleRate);
-        sample.delay[1][0] = new q::delay(m_sampleRate);
-        sample.delay[1][1] = new q::delay(m_sampleRate);
-        sample.env[0] = new q::fast_rms_envelope_follower(70_ms, m_sampleRate);
-        sample.env[1] = new q::fast_rms_envelope_follower(70_ms, m_sampleRate);
-        sample.comp[0] = new q::compressor(-10_dB, 0.5);
-        sample.comp[1] = new q::compressor(-10_dB, 0.5);
-        sample.lp[0] = new q::one_pole_lowpass(1000_Hz, m_sampleRate);
-        sample.lp[1] = new q::one_pole_lowpass(1000_Hz, m_sampleRate);
-        sample.dsp[0] = new float[m_bufferSize];
-        sample.dsp[1] = new float[m_bufferSize];
-    }
+    PrepareBuffers(m_bufferSize, m_sampleRate, false);
 
     // 3A - Scan Sample Packs
     std::filesystem::path samplePackPath(homeDir);
@@ -167,6 +163,60 @@ bool mck::Processing::Init()
 
     m_isInitialized = true;
     return true;
+}
+
+void mck::Processing::PrepareBuffers(unsigned bufferSize, unsigned sampleRate, bool clear)
+{
+    m_bufferSize = bufferSize;
+    m_sampleRate = sampleRate;
+
+    // Clear
+    if (clear)
+    {
+        for (auto &sample : m_samples)
+        {
+            delete sample.delay[0][0];
+            sample.delay[0][0] = nullptr;
+            delete sample.delay[0][1];
+            sample.delay[0][1] = nullptr;
+            delete sample.delay[1][0];
+            sample.delay[1][0] = nullptr;
+            delete sample.delay[1][1];
+            sample.delay[1][1] = nullptr;
+            delete sample.env[0];
+            sample.env[0] = nullptr;
+            delete sample.env[1];
+            sample.env[1] = nullptr;
+            delete sample.comp[0];
+            sample.comp[0] = nullptr;
+            delete sample.comp[1];
+            sample.comp[1] = nullptr;
+            delete sample.lp[0];
+            sample.lp[0] = nullptr;
+            delete sample.lp[1];
+            sample.lp[1] = nullptr;
+            delete[] sample.dsp[0];
+            sample.dsp[0] = nullptr;
+            delete[] sample.dsp[1];
+            sample.dsp[1] = nullptr;
+        }
+    }
+
+    for (auto &sample : m_samples)
+    {
+        sample.delay[0][0] = new q::delay(m_sampleRate);
+        sample.delay[0][1] = new q::delay(m_sampleRate);
+        sample.delay[1][0] = new q::delay(m_sampleRate);
+        sample.delay[1][1] = new q::delay(m_sampleRate);
+        sample.env[0] = new q::fast_rms_envelope_follower(70_ms, m_sampleRate);
+        sample.env[1] = new q::fast_rms_envelope_follower(70_ms, m_sampleRate);
+        sample.comp[0] = new q::compressor(-10_dB, 0.5);
+        sample.comp[1] = new q::compressor(-10_dB, 0.5);
+        sample.lp[0] = new q::one_pole_lowpass(1000_Hz, m_sampleRate);
+        sample.lp[1] = new q::one_pole_lowpass(1000_Hz, m_sampleRate);
+        sample.dsp[0] = new float[m_bufferSize];
+        sample.dsp[1] = new float[m_bufferSize];
+    }
 }
 
 void mck::Processing::Close()
@@ -312,6 +362,42 @@ void mck::Processing::ReceiveMessage(mck::Message &msg)
             }
         }
     }
+    else if (msg.section == "system")
+    {
+        if (msg.msgType == "get")
+        {
+            auto ports = Ports();
+            mck::jack::GetInputPorts(m_client, ports.inputs);
+            mck::jack::GetOutputPorts(m_client, ports.outputs);
+            m_gui->SendMessage("system", "ports", ports);
+        }
+        else if (msg.msgType == "connectOutput")
+        {
+            ConnectCmd cmd;
+            try
+            {
+                cmd = nlohmann::json::parse(msg.data);
+            }
+            catch (std::exception &e)
+            {
+                std::fprintf(stderr, "Failed to parse connect message: %s\n", e.what());
+                return;
+            }
+
+            auto config = m_config[m_curConfig];
+            if (cmd.channel == 0)
+            {
+                config.audioLeftConnections.resize(1);
+                config.audioLeftConnections[0] = cmd.port;
+            }
+            else
+            {
+                config.audioRightConnections.resize(1);
+                config.audioRightConnections[0] = cmd.port;
+            }
+            SetConfiguration(config, true);
+        }
+    }
 }
 
 void mck::Processing::SetGuiPtr(GuiWindow *gui)
@@ -324,6 +410,11 @@ int mck::Processing::ProcessAudioMidi(jack_nframes_t nframes)
     if (m_isInitialized == false)
     {
         return 0;
+    }
+
+    if (nframes != m_bufferSize)
+    {
+        PrepareBuffers(nframes, jack_get_sample_rate(m_client));
     }
 
     m_isProcessing = true;

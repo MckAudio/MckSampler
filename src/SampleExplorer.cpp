@@ -1,5 +1,5 @@
 #include "SampleExplorer.hpp"
-#include "gui/GuiWindow.hpp"
+#include <GuiWindow.hpp>
 #include <filesystem>
 #include <nlohmann/json.hpp>
 #include <cstdio>
